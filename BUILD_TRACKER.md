@@ -9,7 +9,7 @@
 | Step | Feature (spec) | Status | Branch | PR | Notes |
 |---|---|---|---|---|---|
 | 0 | Base scaffold: Laravel 11 API + React shell + seeds + CI | ✅ | `feature/crm-base-scaffold` | #2 | CI green (6c56032) — ready to merge, then step 1 |
-| 1 | Lead & Client Tracking (`04`) | ✅ | `feature/crm-lead-client` | — | Built locally (push pending — no network): CRUD+scoring+convert wizard+360, 5 new tests (41 assertions total), frontend page, live smoke OK |
+| 1 | Lead & Client Tracking (`04`) | ✅ | `feature/crm-lead-client` | to open (base `develop`) | Pushed (a6fd973), CI green — open PR to `develop`, then step 2 |
 | 2 | Opportunity Pipeline (`05`) | ⬜ | — | — | Depends on step 1 (clients exist) |
 | 3 | Follow-up Reminders (`08`) | ⬜ | — | — | Needs `reminders:dispatch` schedule |
 | 4 | Communication History (`07`) | ⬜ | — | — | — |
