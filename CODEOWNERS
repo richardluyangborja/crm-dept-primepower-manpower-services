@@ -1,25 +1,4 @@
-# Ownership = merge approval required from base owner + stream owner.
-# Agents: never edit another stream's paths without their approval.
-
-/backend/app/Models/Lead.php @base-owner
-/backend/app/Models/Client.php @base-owner
-/backend/app/Models/Contact.php @base-owner
-/backend/database/seeders/CrmCoreSeeder.php @base-owner
-/frontend/src/pages/ @base-owner
-/backend/app/Models/Opportunity.php @base-owner
-/backend/app/Models/SurveyTemplate.php @base-owner
-/backend/app/Models/Survey.php @base-owner
-/backend/app/Models/SurveyResponse.php @base-owner
-/backend/app/Models/Activity.php @base-owner
-/backend/app/Models/Followup.php @base-owner
-/backend/app/Models/Notification.php @base-owner
-/backend/app/Models/User.php @base-owner
-/backend/app/Models/Setting.php @base-owner
-/backend/app/Services/Insights/ @base-owner
-/backend/app/Services/Mocks/MockAiService.php @base-owner
-/backend/app/Models/Otp.php @base-owner
-/frontend/src/components/ui/OtpModal.tsx @base-owner
-
+# Sequential single-builder workflow: base owner reviews every step PR.
 # FROZEN — changes need RFC comment on the PR, not silent drift:
 /backend/database/migrations/2026_09_19_* @base-owner
 /backend/routes/api.php @base-owner
@@ -27,3 +6,4 @@
 /frontend/src/lib/apiClient.ts @base-owner
 /frontend/src/components/ui/ @base-owner
 /specs/ @base-owner
+/BUILD_TRACKER.md @base-owner
