@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class LeadResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'owner_id' => $this->owner_id,
+            'company_name' => $this->company_name,
+            'contact_name' => $this->contact_name,
+            'contact_email' => $this->contact_email,
+            'contact_phone' => $this->contact_phone,
+            'source' => $this->source,
+            'status' => $this->status,
+            'score' => $this->score,
+            'notes' => $this->notes,
+            'converted_client_id' => $this->converted_client_id,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
+    }
+}

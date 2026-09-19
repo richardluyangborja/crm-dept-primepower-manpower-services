@@ -1,0 +1,9 @@
+# Sequential single-builder workflow: base owner reviews every step PR.
+# FROZEN — changes need RFC comment on the PR, not silent drift:
+/backend/database/migrations/2026_09_19_* @base-owner
+/backend/routes/api.php @base-owner
+/backend/app/Traits/ @base-owner
+/frontend/src/lib/apiClient.ts @base-owner
+/frontend/src/components/ui/ @base-owner
+/specs/ @base-owner
+/BUILD_TRACKER.md @base-owner
