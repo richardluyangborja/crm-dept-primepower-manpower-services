@@ -28,6 +28,11 @@ class Client extends Model
         return $this->hasMany(Contact::class);
     }
 
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
     public function opportunities(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Opportunity::class);

@@ -10,8 +10,8 @@ use Illuminate\Http\Request;
  * agent stream implements it — this keeps the endpoint index (specs/14) stable
  * and merge conflicts at zero. Agents replace ONLY their own methods/files.
  *
- * Ownership: A=leads/clients(04) B=opportunities(05) C=surveys(06)
- *            D=activities(07) E=followups/notifications(08) F=users/settings(09) G=reports(15)
+ * Ownership (sequential build, specs/17): step 2=opportunities(05) step 5=surveys(06)
+ *            step 4=activities(07) step 3=followups/notifications(08) step 6=users/settings(09) step 7=reports(15)
  */
 class ModuleStubController extends Controller
 {
@@ -31,11 +31,10 @@ class ModuleStubController extends Controller
     protected function stub(Request $request)
     {
         $owner = [
-            'leads' => 'Agent A (specs/04)', 'clients' => 'Agent A (specs/04)',
-            'opportunities' => 'Agent B (specs/05)', 'surveys' => 'Agent C (specs/06)',
-            'activities' => 'Agent D (specs/07)', 'followups' => 'Agent E (specs/08)',
-            'notifications' => 'Agent E (specs/08)', 'users' => 'Agent F (specs/09)',
-            'reports' => 'Agent G (specs/15)',
+            'opportunities' => 'Step 2 (specs/05)', 'surveys' => 'Step 5 (specs/06)',
+            'activities' => 'Step 4 (specs/07)', 'followups' => 'Step 3 (specs/08)',
+            'notifications' => 'Step 3 (specs/08)', 'users' => 'Step 6 (specs/09)',
+            'reports' => 'Step 7 (specs/15)',
         ];
         $segment = $request->segment(3) ?? 'unknown';
 

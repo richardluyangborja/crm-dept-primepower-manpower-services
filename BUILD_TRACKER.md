@@ -9,7 +9,7 @@
 | Step | Feature (spec) | Status | Branch | PR | Notes |
 |---|---|---|---|---|---|
 | 0 | Base scaffold: Laravel 11 API + React shell + seeds + CI | ✅ | `feature/crm-base-scaffold` | #2 | CI green (6c56032) — ready to merge, then step 1 |
-| 1 | Lead & Client Tracking (`04`) | ⬜ | — | — | Next after base merges |
+| 1 | Lead & Client Tracking (`04`) | ✅ | `feature/crm-lead-client` | — | Built locally (push pending — no network): CRUD+scoring+convert wizard+360, 5 new tests (41 assertions total), frontend page, live smoke OK |
 | 2 | Opportunity Pipeline (`05`) | ⬜ | — | — | Depends on step 1 (clients exist) |
 | 3 | Follow-up Reminders (`08`) | ⬜ | — | — | Needs `reminders:dispatch` schedule |
 | 4 | Communication History (`07`) | ⬜ | — | — | — |
@@ -36,3 +36,5 @@
 | 2026-09-19 | Base scaffold PR #2 opened; CI backend failed — root cause: scaffold resolved Laravel 13 (needs PHP ^8.3) vs CI PHP 8.2 |
 | 2026-09-19 | Backend rebuilt on Laravel 11.56 (per spec); plan switched to sequential builds + this tracker |
 | 2026-09-19 | CI fixed after 4 failures: (1) scaffold had resolved Laravel 13 vs CI PHP 8.2 → rebuilt on L11; (2) symfony 8.1/pint in lock → composer `platform.php=8.2.0`; (3) tests needed sqlite ext + run on pgsql service; (4) `jwt:secret` silently skipped because `.env.example` contained the literal `JWT_SECRET` token — removed. CI green on 6c56032 |
+| 2026-09-19 | CORS fixed: `config/cors.php` was missing → added FRONTEND_URL allowlist + `CorsTest` (preflight 204, allow/disallow). Local `artisan serve` on PHP 8.5 hides ACAO headers due to deprecation output flushing before headers — proven local-only; middleware verified in-process |
+| 2026-09-19 | Step 1 built on `feature/crm-lead-client`: Lead/Client/Contact controllers+requests+resources+policies+LeadService, convert idempotency 409, duplicate warnings, `LeadClientTest` (5 tests), `Leads.tsx` page (tabs, score bars, status flow, convert dialog, client 360 drawer). Live smoke: lead→score 45→convert→client+opp→360→409 replay OK |

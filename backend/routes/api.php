@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InsightController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ModuleStubController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
@@ -28,9 +30,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/insights/clients/{id}', [InsightController::class, 'client']);
         Route::get('/insights/opportunities/{id}', [InsightController::class, 'opportunity']);
 
-        // Module streams (501 stubs until owners implement — see ModuleStubController):
-        Route::apiResource('leads', ModuleStubController::class);          // Agent A
-        Route::apiResource('clients', ModuleStubController::class);        // Agent A
+        // Step 1 — Lead & Client Tracking (specs/04). Other resources stay 501 stubs for their steps.
+        Route::apiResource('leads', LeadController::class);
+        Route::post('leads/{lead}/convert', [LeadController::class, 'convert']);
+        Route::apiResource('clients', ClientController::class);
+        Route::get('clients/{client}/contacts', [ClientController::class, 'contacts']);
+        Route::post('clients/{client}/contacts', [ClientController::class, 'storeContact']);
         Route::apiResource('opportunities', ModuleStubController::class);  // Agent B
         Route::apiResource('activities', ModuleStubController::class);     // Agent D
         Route::apiResource('survey-templates', ModuleStubController::class); // Agent C
