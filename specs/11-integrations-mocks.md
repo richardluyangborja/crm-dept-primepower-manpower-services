@@ -16,6 +16,8 @@ pushWonOpportunity(Opportunity $opp): array; // -> ['job_order_ref'=>…]
 | `WorkforceService` (dept 2 HR) | headcount deployed per client | `fixtures/headcount.json` |
 | `AnalyticsExport` (dept 9 BI) | aggregate endpoint consumed by BI (mock consumer script) | `fixtures/bi_pull.json` |
 | `NotifyService` | mail/SMS → `Log` + `notifications` row + `mock_outbox.json` | — |
+| `OtpService` (`16`) | OTP send/verify → `Log` + `mock_outbox.json`, `OTP_MODE=mock` | `fixtures/otp_outbox.json` |
+| `AiService` (`15`) | insights/predict → deterministic fixtures, `AI_MODE=mock` | `fixtures/ai/*.json` |
 
 ## 2. Conventions
 - `INTEGRATIONS_MODE=mock|live` global + per-service override (`JOBORDER_MODE`). Mock latency 100–300ms + `X-Mock: true` header so UI can show "Mock mode" banner.

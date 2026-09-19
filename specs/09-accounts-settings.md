@@ -9,8 +9,9 @@ Mirrors reference Settings UX (`dark-mode.webp`): left submenu + content + top-r
 | Appearance | all (personal) | Light/Dark preview cards + check badge, `Sync with System` toggle; org default (superadmin only) |
 | Organization | superadmin/admin | teams (Manila/Cebu/Davao), regions, master data: industries, sources, stages labels, lost reasons |
 | Notifications | all | in-app toggles (reminder due, overdue, escalation, survey response, assignment), browser-notif opt-in, quiet hours (PHT) |
-| Users & Access | admin+ | invite (email+role+team), activate/deactivate, reset password, role change (audit); manager sees team read-only |
-| Security | all/admin | change password, active JWT sessions (list + revoke), 2FA stub (post-v1 note), login history (audit) |
+| Users & Access | admin+ | invite (email+role+team), activate/deactivate, reset password, role change (audit; v2 step-up OTP per `16`); manager sees team read-only |
+| Security | all/admin | change password, active JWT sessions (list + revoke), **OTP toggle + 5-min idle-timeout notice (v1 scaffolded, enforced v2 per `16`)**, login history (audit) |
+| AI & Reports (`15`) | manager+ | insight visibility, report schedule (weekly/monthly), feedback review |
 | Data & Backup | superadmin | export CSV per entity, DB backup note (Neon auto + `pg_dump` runbook), retention (soft-delete 90d) |
 | Integrations | superadmin/admin | `INTEGRATIONS_MODE=mock|live` toggle per dept, endpoint URLs, test-connection (mock returns fixture), webhook log stub |
 
@@ -24,7 +25,9 @@ Mirrors reference Settings UX (`dark-mode.webp`): left submenu + content + top-r
 GET|PUT /settings (superadmin, keyed)  GET|PUT /me/preferences
 GET|POST /users  GET|PUT|POST /users/{id}/deactivate|reset-password (admin+)
 GET /users/sessions  DELETE /users/sessions/{id}
+POST /auth/otp/send|verify (16; mock in v1)
 GET /integrations/status  PUT /integrations/mode (superadmin)
+GET /reports/weekly|monthly  POST /reports/generate (15)
 ```
 ## 4. Seeds
 Teams + 5 users from `02`; preferences: reps dark+sync-on, manager light; 6 industries (BPO, Manufacturing, Hospitality, Retail, Healthcare, Logistics).

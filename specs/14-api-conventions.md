@@ -2,7 +2,8 @@
 
 ## 1. Base
 - Prefix `/api/v1`, JSON only, `Accept: application/json`. Health `GET /api/v1/health → {ok:true, time}`.
-- Auth: `Authorization: Bearer <access_jwt>`; public: `POST /auth/login|refresh`, `GET /health`. All else `auth:api` + `role`/`can` middleware.
+- Auth: `Authorization: Bearer <access_jwt>`; public: `POST /auth/login|refresh`, `GET /health`, `POST /auth/otp/*`, `GET /s/{token}`. All else `auth:api` + `role`/`can` middleware.
+- Session (v2 enforced, v1 scaffolded — see `16`): idle 300s → `401 {code:"session_expired", message:"…"}`; frontend interceptor clears storage + redirects to login. OTP step-up: `428 {otp_required:true}` → `<OtpModal>` → retry with `X-StepUp-Token`.
 - CORS: `FRONTEND_URL` exact allowlist (comma-separated in prod), no credentials, exposed `Authorization`.
 
 ## 2. Standard shapes
@@ -24,12 +25,15 @@
 - Policies: `LeadPolicy, OpportunityPolicy…` enforcing owner/team/admin scope.
 - Error codes: 401 (refresh once), 403 (show "Ask your manager"), 422 (inline field errors), 409 (duplicate client by email/phone).
 
-## 4. Endpoint index (full detail in 04–08)
+## 4. Endpoint index (full detail in 04–08, 15–16)
 ```
 POST /auth/login|refresh|logout|me
+POST /auth/otp/send|verify|resend        # 16 (v1 mock, v2 enforced; 5-min expiry)
 CRUD /leads, /clients, /contacts, /opportunities, /activities, /survey-templates, /surveys, /surveys/{id}/respond, /followups, /notifications
 POST /leads/{id}/convert  POST /opportunities/{id}/move  POST /opportunities/{id}/win|lose
 GET  /dashboard/summary  GET /reports/* (BI-compatible)
+GET  /insights/clients/{id}  GET /insights/opportunities/{id}   # 15
+GET  /reports/weekly|monthly  POST /reports/generate  POST /insights/feedback  # 15
 ```
 - Idempotency: `POST` convert/win guarded (409 if already converted). Audit every write.
 - Frontend: one `apiClient`, React Query keys mirror paths, mutations invalidate (`['opportunities']`, `['dashboard']`), toasts on success/error, 401→refresh→retry-once queue.

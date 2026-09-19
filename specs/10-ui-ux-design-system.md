@@ -4,10 +4,10 @@ Reference: `light-mode.png` (light) + `dark-mode.webp` (Settings → Appearance)
 
 ## 1. Layout shell (both modes)
 - **Left sidebar (grouped, collapsible):** logo `PRIMEPOWER MANPOWER / CRM`, sections:
-  - `Dashboard`
+  - `Dashboard` (KPIs + **AI insights preview + at-risk list**, see `15`)
   - `SALES`: Leads & Clients, Opportunity Pipeline, Follow-ups
   - `ENGAGEMENT`: Communications, Satisfaction & Surveys
-  - `AI & ANALYTICS`: Reports (BI stub)
+  - `AI & ANALYTICS`: Reports (weekly/monthly packs, `15`; BI stub)
   - `SYSTEM`: Settings, (Superadmin) Users & Access
   - Bottom: user card (avatar initial, name, email, logout icon).
 - **Topbar:** hamburger (mobile), breadcrumb/title, `Quick search…` (⌘K, searches clients/leads/opps), bell with badge (notifications), avatar. Sticky, blur bg.
@@ -34,6 +34,8 @@ Reference: `light-mode.png` (light) + `dark-mode.webp` (Settings → Appearance)
 
 ## 4. Reusable components (frontend, all in `components/ui` + `components/crm`)
 `AppSidebar, Topbar, QuickSearch, KpiCard(delta chip ▲▼), TrendChart(Recharts line), DonutChart, DataTable(server pagination/sort/filter + CSV export), StatusBadge, FormField, EmptyState, ConfirmDialog, Timeline, KanbanBoard(drag-drop, WIP count), SurveyBuilder, ReminderCalendar, ThemeToggle, Toaster`. Props documented with Storybook-style examples in code comments; no duplicated table/kanban logic per module.
+- AI/report additions (`15`): `InsightCard(score + drivers + CTA), RiskPill, ForecastBar, ReportPreviewModal, AiBadge("AI preview — verify")`.
+- Auth additions (`16`, scaffolded v1): `OtpModal` (6 boxes, 05:00 countdown, resend), idle-warning modal ("Stay signed in?", 60s countdown).
 
 ## 5. Responsive & a11y
 - ≥1280: full sidebar; 768–1279: icons; <768: drawer + bottom nav for Follow-ups/Comms. Charts stack; kanban → horizontal scroll with sticky stage headers.
