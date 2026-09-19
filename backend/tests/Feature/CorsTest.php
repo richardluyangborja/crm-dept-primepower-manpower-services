@@ -33,4 +33,19 @@ class CorsTest extends TestCase
         $res->assertOk();
         $this->assertNotSame('http://evil.example', $res->headers->get('Access-Control-Allow-Origin'));
     }
+
+    public function test_each_allowlisted_origin_is_echoed(): void
+    {
+        // Guards the localhost-vs-127.0.0.1 dev gotcha: every origin in
+        // FRONTEND_URL must preflight cleanly.
+        config()->set('cors.allowed_origins', ['http://localhost:5173', 'http://127.0.0.1:5173']);
+        foreach (['http://localhost:5173', 'http://127.0.0.1:5173'] as $origin) {
+            $res = $this->call('OPTIONS', '/api/v1/auth/login', [], [], [], [
+                'HTTP_ORIGIN' => $origin,
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+            ]);
+            $res->assertStatus(204);
+            $this->assertSame($origin, $res->headers->get('Access-Control-Allow-Origin'));
+        }
+    }
 }

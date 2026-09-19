@@ -1,5 +1,14 @@
 <?php
 
+// Local dev runs PHP 8.5 while CI/prod run 8.2 (composer platform). Laravel 11's
+// own config files emit E_DEPRECATED notices on 8.5 during bootstrap — printed
+// before headers, which silently kills ALL response headers (incl. CORS) under
+// `artisan serve`. Mute E_DEPRECATED display early on 8.5+ only; 8.2 behavior
+// (and CI) is untouched.
+if (PHP_VERSION_ID >= 80500) {
+    error_reporting(E_ALL & ~E_DEPRECATED);
+}
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
