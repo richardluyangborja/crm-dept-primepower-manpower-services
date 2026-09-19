@@ -35,9 +35,9 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create(['email' => 'rep.stub@primepower.ph']);
         $token = auth('api')->login($user);
-        // Opportunities land in Step 2 — still a stub with its owner note.
-        $res = $this->getJson('/api/v1/opportunities', ['Authorization' => "Bearer {$token}"])
+        // Follow-ups land in Step 3 — still a stub with its owner note.
+        $res = $this->getJson('/api/v1/followups', ['Authorization' => "Bearer {$token}"])
             ->assertStatus(501);
-        $this->assertStringContainsString('Step 2', $res->getContent());
+        $this->assertStringContainsString('Step 3', $res->getContent());
     }
 }

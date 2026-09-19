@@ -5,6 +5,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InsightController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\OpportunityController;
 use App\Http\Controllers\ModuleStubController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
@@ -36,7 +37,11 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('clients', ClientController::class);
         Route::get('clients/{client}/contacts', [ClientController::class, 'contacts']);
         Route::post('clients/{client}/contacts', [ClientController::class, 'storeContact']);
-        Route::apiResource('opportunities', ModuleStubController::class);  // Agent B
+        // Step 2 — Opportunity Pipeline (specs/05).
+        Route::apiResource('opportunities', OpportunityController::class);
+        Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);
+        Route::post('opportunities/{opportunity}/win', [OpportunityController::class, 'win']);
+        Route::post('opportunities/{opportunity}/lose', [OpportunityController::class, 'lose']);
         Route::apiResource('activities', ModuleStubController::class);     // Agent D
         Route::apiResource('survey-templates', ModuleStubController::class); // Agent C
         Route::apiResource('surveys', ModuleStubController::class);        // Agent C

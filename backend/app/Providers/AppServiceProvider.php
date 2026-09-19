@@ -35,5 +35,6 @@ class AppServiceProvider extends ServiceProvider
         // Explicit policy map (Gate also auto-discovers *Policy by convention).
         Gate::policy(\App\Models\Lead::class, \App\Policies\LeadPolicy::class);
         Gate::policy(\App\Models\Client::class, \App\Policies\ClientPolicy::class);
+        Gate::policy(\App\Models\Opportunity::class, \App\Policies\OpportunityPolicy::class);
     }
 }
