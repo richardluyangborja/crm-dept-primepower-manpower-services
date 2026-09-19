@@ -23,4 +23,9 @@ class Lead extends Model
     {
         return ['score' => 'integer'];
     }
+
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }

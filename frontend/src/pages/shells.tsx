@@ -15,10 +15,9 @@ function shell(title: string, hint: string, owner: string) {
   };
 }
 
-export const LeadsPage = shell('Leads & Clients', 'Capture, qualify, convert. Owner: Agent A (specs/04).', 'Agent A');
-export const PipelinePage = shell('Opportunity Pipeline', 'Kanban, win/loss, forecast. Owner: Agent B (specs/05).', 'Agent B');
-export const SurveysPage = shell('Satisfaction & Surveys', 'NPS/CSAT templates and analytics. Owner: Agent C (specs/06).', 'Agent C');
-export const CommsPage = shell('Communications', 'Unified timeline and loggers. Owner: Agent D (specs/07).', 'Agent D');
-export const FollowupsPage = shell('Follow-ups', 'Reminders, escalation, calendar. Owner: Agent E (specs/08).', 'Agent E');
-export const ReportsPage = shell('Reports', 'Weekly/monthly packs + AI insights. Owner: Agent G (specs/15).', 'Agent G');
-export const SettingsPage = shell('Settings', 'General, appearance, users, security, integrations. Owner: Agent F (specs/09).', 'Agent F');
+export const PipelinePage = shell('Opportunity Pipeline', 'Kanban, win/loss, forecast. Step 2 (specs/05).', 'Step 2');
+export const SurveysPage = shell('Satisfaction & Surveys', 'NPS/CSAT templates and analytics. Step 5 (specs/06).', 'Step 5');
+export const CommsPage = shell('Communications', 'Unified timeline and loggers. Step 4 (specs/07).', 'Step 4');
+export const FollowupsPage = shell('Follow-ups', 'Reminders, escalation, calendar. Step 3 (specs/08).', 'Step 3');
+export const ReportsPage = shell('Reports', 'Weekly/monthly packs + AI insights. Step 7 (specs/15).', 'Step 7');
+export const SettingsPage = shell('Settings', 'General, appearance, users, security, integrations. Step 6 (specs/09).', 'Step 6');

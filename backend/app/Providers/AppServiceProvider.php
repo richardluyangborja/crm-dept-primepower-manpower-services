@@ -14,8 +14,8 @@ use App\Services\Mocks\MockJobOrderService;
 use App\Services\Mocks\MockNotifyService;
 use App\Services\Mocks\MockOtpService;
 use App\Services\Mocks\MockWorkforceService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -32,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        // Explicit policy map (Gate also auto-discovers *Policy by convention).
+        Gate::policy(\App\Models\Lead::class, \App\Policies\LeadPolicy::class);
+        Gate::policy(\App\Models\Client::class, \App\Policies\ClientPolicy::class);
     }
 }

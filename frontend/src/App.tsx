@@ -6,7 +6,8 @@ import { Toaster } from './components/ui/Toaster';
 import { applyTheme, hasRole, useSession } from './store/session';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
-import { CommsPage, FollowupsPage, LeadsPage, PipelinePage, ReportsPage, SettingsPage, SurveysPage } from './pages/shells';
+import { CommsPage, FollowupsPage, PipelinePage, ReportsPage, SettingsPage, SurveysPage } from './pages/shells';
+import { LeadsPage } from './pages/Leads';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } } });
 
