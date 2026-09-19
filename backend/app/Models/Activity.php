@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 
 class Activity extends Model
 {
-    use Filterable;
+    use Filterable, HasAuditLog;
 
     public const TYPES = ['call', 'email', 'meeting', 'site_visit', 'note'];
 
@@ -19,5 +20,15 @@ class Activity extends Model
     protected function casts(): array
     {
         return ['occurred_at' => 'datetime', 'attachments' => 'array'];
+    }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }

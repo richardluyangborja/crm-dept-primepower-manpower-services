@@ -38,5 +38,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(\App\Models\Opportunity::class, \App\Policies\OpportunityPolicy::class);
         Gate::policy(\App\Models\Followup::class, \App\Policies\FollowupPolicy::class);
         Gate::policy(\App\Models\Notification::class, \App\Policies\NotificationPolicy::class);
+        Gate::policy(\App\Models\Activity::class, \App\Policies\ActivityPolicy::class);
     }
 }

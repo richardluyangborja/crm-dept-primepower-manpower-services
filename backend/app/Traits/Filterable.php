@@ -28,10 +28,12 @@ trait Filterable
             return $query;
         }
         $table = $query->getModel()->getTable();
+        // ilike is Postgres-only; LIKE is case-insensitive enough on sqlite/mysql defaults.
+        $op = $query->getModel()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
-        return $query->where(function (Builder $q) use ($term, $columns, $table) {
+        return $query->where(function (Builder $q) use ($term, $columns, $table, $op) {
             foreach ($columns as $col) {
-                $q->orWhere($table.'.'.$col, 'ilike', "%{$term}%");
+                $q->orWhere($table.'.'.$col, $op, "%{$term}%");
             }
         });
     }
