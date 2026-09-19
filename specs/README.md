@@ -19,6 +19,8 @@ Source of truth for PrimePower Manpower Services CRM (Laravel API + React SPA, J
 | 12 | `12-seeding-strategy.md` | static PH seeds, no Faker |
 | 13 | `13-git-workflow.md` | branches, PRs, conflicts |
 | 14 | `14-api-conventions.md` | REST/JWT envelopes, reuse rules |
+| 15 | `15-ai-analytics-customer-intelligence.md` | REQUIRED: AI dashboards, customer intelligence, management reports (rules → mock-AI → models) |
+| 16 | `16-auth-otp-session-timeout.md` | REQUIRED but DEFERRED: OTP 5-min expiry + 5-min idle timeout (spec now, enforce v2) |
 
 UI refs: `../ui-references/light-mode.png`, `../ui-references/dark-mode.webp`.
 Depts: `../list-of-departments.md`.

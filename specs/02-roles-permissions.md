@@ -27,12 +27,16 @@ Future roles (reserve ids/slugs): `viewer` (read-only), `client_contact` (portal
 | Create/complete follow-ups | ✅ | ✅ | ✅ | ✅ (own) |
 | View reminders calendar (team) | ✅ | ✅ | ✅ | own |
 | Export CSV | ✅ | ✅ | ✅ | own |
+| View AI insights & management reports (`15`) | ✅ | ✅ | ✅ | own (team rollup read-only optional) |
+| Step-up OTP for deletes / go-live switches (`16`, v2) | ✅ | ✅ | ✅ | ✅ (own scope) |
 | Delete records | ✅ (soft) | ✅ (soft, own scope) | request | ❌ |
 
 Default scope: `sales_rep` sees `owner_id = me`; `manager` sees `team_id = my team`; `admin/superadmin` see all. Implemented via global scope `OwnedByTeam` + Policy `viewAny/view/update`.
 
-## 3. Auth rules (JWT)
+## 3. Auth rules (JWT + deferred OTP/session, see `16`)
 - Login `POST /auth/login` (email+password) → `{access_token, refresh_token, user, role}`. Refresh `POST /auth/refresh`. Logout denylists token.
+- **v1:** JWT baseline only (`VITE_SESSION_TIMEOUT_ENABLED=false`, `OTP_MODE=mock`, no enforcement).
+- **v2 (deferred):** login returns `{otp_required:true}` → `POST /auth/otp/verify` (6-digit, 5-min expiry) → tokens; **5-min idle timeout** (`401 session_expired` → re-login); step-up OTP (`428`) for role changes/deletes/go-live.
 - Frontend stores tokens in memory + `sessionStorage` (never localStorage for access); refresh rotation on 401. Route guards: `RequireAuth`, `RequireRole(['manager','admin','superadmin'])`.
 - Passwords: bcrypt 12, min 10 chars, lockout 5 attempts/15 min. Audit every login/refresh/logout.
 
