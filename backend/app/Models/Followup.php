@@ -19,8 +19,15 @@ class Followup extends Model
         'priority', 'status', 'snoozed_until', 'escalated_to',
     ];
 
+    protected $attributes = ['status' => 'open', 'priority' => 'medium'];
+
     protected function casts(): array
     {
         return ['due_at' => 'datetime', 'snoozed_until' => 'datetime'];
+    }
+
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }

@@ -3,10 +3,12 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FollowupController;
 use App\Http\Controllers\InsightController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\OpportunityController;
 use App\Http\Controllers\ModuleStubController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,8 +47,14 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('activities', ModuleStubController::class);     // Agent D
         Route::apiResource('survey-templates', ModuleStubController::class); // Agent C
         Route::apiResource('surveys', ModuleStubController::class);        // Agent C
-        Route::apiResource('followups', ModuleStubController::class);      // Agent E
-        Route::apiResource('notifications', ModuleStubController::class)->only(['index', 'show']); // Agent E
+        // Step 3 — Follow-up Reminders (specs/08).
+        Route::apiResource('followups', FollowupController::class);
+        Route::post('followups/{followup}/done', [FollowupController::class, 'done']);
+        Route::post('followups/{followup}/snooze', [FollowupController::class, 'snooze']);
+        Route::post('followups/{followup}/escalate', [FollowupController::class, 'escalate']);
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'read']);
         Route::apiResource('users', ModuleStubController::class)->only(['index', 'store', 'show', 'update']); // Agent F
         Route::get('/reports/weekly', [ModuleStubController::class]);      // Agent G
         Route::get('/reports/monthly', [ModuleStubController::class]);     // Agent G
