@@ -15,7 +15,6 @@ function shell(title: string, hint: string, owner: string) {
   };
 }
 
-export const PipelinePage = shell('Opportunity Pipeline', 'Kanban, win/loss, forecast. Step 2 (specs/05).', 'Step 2');
 export const SurveysPage = shell('Satisfaction & Surveys', 'NPS/CSAT templates and analytics. Step 5 (specs/06).', 'Step 5');
 export const CommsPage = shell('Communications', 'Unified timeline and loggers. Step 4 (specs/07).', 'Step 4');
 export const FollowupsPage = shell('Follow-ups', 'Reminders, escalation, calendar. Step 3 (specs/08).', 'Step 3');

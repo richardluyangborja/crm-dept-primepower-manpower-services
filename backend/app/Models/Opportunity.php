@@ -32,4 +32,14 @@ class Opportunity extends Model
             'lost_at' => 'datetime',
         ];
     }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }
