@@ -16,6 +16,5 @@ function shell(title: string, hint: string, owner: string) {
 }
 
 export const SurveysPage = shell('Satisfaction & Surveys', 'NPS/CSAT templates and analytics. Step 5 (specs/06).', 'Step 5');
-export const CommsPage = shell('Communications', 'Unified timeline and loggers. Step 4 (specs/07).', 'Step 4');
 export const ReportsPage = shell('Reports', 'Weekly/monthly packs + AI insights. Step 7 (specs/15).', 'Step 7');
 export const SettingsPage = shell('Settings', 'General, appearance, users, security, integrations. Step 6 (specs/09).', 'Step 6');

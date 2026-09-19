@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FollowupController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\InsightController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\OpportunityController;
@@ -44,7 +45,9 @@ Route::prefix('v1')->group(function () {
         Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);
         Route::post('opportunities/{opportunity}/win', [OpportunityController::class, 'win']);
         Route::post('opportunities/{opportunity}/lose', [OpportunityController::class, 'lose']);
-        Route::apiResource('activities', ModuleStubController::class);     // Agent D
+        // Step 4 — Communication History (specs/07).
+        Route::get('message-templates', [ActivityController::class, 'templates']);
+        Route::apiResource('activities', ActivityController::class);
         Route::apiResource('survey-templates', ModuleStubController::class); // Agent C
         Route::apiResource('surveys', ModuleStubController::class);        // Agent C
         // Step 3 — Follow-up Reminders (specs/08).

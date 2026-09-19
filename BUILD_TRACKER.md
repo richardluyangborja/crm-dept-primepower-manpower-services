@@ -12,7 +12,7 @@
 | 1 | Lead & Client Tracking (`04`) | ✅ | `feature/crm-lead-client` | to open (base `develop`) | Pushed (a6fd973), CI green — open PR to `develop`, then step 2 |
 | 2 | Opportunity Pipeline (`05`) | ✅ | `feature/crm-pipeline` | to open (base `develop`) | Pushed (d06423c), CI green — 5 new tests, kanban + win/loss + reopen guards; open PR to `develop`, then step 3 |
 | 3 | Follow-up Reminders (`08`) | ✅ | `feature/crm-followup` | to open (base `develop`) | Pushed (78b053b), CI green — 4 new tests, dispatch command, queue+calendar+badge; open PR to `develop`, then step 4 |
-| 4 | Communication History (`07`) | ⬜ | — | — | — |
+| 4 | Communication History (`07`) | 🔄 | `feature/crm-comms` | — | Backend+timeline built, tests green (29 cases), live smoke OK (log+hook+fup, templates, search); pushing for CI |
 | 5 | Satisfaction & Surveys (`06`) | ⬜ | — | — | Includes public `/s/{token}` page |
 | 6 | Accounts & Settings (`09`) | ⬜ | — | — | — |
 | 7 | AI Analytics + Reports (`15`) | ⬜ | — | — | Rules → mock-AI; real models later |
