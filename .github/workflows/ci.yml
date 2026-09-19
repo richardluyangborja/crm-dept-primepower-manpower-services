@@ -46,13 +46,7 @@ jobs:
           DB_DATABASE: crm_primepower
           DB_USERNAME: crm
           DB_PASSWORD: crm_secret
-      - name: Run php artisan test
-        run: |
-          set +e
-          php artisan test --no-ansi > /tmp/test.log 2>&1
-          code=$?
-          grep -v '^$' /tmp/test.log | sed 's/::/;;/g' | tail -30 | while IFS= read -r line; do echo "::error::$line"; done
-          exit $code
+      - run: php artisan test
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
