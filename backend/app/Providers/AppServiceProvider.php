@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Providers;
+
+use App\Services\Contracts\AiServiceInterface;
+use App\Services\Contracts\BillingServiceInterface;
+use App\Services\Contracts\JobOrderServiceInterface;
+use App\Services\Contracts\NotifyServiceInterface;
+use App\Services\Contracts\OtpServiceInterface;
+use App\Services\Contracts\WorkforceServiceInterface;
+use App\Services\Mocks\MockAiService;
+use App\Services\Mocks\MockBillingService;
+use App\Services\Mocks\MockJobOrderService;
+use App\Services\Mocks\MockNotifyService;
+use App\Services\Mocks\MockOtpService;
+use App\Services\Mocks\MockWorkforceService;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // v1: all external/AI deps resolve to mocks (specs/11 + 15 + 16).
+        // Flip to live implementations per-service in v2 — no controller changes.
+        $this->app->bind(JobOrderServiceInterface::class, MockJobOrderService::class);
+        $this->app->bind(BillingServiceInterface::class, MockBillingService::class);
+        $this->app->bind(WorkforceServiceInterface::class, MockWorkforceService::class);
+        $this->app->bind(NotifyServiceInterface::class, MockNotifyService::class);
+        $this->app->bind(OtpServiceInterface::class, MockOtpService::class);
+        $this->app->bind(AiServiceInterface::class, MockAiService::class);
+    }
+
+    public function boot(): void
+    {
+        //
+    }
+}

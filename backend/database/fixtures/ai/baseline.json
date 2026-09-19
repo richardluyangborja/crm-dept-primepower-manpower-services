@@ -1,0 +1,1 @@
+{"client_risk": {"level": "low", "drivers": ["fixture baseline"], "confidence": 40}, "win_probability": {"probability": 50, "drivers": ["fixture baseline"]}, "mock": true, "ai_preview": true}
