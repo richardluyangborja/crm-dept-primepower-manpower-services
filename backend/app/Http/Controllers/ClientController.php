@@ -49,6 +49,30 @@ class ClientController extends Controller
         return $this->ok(new ClientResource($client));
     }
 
+    /**
+     * Operations read-backs (specs/18 §3A): mock deployment headcount,
+     * mock AR balance, and job-order pipeline counts — surfaced, not buried.
+     */
+    public function operations(
+        Client $client,
+        \App\Services\Contracts\WorkforceServiceInterface $workforce,
+        \App\Services\Contracts\BillingServiceInterface $billing
+    ) {
+        $this->authorize('view', $client);
+        $jobs = \App\Models\JobOrder::where('client_id', $client->id)->get();
+
+        return $this->ok([
+            'deployment' => $workforce->headcountByClient($client->id) + ['mock' => true],
+            'billing' => $billing->paymentStatus($client->id) + ['mock' => true],
+            'job_orders' => [
+                'count' => $jobs->count(),
+                'active' => $jobs->whereNotIn('status', ['billed'])->count(),
+                'by_status' => $jobs->groupBy('status')->map->count(),
+            ],
+            'mock' => true,
+        ]);
+    }
+
     public function update(UpdateClientRequest $request, Client $client)
     {
         $this->authorize('update', $client);

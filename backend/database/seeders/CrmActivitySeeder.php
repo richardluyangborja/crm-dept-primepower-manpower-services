@@ -99,6 +99,21 @@ class CrmActivitySeeder extends Seeder
             }
         }
 
+        // Journey seeds (specs/18 §3A): Davao Prime walks staffing stages out of the box.
+        $wonOpp = Opportunity::where('title', '80 security guards — Davao Prime')->first();
+        $smWon = Opportunity::where('title', '60 promo staff — SM Cebu (won)')->first();
+        $seedJobs = [
+            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'JO-2026-0101', 'title' => '80 security guards — Davao Prime', 'headcount' => 60, 'value_centavos' => 240000000, 'status' => 'deployed', 'invoice_ref' => 'INV-2026-0101'],
+            ['opportunity_id' => $smWon?->id, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'JO-2026-0102', 'title' => '60 promo staff — SM Cebu', 'headcount' => 45, 'value_centavos' => 210000000, 'status' => 'staffed', 'invoice_ref' => 'INV-2026-0102'],
+        ];
+        foreach ($seedJobs as $j) {
+            if (! $j['opportunity_id']) continue;
+            \App\Models\JobOrder::firstOrCreate(
+                ['ref' => $j['ref']],
+                $j + ['payload' => ['mock' => true, 'seeded' => true]]
+            );
+        }
+
         $fups = [
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'Follow up quotation — SM Cebu headcount', 'due_at' => now()->addHours(3), 'priority' => 'high', 'status' => 'open'],
             ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => 'Confirm reliever for Sunday shift', 'due_at' => now()->subHours(26), 'priority' => 'high', 'status' => 'overdue'],

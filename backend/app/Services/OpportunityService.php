@@ -53,10 +53,31 @@ class OpportunityService
 
             $meta = ['from' => $from, 'to' => $to];
             if ($to === 'won') {
-                // Mock cross-dept docs (specs/11): same interface live impls will use in v2.
-                $meta['job_order'] = $this->jobs->pushWonOpportunity($opp);
-                $meta['invoice'] = $this->billing->createDraftInvoice($opp);
-                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", 'Job order + draft invoice created (mock).', "/pipeline?stage=won");
+                // Mock cross-dept docs (specs/11) persisted as a first-class
+                // JobOrder so the client timeline can show the journey (specs/18).
+                // Idempotent: re-winning reuses the existing row for this opp.
+                $jo = $this->jobs->pushWonOpportunity($opp);
+                $inv = $this->billing->createDraftInvoice($opp);
+                $meta['job_order'] = $jo;
+                $meta['invoice'] = $inv;
+                $jobOrder = \App\Models\JobOrder::withTrashed()->firstOrCreate(
+                    ['opportunity_id' => $opp->id],
+                    [
+                        'client_id' => $opp->client_id,
+                        'owner_id' => $opp->owner_id,
+                        'ref' => $jo['job_order_ref'],
+                        'title' => $opp->title,
+                        'value_centavos' => $opp->value_centavos,
+                        'status' => 'draft',
+                        'invoice_ref' => $inv['invoice_ref'],
+                        'payload' => ['mock' => true, 'job_order' => $jo, 'invoice' => $inv],
+                    ]
+                );
+                if ($jobOrder->trashed()) {
+                    $jobOrder->restore();
+                }
+                $meta['job_order_id'] = $jobOrder->id;
+                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", "/leads?client={$opp->client_id}");
             }
             if ($to === 'lost') {
                 $meta['lost_reason'] = $opp->lost_reason;

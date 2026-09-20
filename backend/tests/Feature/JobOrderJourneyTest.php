@@ -1,0 +1,93 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Client;
+use App\Models\JobOrder;
+use App\Models\Opportunity;
+use App\Models\Team;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/** v2 journey A (specs/18 §3A): win persists a visible job order; timeline advances. */
+class JobOrderJourneyTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function org(): array
+    {
+        $team = Team::create(['name' => 'Manila']);
+        $mk = fn ($email, $role) => User::factory()->create(['email' => $email, 'role' => $role, 'team_id' => $team->id]);
+        return ['mgr' => $mk('mgr.jo@primepower.ph', 'manager'), 'rep' => $mk('rep.jo@primepower.ph', 'sales_rep'), 'team' => $team];
+    }
+
+    protected function oppFor(User $owner): Opportunity
+    {
+        $client = Client::create(['owner_id' => $owner->id, 'name' => 'JO Client '.uniqid(), 'status' => 'active']);
+        return Opportunity::create([
+            'client_id' => $client->id, 'owner_id' => $owner->id, 'title' => 'Deal '.uniqid(),
+            'stage' => 'negotiation', 'value_centavos' => 200000000, 'probability' => 80,
+        ]);
+    }
+
+    public function test_win_persists_job_order_row(): void
+    {
+        $o = $this->org();
+        $t = auth('api')->login($o['rep']);
+        $opp = $this->oppFor($o['rep']);
+
+        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
+
+        $jo = JobOrder::where('opportunity_id', $opp->id)->firstOrFail();
+        $this->assertSame('draft', $jo->status);
+        $this->assertStringStartsWith('JO-2026-', $jo->ref);
+        $this->assertNotNull($jo->invoice_ref);
+        // Re-win is idempotent — no duplicate row (rep can't reopen: 403).
+        $this->postJson("/api/v1/opportunities/{$opp->id}/move", ['stage' => 'proposal', 'reopen_note' => 'x'], ['Authorization' => "Bearer $t"])->assertForbidden();
+        $mgr = auth('api')->login($o['mgr']);
+        $this->postJson("/api/v1/opportunities/{$opp->id}/move", ['stage' => 'proposal', 'reopen_note' => 'Revived'], ['Authorization' => "Bearer $mgr"])->assertOk();
+        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $mgr"])->assertOk();
+        $this->assertSame(1, JobOrder::where('opportunity_id', $opp->id)->count());
+    }
+
+    public function test_timeline_lists_and_advances_step_by_step(): void
+    {
+        $o = $this->org();
+        $t = auth('api')->login($o['rep']);
+        $opp = $this->oppFor($o['rep']);
+        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
+
+        $list = $this->getJson("/api/v1/job-orders?client_id={$opp->client_id}", ['Authorization' => "Bearer $t"])->assertOk();
+        $this->assertCount(1, $list->json('data'));
+        $id = $list->json('data.0.id');
+        $this->assertSame('staffed', $list->json('data.0.next_status'));
+
+        foreach (['staffed', 'deployed', 'billed'] as $stage) {
+            $this->postJson("/api/v1/job-orders/$id/advance", [], ['Authorization' => "Bearer $t"])
+                ->assertOk()->assertJsonPath('data.status', $stage);
+        }
+        // Terminal: advancing a billed order → 422.
+        $this->postJson("/api/v1/job-orders/$id/advance", [], ['Authorization' => "Bearer $t"])->assertStatus(422);
+    }
+
+    public function test_operations_readbacks_are_mock_labeled_and_scoped(): void
+    {
+        $o = $this->org();
+        $other = User::factory()->create(['email' => 'other.jo@primepower.ph', 'role' => 'sales_rep']);
+        $opp = $this->oppFor($o['rep']);
+
+        $res = $this->getJson("/api/v1/clients/{$opp->client_id}/operations", ['Authorization' => 'Bearer '.auth('api')->login($o['rep'])])
+            ->assertOk()->json('data');
+        $this->assertTrue($res['mock']);
+        $this->assertArrayHasKey('deployment', $res);
+        $this->assertArrayHasKey('billing', $res);
+        $this->assertSame(0, $res['job_orders']['count']);
+
+        // Another rep's client is invisible.
+        $this->getJson("/api/v1/clients/{$opp->client_id}/operations", ['Authorization' => 'Bearer '.auth('api')->login($other)])
+            ->assertForbidden();
+        $this->getJson("/api/v1/job-orders?client_id={$opp->client_id}", ['Authorization' => 'Bearer '.auth('api')->login($other)])
+            ->assertOk()->assertJsonCount(0, 'data');
+    }
+}
