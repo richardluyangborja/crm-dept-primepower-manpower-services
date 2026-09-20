@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## v1.0.1 hotfix + v2 planning (branch `fix/v1.0.1-envelope-shapes`, spec `specs/18-v2-roadmap.md`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Comms blank-screen root-caused + fixed | ✅ | Raw-model envelopes → `attachments: null` → throw on `.length`; trait now shapes via Resources; ErrorBoundary added |
+| Reminders 500 root-caused + fixed | ✅ | `Followup::client()` relation was missing |
+| `ListEnvelopeTest` regression cover | ✅ | 4 tests; full suite 278 assertions green; build green; live-verified |
+| Neon removed everywhere | ✅ | Deployment-managed Postgres; mocks locked on incl. prod; specs/01,09,12,13,17 + DEPLOYMENT.md + Settings copy |
+| v2 roadmap (`specs/18`) | 🔄 | Gap analysis + workstreams A–E + 4 decisions needed from you (order, version, demo client, branching) |
+
 ## Kanban
 
 | Step | Feature (spec) | Status | Branch | PR | Notes |
