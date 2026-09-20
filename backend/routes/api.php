@@ -80,7 +80,7 @@ Route::prefix('v1')->group(function () {
         Route::get('integrations/{service}/test', [\App\Http\Controllers\IntegrationController::class, 'test']);
         Route::put('integrations/mode', [\App\Http\Controllers\IntegrationController::class, 'updateMode']);
         Route::get('exports/{entity}.csv', [\App\Http\Controllers\ExportController::class, 'csv']);
-        Route::get('/reports/weekly', [ModuleStubController::class]);      // Agent G
-        Route::get('/reports/monthly', [ModuleStubController::class]);     // Agent G
+        Route::get('/reports/weekly', [ModuleStubController::class, '__invoke']);  // Step 7
+        Route::get('/reports/monthly', [ModuleStubController::class, '__invoke']); // Step 7
     });
 });
