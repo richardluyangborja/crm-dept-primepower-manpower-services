@@ -61,9 +61,29 @@ class SurveyService
         return $existing->refresh();
     }
 
-    /** Mark overdue sent surveys as expired (scheduler or lazy on read). */
+    /**
+     * Mark overdue sent surveys as expired. Each newly-expired survey spawns
+     * one collection-style follow-up for the sender (specs/06 → 08 hook).
+     * Idempotent: only the sent→expired transition creates the reminder.
+     */
     public function expireOverdue(): int
     {
-        return Survey::where('status', 'sent')->where('due_at', '<', now())->update(['status' => 'expired']);
+        $count = 0;
+        Survey::where('status', 'sent')->where('due_at', '<', now())
+            ->chunkById(100, function ($surveys) use (&$count) {
+                foreach ($surveys as $survey) {
+                    $survey->update(['status' => 'expired']);
+                    \App\Models\Followup::create([
+                        'owner_id' => $survey->sent_by,
+                        'client_id' => $survey->client_id,
+                        'title' => "Survey expired unanswered — check in with {$survey->client?->name}",
+                        'due_at' => now()->addDays(2)->toIso8601String(),
+                        'priority' => 'medium',
+                    ]);
+                    $count++;
+                }
+            });
+
+        return $count;
     }
 }

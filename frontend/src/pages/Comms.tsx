@@ -4,6 +4,7 @@ import { Phone, Mail, Users, MapPin, StickyNote } from 'lucide-react';
 import api from '../lib/apiClient';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toaster';
+import { useSession } from '../store/session';
 
 interface Act {
   id: number;
@@ -14,6 +15,7 @@ interface Act {
   subject: string | null;
   body: string | null;
   outcome: string | null;
+  duration_minutes: number | null;
   occurred_at: string;
   attachments: { name: string; size: number; mime: string }[];
 }
@@ -48,15 +50,24 @@ export function CommsPage() {
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
   const [clientId, setClientId] = useState('');
+  const [mineOnly, setMineOnly] = useState(false);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [showNew, setShowNew] = useState(false);
   const toast = useToast();
   const qc = useQueryClient();
+  const { user } = useSession();
 
   const actsQ = useQuery({
-    queryKey: ['activities', q, type, clientId],
+    queryKey: ['activities', q, type, clientId, mineOnly, from, to],
     queryFn: async () =>
-      (await api.get('/activities', { params: { q: q || undefined, type: type || undefined, client_id: clientId || undefined, per_page: 50 } }))
-        .data.data as Act[],
+      (await api.get('/activities', {
+        params: {
+          q: q || undefined, type: type || undefined, client_id: clientId || undefined,
+          owner_id: mineOnly && user ? user.id : undefined,
+          from: from || undefined, to: to || undefined, per_page: 50,
+        },
+      })).data.data as Act[],
   });
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
@@ -84,6 +95,11 @@ export function CommsPage() {
           <option value="">All clients</option>
           {clientsQ.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+        <label className="card flex items-center gap-1.5 px-3 py-2 text-sm">
+          <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} /> Mine only
+        </label>
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="card px-3 py-2 text-sm" aria-label="From date" />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="card px-3 py-2 text-sm" aria-label="To date" />
       </div>
 
       {actsQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading timeline…</p>
@@ -101,7 +117,7 @@ export function CommsPage() {
                     <p className="text-sm font-semibold">{a.subject || a.type}</p>
                     {a.outcome && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-700 dark:text-slate-200">{a.outcome}</span>}
                   </div>
-                  <p className="text-xs text-[var(--text-muted)]">{a.client_name} · {rel(a.occurred_at)}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{a.client_name} · {rel(a.occurred_at)}{a.duration_minutes ? ` · ${a.duration_minutes} min` : ''}</p>
                   {a.body && <p className="mt-1 whitespace-pre-wrap text-sm">{highlight(a.body, q)}</p>}
                   {(a.attachments ?? []).length > 0 && (
                     <p className="mt-1 text-xs text-[var(--text-muted)]">📎 {(a.attachments ?? []).map((f) => f.name).join(', ')}</p>
@@ -143,7 +159,7 @@ function highlight(body: string, q: string): React.ReactNode {
 
 function Composer({ clients, onClose, onDone }: { clients: { id: number; name: string }[]; onClose: () => void; onDone: () => void }) {
   const [tab, setTab] = useState<(typeof TYPES)[number]>('call');
-  const [f, setF] = useState({ client_id: '', subject: '', body: '', outcome: 'connected', occurred: '', wantFollowup: false, followup_title: '', followup_due: '' });
+  const [f, setF] = useState({ client_id: '', subject: '', body: '', outcome: 'connected', duration: '', occurred: '', wantFollowup: false, followup_title: '', followup_due: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [showTpls, setShowTpls] = useState(false);
@@ -167,6 +183,7 @@ function Composer({ clients, onClose, onDone }: { clients: { id: number; name: s
         subject: f.subject || undefined,
         body: f.body || undefined,
         outcome: f.outcome || undefined,
+        duration_minutes: f.duration ? Number(f.duration) : undefined,
         occurred_at: f.occurred ? new Date(f.occurred).toISOString() : undefined,
         create_followup: f.wantFollowup || undefined,
         followup_title: f.followup_title || undefined,
@@ -205,6 +222,7 @@ function Composer({ clients, onClose, onDone }: { clients: { id: number; name: s
             </select></label>
           </div>
           <label>Notes<textarea value={f.body} onChange={set('body')} rows={3} placeholder="What happened, what was agreed…" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <label className="max-w-40">Duration (min)<input value={f.duration} onChange={set('duration')} inputMode="numeric" min={1} placeholder="e.g. 30" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <div className="flex items-center justify-between">
             <button type="button" onClick={() => setShowTpls((v) => !v)} className="text-xs text-sky-600 underline">Use a template</button>
             <label className="text-xs text-[var(--text-muted)]">When <input type="datetime-local" value={f.occurred} onChange={set('occurred')} className="rounded border border-[var(--border)] bg-transparent px-1 py-0.5" /> <span title="Defaults to now">(default now)</span></label>

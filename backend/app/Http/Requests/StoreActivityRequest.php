@@ -17,6 +17,7 @@ class StoreActivityRequest extends FormRequest
             'subject' => ['required_if:type,email,meeting', 'nullable', 'string', 'max:255'],
             'body' => ['nullable', 'string'],
             'outcome' => ['nullable', 'string', 'max:50'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'occurred_at' => ['sometimes', 'date', 'before_or_equal:now'],
             'attachments' => ['sometimes', 'array', 'max:5'],
             'attachments.*' => ['file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx'],

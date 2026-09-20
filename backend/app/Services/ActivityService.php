@@ -43,6 +43,7 @@ class ActivityService
             'subject' => $input['subject'] ?? null,
             'body' => $input['body'] ?? null,
             'outcome' => $input['outcome'] ?? null,
+            'duration_minutes' => $input['duration_minutes'] ?? null,
             'occurred_at' => $input['occurred_at'] ?? now(),
             'attachments' => $files ?: null,
         ]);

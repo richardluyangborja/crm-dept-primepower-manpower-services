@@ -12,6 +12,7 @@ class UpdateActivityRequest extends FormRequest
             'subject' => ['sometimes', 'string', 'max:255'],
             'body' => ['nullable', 'string'],
             'outcome' => ['nullable', 'string', 'max:50'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'occurred_at' => ['sometimes', 'date', 'before_or_equal:now'],
         ];
     }

@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
+import { useSettingsList } from '../hooks/useSettings';
 import { apiErr } from '../components/crm/ClientWidgets';
 
 interface Lead {
@@ -47,6 +48,7 @@ export function LeadsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [showNew, setShowNew] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [convertId, setConvertId] = useState<number | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
@@ -95,9 +97,14 @@ export function LeadsPage() {
           <h1 className="text-xl font-bold">Leads & Clients</h1>
           <p className="text-sm text-[var(--text-muted)]">Capture in under a minute, qualify with scoring, convert to client.</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">
-          + New lead
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowImport(true)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold">
+            ⬆ Import CSV
+          </button>
+          <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">
+            + New lead
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -174,6 +181,7 @@ export function LeadsPage() {
       )}
 
       {showNew && <NewLeadForm onClose={() => setShowNew(false)} onDone={invalidate} />}
+      {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={invalidate} />}
       <ConfirmDialog
         open={convertId !== null}
         title="Convert lead to client?"
@@ -187,6 +195,7 @@ export function LeadsPage() {
 
 function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const sources = useSettingsList('lead_sources', ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event']);
   const [f, setF] = useState({ company_name: '', contact_name: '', contact_email: '', contact_phone: '', source: 'referral' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -221,13 +230,88 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
           <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.ph (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Mobile<input value={f.contact_phone} onChange={set('contact_phone')} placeholder="+639XXXXXXXXX (+25 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Source<select value={f.source} onChange={set('source')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-            {['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event'].map((s) => <option key={s} value={s}>{s}</option>)}
+            {sources.map((s) => <option key={s} value={s}>{s}</option>)}
           </select></label>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
           <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Saving…' : 'Create lead'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ imported: number; failed: { row: number; errors: string[] }[] } | null>(null);
+  const [err, setErr] = useState('');
+
+  const downloadTemplate = async () => {
+    try {
+      const r = await api.get('/leads/import-template', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([r.data], { type: 'text/csv' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'leads-template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast('error', 'Could not download the template.');
+    }
+  };
+
+  const submit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!file) {
+      setErr('Pick a CSV file first.');
+      return;
+    }
+    setBusy(true);
+    setErr('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await api.post('/leads/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setResult(r.data.data);
+      toast('success', r.data.message ?? 'Import finished.');
+      onDone();
+    } catch (e) {
+      setErr(apiErr(e, 'Import failed.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <form onSubmit={submit} className="card w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold">Import leads (CSV)</h2>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">
+          Columns: company_name, contact_name, contact_email, contact_phone, source, notes. Max 500 rows —
+          bad rows are reported, good rows still import.
+        </p>
+        <button type="button" onClick={downloadTemplate} className="text-xs text-sky-600 underline">⬇ Download template</button>
+        <input type="file" accept=".csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-3 w-full text-sm" />
+        {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+        {result && (
+          <div className="mt-3 rounded-lg border border-[var(--border)] p-3 text-sm">
+            <p><strong>{result.imported}</strong> imported, <strong>{result.failed.length}</strong> failed.</p>
+            {result.failed.length > 0 && (
+              <ul className="mt-1 max-h-32 overflow-y-auto text-xs">
+                {result.failed.map((f) => (
+                  <li key={f.row}>Row {f.row}: {f.errors.join('; ')}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">{result ? 'Done' : 'Cancel'}</button>
+          {!result && <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Importing…' : 'Import'}</button>}
         </div>
       </form>
     </div>

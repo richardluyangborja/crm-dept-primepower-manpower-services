@@ -62,7 +62,7 @@
 |---|---|---|---|---|
 | 2A | Client/Lead detail pages (replace drawer) | ✅ | `feature/crm-client-pages` | to open (base `develop`) | Pushed (f33234b), CI green — 8-tab client page, lead journey page, drawer removed; open PR to `develop`, then 2B |
 | 2B | Finance section (mock + light workflows) | ✅ | `feature/crm-finance` | to open (base `develop`) | Pushed (aa06020), CI green — invoices+aging+pay/collect, Finance section, client invoice list; open PR to `develop`, then 2C |
-| 2C | Core-1 Operations (see-only) + submodule gaps | ⬜ | — | Read-only ops board; CSV import; configurable stages; survey→followup auto; week/day + drag; duration/owner-date filters; master-data UI; effective dates |
+| 2C | Core-1 Operations (see-only) + submodule gaps | 🔄 | `feature/crm-ops-gaps` | — | Ops board, CSV import+template, configurable stages/labels/reasons, survey→followup auto, week/day+drag reschedule, duration+owner/date filters, master-data UI, effective dates; tests+build green, live smoke OK; pushing for CI |
 | 2D | BI expansion + `crm-v1.2.0` release | ⬜ | — | KPI consistency, METHODOLOGY rows, release + tag |
 
 Locked: pages replace drawer · light finance workflows · Core-1 see-only · OTP mock untouched.

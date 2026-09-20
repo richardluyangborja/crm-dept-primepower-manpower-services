@@ -36,12 +36,13 @@ class OpportunityService
         return DB::transaction(function () use ($opp, $input, $from, $to, $actorId, $reopening) {
             $opp->stage = $to;
             $opp->probability = $input['probability'] ?? Opportunity::STAGE_PROBABILITY[$to];
+            $effective = isset($input['effective_date']) ? \Carbon\Carbon::parse($input['effective_date']) : now();
             if ($to === 'won') {
-                $opp->won_at = now();
+                $opp->won_at = $effective;
                 $opp->lost_at = null;
                 $opp->lost_reason = null;
             } elseif ($to === 'lost') {
-                $opp->lost_at = now();
+                $opp->lost_at = $effective;
                 $opp->won_at = null;
                 $opp->lost_reason = $input['lost_reason'];
             } elseif ($reopening) {

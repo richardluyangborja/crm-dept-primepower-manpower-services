@@ -21,6 +21,17 @@ class SettingsSeeder extends Seeder
             'report_schedule' => 'monthly',
             'retention_days' => 90,
             'industries' => ['BPO', 'Manufacturing', 'Hospitality', 'Retail', 'Healthcare', 'Logistics'],
+            'lead_sources' => ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event'],
+            'pipeline_stages' => [
+                ['key' => 'new', 'label' => 'New'],
+                ['key' => 'contacted', 'label' => 'Contacted'],
+                ['key' => 'qualified', 'label' => 'Qualified'],
+                ['key' => 'proposal', 'label' => 'Proposal'],
+                ['key' => 'negotiation', 'label' => 'Negotiation'],
+                ['key' => 'won', 'label' => 'Won'],
+                ['key' => 'lost', 'label' => 'Lost'],
+            ],
+            'lost_reasons' => ['Chose competitor pricing', 'No response after quotation', 'Budget frozen', 'Timing'],
         ];
         foreach ($defaults as $key => $value) {
             Setting::firstOrCreate(['key' => $key], ['value' => $value]);
