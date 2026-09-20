@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import api from '../lib/apiClient';
+import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -28,6 +30,26 @@ interface Client {
   contacts?: { id: number; full_name: string; email: string | null; phone: string | null; is_primary: boolean }[];
 }
 
+interface JobOrder {
+  id: number;
+  ref: string;
+  title: string;
+  headcount: number | null;
+  value_centavos: number;
+  status: string;
+  next_status: string | null;
+  invoice_ref: string | null;
+}
+
+interface ClientOps {
+  deployment: { deployed?: number; site?: string; mock?: boolean };
+  billing: { outstanding_centavos?: number; status?: string; mock?: boolean };
+  job_orders: { count: number; active: number; by_status: Record<string, number> };
+  mock: boolean;
+}
+
+const JO_STAGES = ['draft', 'staffed', 'deployed', 'billed'];
+
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 
 function ScoreBar({ v }: { v: number }) {
@@ -50,6 +72,17 @@ export function LeadsPage() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
+  const [params] = useSearchParams();
+
+  // Deep link: /leads?client=<id> opens the 360° drawer (win narration lands here).
+  useEffect(() => {
+    const cid = params.get('client');
+    if (cid) {
+      setTab('clients');
+      setDetailId(Number(cid));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const leadsQ = useQuery({
     queryKey: ['leads', q, status],
@@ -193,7 +226,8 @@ export function LeadsPage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-xs text-[var(--text-muted)]">Opportunities, comms, surveys and follow-ups tabs unlock in steps 2–5.</p>
+                  <ClientOpsCards clientId={detailQ.data.id} />
+                  <ClientJourney clientId={detailQ.data.id} />
                 </div>
               )}
             </div>
@@ -209,6 +243,90 @@ export function LeadsPage() {
         onCancel={() => setConvertId(null)}
         onConfirm={() => convertId !== null && convertMut.mutate({ id: convertId, withOpp: true })}
       />
+    </div>
+  );
+}
+
+function ClientOpsCards({ clientId }: { clientId: number }) {
+  const opsQ = useQuery({
+    queryKey: ['client-ops', clientId],
+    queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as ClientOps,
+    enabled: clientId > 0,
+  });
+  if (opsQ.isLoading || !opsQ.data) return null;
+  const ops = opsQ.data;
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+      <div className="rounded-lg border border-[var(--border)] p-2">
+        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Mock Dept-2 read-back">Ⓜ</span></p>
+        <p className="font-semibold tabular-nums">{ops.deployment.deployed ?? 0} staff</p>
+      </div>
+      <div className="rounded-lg border border-[var(--border)] p-2">
+        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Mock Dept-5 read-back">Ⓜ</span></p>
+        <p className="font-semibold tabular-nums">{formatPHP(ops.billing.outstanding_centavos ?? 0)}</p>
+      </div>
+      <div className="rounded-lg border border-[var(--border)] p-2">
+        <p className="text-xs text-[var(--text-muted)]">Job orders</p>
+        <p className="font-semibold tabular-nums">{ops.job_orders.active} active / {ops.job_orders.count}</p>
+      </div>
+    </div>
+  );
+}
+
+function ClientJourney({ clientId }: { clientId: number }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const jobsQ = useQuery({
+    queryKey: ['job-orders', clientId],
+    queryFn: async () => (await api.get('/job-orders', { params: { client_id: clientId, per_page: 50 } })).data.data as JobOrder[],
+    enabled: clientId > 0,
+  });
+  const advanceMut = useMutation({
+    mutationFn: async (id: number) => (await api.post(`/job-orders/${id}/advance`)).data,
+    onSuccess: (d) => {
+      toast('success', d.message ?? 'Advanced.');
+      qc.invalidateQueries({ queryKey: ['job-orders', clientId] });
+      qc.invalidateQueries({ queryKey: ['client-ops', clientId] });
+    },
+    onError: (e) => toast('error', apiErr(e, 'Could not advance.')),
+  });
+
+  const jobs = jobsQ.data ?? [];
+  if (jobsQ.isLoading) return <p className="mt-3 text-xs">Loading journey…</p>;
+  if (jobs.length === 0) {
+    return (
+      <div className="mt-3 rounded-lg border border-dashed border-[var(--border)] p-3 text-xs text-[var(--text-muted)]">
+        No job orders yet — win an opportunity and the staffing journey starts here automatically.
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3">
+      <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 1 → 2 → 5)</span></h3>
+      <ul className="mt-1 flex flex-col gap-2">
+        {jobs.map((j) => (
+          <li key={j.id} className="rounded-lg border border-[var(--border)] p-2.5 text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{j.ref} · {j.title}</span>
+              <StatusBadge value={j.status} />
+            </div>
+            <div className="mt-1.5 flex items-center gap-1" aria-label={`Stage ${j.status}`}>
+              {JO_STAGES.map((s) => (
+                <span key={s} title={s} className={`h-1.5 flex-1 rounded ${JO_STAGES.indexOf(s) <= JO_STAGES.indexOf(j.status) ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              {j.headcount !== null ? `${j.headcount} headcount` : 'Headcount estimating'} · {formatPHP(j.value_centavos)}
+              {j.invoice_ref ? ` · ${j.invoice_ref}` : ''}
+            </p>
+            {j.next_status && (
+              <button onClick={() => advanceMut.mutate(j.id)} className="mt-1.5 rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
+                Advance → {j.next_status}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

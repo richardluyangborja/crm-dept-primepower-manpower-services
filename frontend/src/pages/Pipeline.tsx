@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
@@ -68,12 +69,24 @@ export function PipelinePage() {
     },
   });
 
+  const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: number } | null>(null);
   const winMut = useMutation({
     mutationFn: async (id: number) => (await api.post(`/opportunities/${id}/win`)).data,
-    onSuccess: (d) => {
+    onSuccess: async (d, id) => {
       toast('success', d.message ?? 'Won!');
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      // Narrate the handoff: fetch the freshly persisted mock job order.
+      try {
+        const opp = rows.find((o) => o.id === id);
+        if (opp) {
+          const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: number | null }[];
+          const mine = jobs.find((j) => j.opportunity_id === id) ?? jobs[0];
+          if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id });
+        }
+      } catch {
+        // Narration is best-effort; the win itself succeeded.
+      }
     },
     onError: (e) => toast('error', apiErr(e, 'Could not mark as won.')),
   });
@@ -89,6 +102,20 @@ export function PipelinePage() {
         </div>
         <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">+ New deal</button>
       </div>
+
+      {wonInfo && (
+        <div className="card border-l-4 border-l-green-500 p-4">
+          <p className="font-semibold text-green-700 dark:text-green-400">
+            🎉 Won! Job Order {wonInfo.ref} created — staffing starts <span className="text-xs font-normal">(mock)</span>.
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Link to={`/leads?client=${wonInfo.clientId}`} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">
+              View client timeline →
+            </Link>
+            <button onClick={() => setWonInfo(null)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs">Dismiss</button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Open pipeline</p><p className="text-2xl font-bold tabular-nums">{formatPHP(openVal)}</p></div>

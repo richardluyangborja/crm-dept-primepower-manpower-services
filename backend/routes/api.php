@@ -42,6 +42,10 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('clients', ClientController::class);
         Route::get('clients/{client}/contacts', [ClientController::class, 'contacts']);
         Route::post('clients/{client}/contacts', [ClientController::class, 'storeContact']);
+        Route::get('clients/{client}/operations', [ClientController::class, 'operations']); // v2 journey A
+        // v2 journey A — visible mock job-order timeline (specs/18).
+        Route::apiResource('job-orders', \App\Http\Controllers\JobOrderController::class)->only(['index', 'show']);
+        Route::post('job-orders/{job_order}/advance', [\App\Http\Controllers\JobOrderController::class, 'advance']);
         // Step 2 — Opportunity Pipeline (specs/05).
         Route::apiResource('opportunities', OpportunityController::class);
         Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);

@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## v2 journey A (branch `feature/crm-journey-a`, stacked on the v1.0.1 fix)
+
+| Item | Status | Notes |
+|---|---|---|
+| `job_orders` table + timeline API + advance flow | ✅ | Tests green (27 assertions), live smoke OK (persist on win, step advance, terminal 422) |
+| Win narration + `?client=` deep link + 360 ops/journey UI | ✅ | Build green; Davao Prime seeded walking draft→deployed |
+| Ops read-backs (deployment + AR, mock-labeled) | ✅ | Live-verified on client 2 |
+
 ## v1.0.1 hotfix + v2 planning (branch `fix/v1.0.1-envelope-shapes`, spec `specs/18-v2-roadmap.md`)
 
 | Item | Status | Notes |
