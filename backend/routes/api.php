@@ -24,7 +24,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
     Route::post('/auth/otp/send', [OtpController::class, 'send'])->middleware('throttle:5,1');
     Route::post('/auth/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:10,1');
-    Route::get('/s/{token}', [ModuleStubController::class]); // Agent C: public survey respond page
+    // Step 5 — Public survey respond (specs/06): no auth, 30/min per IP.
+    Route::get('/s/{token}', [\App\Http\Controllers\SurveyController::class, 'publicShow'])->middleware('throttle:30,1');
+    Route::post('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'respond'])->middleware('throttle:30,1');
+    Route::put('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'updateResponse'])->middleware('throttle:30,1');
 
     Route::middleware('auth:api')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -48,8 +51,10 @@ Route::prefix('v1')->group(function () {
         // Step 4 — Communication History (specs/07).
         Route::get('message-templates', [ActivityController::class, 'templates']);
         Route::apiResource('activities', ActivityController::class);
-        Route::apiResource('survey-templates', ModuleStubController::class); // Agent C
-        Route::apiResource('surveys', ModuleStubController::class);        // Agent C
+        // Step 5 — Templates + Surveys (specs/06).
+        Route::apiResource('survey-templates', \App\Http\Controllers\SurveyTemplateController::class);
+        Route::apiResource('surveys', \App\Http\Controllers\SurveyController::class)->only(['index', 'store', 'show']);
+        Route::get('surveys-analytics', [\App\Http\Controllers\SurveyController::class, 'analytics']);
         // Step 3 — Follow-up Reminders (specs/08).
         Route::apiResource('followups', FollowupController::class);
         Route::post('followups/{followup}/done', [FollowupController::class, 'done']);
@@ -75,7 +80,7 @@ Route::prefix('v1')->group(function () {
         Route::get('integrations/{service}/test', [\App\Http\Controllers\IntegrationController::class, 'test']);
         Route::put('integrations/mode', [\App\Http\Controllers\IntegrationController::class, 'updateMode']);
         Route::get('exports/{entity}.csv', [\App\Http\Controllers\ExportController::class, 'csv']);
-        Route::get('/reports/weekly', [ModuleStubController::class]);      // Agent G
-        Route::get('/reports/monthly', [ModuleStubController::class]);     // Agent G
+        Route::get('/reports/weekly', [ModuleStubController::class, '__invoke']);  // Step 7
+        Route::get('/reports/monthly', [ModuleStubController::class, '__invoke']); // Step 7
     });
 });

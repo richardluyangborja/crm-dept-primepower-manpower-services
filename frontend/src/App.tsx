@@ -6,8 +6,10 @@ import { Toaster } from './components/ui/Toaster';
 import { applyTheme, hasRole, useSession } from './store/session';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
-import { ReportsPage, SurveysPage } from './pages/shells';
+import { ReportsPage } from './pages/shells';
 import { SettingsPage } from './pages/Settings';
+import { SurveysPage } from './pages/Surveys';
+import { RespondPage } from './pages/Respond';
 import { CommsPage } from './pages/Comms';
 import { FollowupsPage } from './pages/Followups';
 import { LeadsPage } from './pages/Leads';
@@ -32,6 +34,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/s/:token" element={<RespondPage />} />
             <Route
               element={
                 <RequireAuth>

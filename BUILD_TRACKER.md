@@ -12,9 +12,9 @@
 | 1 | Lead & Client Tracking (`04`) | ✅ | `feature/crm-lead-client` | to open (base `develop`) | Pushed (a6fd973), CI green — open PR to `develop`, then step 2 |
 | 2 | Opportunity Pipeline (`05`) | ✅ | `feature/crm-pipeline` | to open (base `develop`) | Pushed (d06423c), CI green — 5 new tests, kanban + win/loss + reopen guards; open PR to `develop`, then step 3 |
 | 3 | Follow-up Reminders (`08`) | ✅ | `feature/crm-followup` | to open (base `develop`) | Pushed (78b053b), CI green — 4 new tests, dispatch command, queue+calendar+badge; open PR to `develop`, then step 4 |
-| 4 | Communication History (`07`) | ✅ | `feature/crm-comms` | to open (base `develop`) | Pushed (6124075), CI green — 5 new tests, timeline+templates+hook; open PR to `develop`, then step 5 |
-| 5 | Satisfaction & Surveys (`06`) | 🔄 | `feature/crm-surveys` | #7 (open) | Awaiting merge — no file overlap with step 6 |
-| 6 | Accounts & Settings (`09`) | ✅ | `feature/crm-settings` | to open (base `develop`) | Pushed (60e4360), CI green — 8 new tests, 9-section Settings page, sessions+CSV+mock status; open PR to `develop` (after #7 merges), then step 7 |
+| 4 | Communication History (`07`) | ✅ | `feature/crm-comms` | #6 | Merged to `develop` |
+| 5 | Satisfaction & Surveys (`06`) | ✅ | `feature/crm-surveys` | #7 (open) | Rebased onto develop (step 6 had merged first) — conflicts resolved, full suite + build + smoke green, CI green; safe to merge |
+| 6 | Accounts & Settings (`09`) | ✅ | `feature/crm-settings` | #9 | Merged to `develop` out of order — reconciled via this rebase |
 | 7 | AI Analytics + Reports (`15`) | ⬜ | — | — | Rules → mock-AI; real models later |
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
 | 9 | Release hardening + `crm-v1.0.0` | ⬜ | — | — | Neon guide, prod env docs |
