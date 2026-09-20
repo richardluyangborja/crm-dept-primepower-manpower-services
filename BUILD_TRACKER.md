@@ -18,7 +18,7 @@
 | 7 | AI Analytics + Reports (`15`) | ✅ | `feature/crm-ai-reports` | #10 | Merged to `develop` |
 | 8 | OTP + 5-min Session (`16`) | ✅ | `feature/crm-otp-session` | to open (base `develop`) | Pushed (b8d03b6), CI green — 6 new tests, OTP gate + idle/absolute + step-up + modal + idle UX; open PR to `develop`, then step 9 |
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
-| 9 | Release hardening + `crm-v1.0.0` | ✅ | `feature/crm-release` | to open (base `develop`) | Pushed (996cc63), CI green — reports schedule, spec-volume seeds, DEPLOYMENT.md; open PR to `develop`, then release to `main` + tag |
+| 9 | Release hardening + `crm-v1.0.0` | ✅ | `feature/crm-release` | #12 | Merged — **released to `main` + tagged `crm-v1.0.0`**. Reports schedule, spec-volume seeds, DEPLOYMENT.md, trustProxies |
 
 ## Per-step verification checklist (paste into each PR)
 
