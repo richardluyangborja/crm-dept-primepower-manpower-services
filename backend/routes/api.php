@@ -58,7 +58,23 @@ Route::prefix('v1')->group(function () {
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
         Route::post('notifications/{notification}/read', [NotificationController::class, 'read']);
-        Route::apiResource('users', ModuleStubController::class)->only(['index', 'store', 'show', 'update']); // Agent F
+        // Step 6 — Accounts & Settings (specs/09).
+        Route::apiResource('users', \App\Http\Controllers\UserController::class)->only(['index', 'store', 'show', 'update']);
+        Route::post('users/{user}/deactivate', [\App\Http\Controllers\UserController::class, 'deactivate']);
+        Route::post('users/{user}/reset-password', [\App\Http\Controllers\UserController::class, 'resetPassword']);
+        Route::get('me/preferences', [\App\Http\Controllers\UserController::class, 'preferences']);
+        Route::put('me/preferences', [\App\Http\Controllers\UserController::class, 'updatePreferences']);
+        Route::post('me/password', [\App\Http\Controllers\UserController::class, 'changePassword']);
+        Route::get('me/logins', [\App\Http\Controllers\UserController::class, 'logins']);
+        Route::get('users-sessions', [\App\Http\Controllers\UserController::class, 'sessions']);
+        Route::delete('users-sessions/{user_session}', [\App\Http\Controllers\UserController::class, 'revokeSession']);
+        Route::apiResource('teams', \App\Http\Controllers\TeamController::class)->only(['index', 'store', 'show', 'update']);
+        Route::get('settings', [\App\Http\Controllers\SettingController::class, 'index']);
+        Route::put('settings', [\App\Http\Controllers\SettingController::class, 'update']);
+        Route::get('integrations/status', [\App\Http\Controllers\IntegrationController::class, 'status']);
+        Route::get('integrations/{service}/test', [\App\Http\Controllers\IntegrationController::class, 'test']);
+        Route::put('integrations/mode', [\App\Http\Controllers\IntegrationController::class, 'updateMode']);
+        Route::get('exports/{entity}.csv', [\App\Http\Controllers\ExportController::class, 'csv']);
         Route::get('/reports/weekly', [ModuleStubController::class]);      // Agent G
         Route::get('/reports/monthly', [ModuleStubController::class]);     // Agent G
     });

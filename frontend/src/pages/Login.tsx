@@ -9,7 +9,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const { setUser } = useSession();
+  const { setUser, setTheme } = useSession();
   const toast = useToast();
   const nav = useNavigate();
   const [params] = useSearchParams();
@@ -23,6 +23,12 @@ export function LoginPage() {
       sessionStorage.setItem('crm.access', r.data.data.access_token);
       sessionStorage.setItem('crm.refresh', r.data.data.refresh_token);
       setUser(r.data.data.user);
+      try {
+        const prefs = (await api.get('/me/preferences')).data.data as { theme?: 'light' | 'dark' | 'system' };
+        if (prefs?.theme) setTheme(prefs.theme);
+      } catch {
+        // preferences are best-effort at login
+      }
       toast('success', 'Welcome back — logged in.');
       nav('/');
     } catch {
