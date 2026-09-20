@@ -61,7 +61,7 @@
 | Phase | Scope | Status | Branch | Notes |
 |---|---|---|---|---|
 | 2A | Client/Lead detail pages (replace drawer) | ✅ | `feature/crm-client-pages` | to open (base `develop`) | Pushed (f33234b), CI green — 8-tab client page, lead journey page, drawer removed; open PR to `develop`, then 2B |
-| 2B | Finance section (mock + light workflows) | ⬜ | — | `invoices` table, AR aging, record payment, mark paid, collection follow-ups |
+| 2B | Finance section (mock + light workflows) | ✅ | `feature/crm-finance` | to open (base `develop`) | Pushed (aa06020), CI green — invoices+aging+pay/collect, Finance section, client invoice list; open PR to `develop`, then 2C |
 | 2C | Core-1 Operations (see-only) + submodule gaps | ⬜ | — | Read-only ops board; CSV import; configurable stages; survey→followup auto; week/day + drag; duration/owner-date filters; master-data UI; effective dates |
 | 2D | BI expansion + `crm-v1.2.0` release | ⬜ | — | KPI consistency, METHODOLOGY rows, release + tag |
 

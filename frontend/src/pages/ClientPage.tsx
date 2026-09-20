@@ -257,22 +257,43 @@ function FinanceTab({ clientId }: { clientId: number }) {
     queryKey: ['client-ops', clientId],
     queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as { billing: { outstanding_centavos?: number; status?: string }; mock: boolean },
   });
+  const invQ = useQuery({
+    queryKey: ['invoices', `client-${clientId}`],
+    queryFn: async () => (await api.get('/invoices', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: number; ref: string; title: string; amount_centavos: number; balance_centavos: number; status: string; is_overdue: boolean; due_at: string | null }[],
+  });
   return (
-    <div className="card p-4">
-      <h3 className="font-medium">Account finance <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 5)</span></h3>
-      {opsQ.isLoading ? <p className="mt-1 text-sm">Loading…</p> : (
-        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg border border-[var(--border)] p-2">
-            <p className="text-xs text-[var(--text-muted)]">AR balance</p>
-            <p className="font-semibold tabular-nums">{formatPHP(opsQ.data?.billing.outstanding_centavos ?? 0)}</p>
+    <div className="flex flex-col gap-3">
+      <div className="card p-4">
+        <h3 className="font-medium">Account finance <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 5)</span></h3>
+        {opsQ.isLoading ? <p className="mt-1 text-sm">Loading…</p> : (
+          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-lg border border-[var(--border)] p-2">
+              <p className="text-xs text-[var(--text-muted)]">AR balance</p>
+              <p className="font-semibold tabular-nums">{formatPHP(opsQ.data?.billing.outstanding_centavos ?? 0)}</p>
+            </div>
+            <div className="rounded-lg border border-[var(--border)] p-2">
+              <p className="text-xs text-[var(--text-muted)]">Account standing</p>
+              <p className="font-semibold capitalize">{opsQ.data?.billing.status ?? '—'}</p>
+            </div>
           </div>
-          <div className="rounded-lg border border-[var(--border)] p-2">
-            <p className="text-xs text-[var(--text-muted)]">Account standing</p>
-            <p className="font-semibold capitalize">{opsQ.data?.billing.status ?? '—'}</p>
-          </div>
-        </div>
-      )}
-      <p className="mt-2 text-xs text-[var(--text-muted)]">Invoices, aging buckets, payments and collection reminders land here in Phase 2B.</p>
+        )}
+      </div>
+      <div className="card p-4">
+        <h3 className="mb-2 font-medium">Invoices</h3>
+        {invQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading invoices…</p>
+          : (invQ.data ?? []).length === 0 ? <p className="text-sm text-[var(--text-muted)]">No invoices yet — win a deal and the mock draft appears here.</p> : (
+            <ul className="flex flex-col gap-2 text-sm">
+              {invQ.data!.map((inv) => (
+                <li key={inv.id} className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-2 last:border-0">
+                  <span className="font-medium">{inv.ref}</span>
+                  <StatusBadge value={inv.is_overdue ? 'overdue' : inv.status} />
+                  <span className="ml-auto font-semibold tabular-nums">{formatPHP(inv.balance_centavos)} <span className="font-normal text-xs text-[var(--text-muted)]">/ {formatPHP(inv.amount_centavos)}</span></span>
+                </li>
+              ))}
+            </ul>
+          )}
+        <Link to="/finance" className="mt-2 inline-block text-sm text-sky-600 underline">Open Finance section →</Link>
+      </div>
     </div>
   );
 }

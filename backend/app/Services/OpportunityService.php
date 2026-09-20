@@ -77,6 +77,27 @@ class OpportunityService
                     $jobOrder->restore();
                 }
                 $meta['job_order_id'] = $jobOrder->id;
+                // Phase 2B: the mock draft invoice also becomes a first-class
+                // row so AR aging/payments reconcile (idempotent per opp).
+                $invoice = \App\Models\Invoice::withTrashed()->firstOrCreate(
+                    ['opportunity_id' => $opp->id],
+                    [
+                        'client_id' => $opp->client_id,
+                        'job_order_id' => $jobOrder->id,
+                        'owner_id' => $opp->owner_id,
+                        'ref' => $inv['invoice_ref'],
+                        'title' => $opp->title,
+                        'amount_centavos' => $opp->value_centavos,
+                        'balance_centavos' => $opp->value_centavos,
+                        'status' => 'sent',
+                        'due_at' => now()->addDays(30)->toDateString(),
+                        'payload' => ['mock' => true, 'invoice' => $inv],
+                    ]
+                );
+                if ($invoice->trashed()) {
+                    $invoice->restore();
+                }
+                $meta['invoice_id'] = $invoice->id;
                 $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", "/clients/{$opp->client_id}");
             }
             if ($to === 'lost') {
