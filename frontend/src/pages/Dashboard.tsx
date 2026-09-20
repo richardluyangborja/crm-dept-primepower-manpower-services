@@ -30,6 +30,7 @@ export function DashboardPage() {
         <h1 className="text-xl font-bold">Dashboard</h1>
         <p className="text-sm text-[var(--text-muted)]">Pipeline health, satisfaction and next actions. AI insights carry an “AI preview” badge (specs/15).</p>
       </div>
+      <NarrativeStrip data={data} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} />
         <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" />
@@ -102,6 +103,30 @@ export function DashboardPage() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function NarrativeStrip({ data }: { data: {
+  forecast: { open_centavos: number; weighted_centavos: number; count: number };
+  nps_avg?: number | null;
+  at_risk?: { client_name: string; level: string }[];
+  next_best_actions: { kind: string }[];
+} }) {
+  const overdue = data.next_best_actions.filter((a) => a.kind === 'followup_overdue').length;
+  const risks = data.at_risk ?? [];
+  const topRisk = risks.find((c) => c.level === 'high') ?? risks[0];
+  const sentences = [
+    `${data.forecast.count} open deals worth ${formatPHP(data.forecast.open_centavos)} (${formatPHP(data.forecast.weighted_centavos)} weighted).`,
+    data.nps_avg !== null && data.nps_avg !== undefined
+      ? `Client sentiment sits at NPS ${data.nps_avg}.`
+      : 'No satisfaction data yet — send a survey to unlock it.',
+    overdue > 0 ? `${overdue} overdue follow-up${overdue === 1 ? '' : 's'} need${overdue === 1 ? 's' : ''} clearing.` : 'Follow-ups are under control.',
+    topRisk ? `Top concern: ${topRisk.client_name} (${topRisk.level} risk).` : 'No at-risk clients right now.',
+  ];
+  return (
+    <div className="card border-l-4 border-l-sky-500 p-4">
+      <p className="text-sm leading-relaxed"><span className="font-semibold">Today at PrimePower: </span>{sentences.join(' ')}</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
@@ -30,11 +30,14 @@ function pesoToCentavos(v: string): number {
 export function PipelinePage() {
   const [q, setQ] = useState('');
   const [detailId, setDetailId] = useState<number | null>(null);
-  const [showNew, setShowNew] = useState(false);
   const [lostId, setLostId] = useState<number | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
+  const [params] = useSearchParams();
+  // Deep link from a client timeline: /pipeline?client=<id> opens the form prefilled.
+  const preselectClient = params.get('client') ?? '';
+  const [showNew, setShowNew] = useState(preselectClient !== '');
 
   const oppsQ = useQuery({
     queryKey: ['opportunities', q],
@@ -175,7 +178,7 @@ export function PipelinePage() {
       )}
 
       {lostId !== null && <LostModal onClose={() => setLostId(null)} onDone={(reason) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason }); setLostId(null); }} />}
-      {showNew && <NewOppForm onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
+      {showNew && <NewOppForm initialClientId={preselectClient} onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
     </div>
   );
 }
@@ -225,13 +228,13 @@ function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: 
   );
 }
 
-function NewOppForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId?: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
   });
-  const [f, setF] = useState({ client_id: '', title: '', value: '', expected_close_date: '' });
+  const [f, setF] = useState({ client_id: initialClientId, title: '', value: '', expected_close_date: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });

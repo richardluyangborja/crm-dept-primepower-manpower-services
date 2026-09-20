@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
@@ -205,7 +205,7 @@ export function LeadsPage() {
                 { key: 'c', header: 'City', render: (r) => r.address_city ?? '—' },
                 { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
               ]}
-              empty={<EmptyState title="No clients yet" hint="Convert a qualified lead to create your first client profile." />}
+              empty={<EmptyState title="No clients yet" hint="Convert a qualified lead to create your first client profile." action={<button onClick={() => setTab('leads')} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Find a lead to convert →</button>} />}
             />
           )}
           {detailId !== null && (
@@ -302,7 +302,10 @@ function ClientJourney({ clientId }: { clientId: number }) {
   }
   return (
     <div className="mt-3">
-      <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 1 → 2 → 5)</span></h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 1 → 2 → 5)</span></h3>
+        <Link to={`/pipeline?client=${clientId}`} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">+ New deal</Link>
+      </div>
       <ul className="mt-1 flex flex-col gap-2">
         {jobs.map((j) => (
           <li key={j.id} className="rounded-lg border border-[var(--border)] p-2.5 text-sm">

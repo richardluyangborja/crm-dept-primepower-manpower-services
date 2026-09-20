@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -7,6 +7,7 @@ import { hasRole, useSession } from '../../store/session';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useToast } from '../ui/Toaster';
 import { useIdleTimer } from '../../hooks/useIdleTimer';
+import { TourCard, useTour } from '../ui/Tour';
 
 const groups: { label: string; links: { to: string; label: string; icon: React.ReactNode; roles?: string[] }[] }[] = [
   { label: '', links: [{ to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
@@ -52,6 +53,7 @@ export function AppShell() {
     }
     idle.stay();
   };
+  const tour = useTour();
   const unreadQ = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => (await api.get('/notifications', { params: { unread: 1, per_page: 1 } })).data.meta.total as number,
@@ -116,12 +118,26 @@ export function AppShell() {
             <Bell size={18} />
             {unread > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
           </button>
+          <button aria-label="Replay product tour" title="Take the 5-step tour again" onClick={() => tour.replay()} className="rounded-lg border border-[var(--border)] p-2">
+            <CircleHelp size={18} />
+          </button>
           <ThemeToggle />
         </header>
         <main className="mx-auto max-w-[1400px] p-4 md:p-6">
           <Outlet />
         </main>
       </div>
+      {tour.active && (
+        <TourCard
+          step={tour.step}
+          current={tour.current}
+          onRoute={tour.onRoute}
+          onNext={() => (tour.step === 4 ? tour.finish() : tour.go(tour.step + 1))}
+          onBack={() => tour.go(tour.step - 1)}
+          onSkip={() => tour.finish()}
+          onGoRoute={() => tour.go(tour.step)}
+        />
+      )}
       {idle.warning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-label="Session expiring">
           <div className="card w-full max-w-sm p-6 text-center">

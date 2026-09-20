@@ -106,6 +106,9 @@ class SettingsAccessTest extends TestCase
         $this->getJson('/api/v1/me/preferences', ['Authorization' => "Bearer $t"])->assertOk()->assertJsonPath('data.theme', 'system');
         $this->putJson('/api/v1/me/preferences', ['theme' => 'dark', 'notifications' => ['overdue' => false]], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.theme', 'dark')->assertJsonPath('data.notifications.overdue', false);
+        // v2 tour flag persists (specs/18 §3B).
+        $this->putJson('/api/v1/me/preferences', ['tour_seen' => true], ['Authorization' => "Bearer $t"])
+            ->assertOk()->assertJsonPath('data.tour_seen', true);
     }
 
     public function test_sessions_listed_revoked_and_logins_visible(): void

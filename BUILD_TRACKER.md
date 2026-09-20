@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## v2 journey B (same branch `feature/crm-journey-a`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Onboarding tour (5 stops, persisted) | ✅ | `Tour.tsx` + Topbar replay; `tour_seen` in preferences (backend validated) |
+| Empty-state CTAs + deep links | ✅ | Clients→leads CTA; `?client=` preselects Pipeline form + auto-opens; journey “New deal” link |
+| Dashboard narrative strip | ✅ | Plain-language paragraph from live KPIs, above the cards |
+
 ## v2 journey A (branch `feature/crm-journey-a`, stacked on the v1.0.1 fix)
 
 | Item | Status | Notes |
