@@ -29,7 +29,7 @@ class SurveyController extends Controller
             });
         }
 
-        return $this->paginated($q->latest()->paginate(min(100, (int) $request->query('per_page', 25))));
+        return $this->paginated(SurveyResource::collection($q->latest()->paginate(min(100, (int) $request->query('per_page', 25)))));
     }
 
     public function store(StoreSurveyRequest $request, SurveyService $service)

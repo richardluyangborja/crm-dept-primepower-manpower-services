@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './components/layout/AppShell';
 import { Toaster } from './components/ui/Toaster';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { applyTheme, hasRole, useSession } from './store/session';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
@@ -32,6 +33,7 @@ export default function App() {
     <QueryClientProvider client={qc}>
       <Toaster>
         <BrowserRouter>
+          <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/s/:token" element={<RespondPage />} />
@@ -53,6 +55,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
       </Toaster>
     </QueryClientProvider>

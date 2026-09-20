@@ -30,4 +30,9 @@ class Followup extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
 }

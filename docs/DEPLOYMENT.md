@@ -1,6 +1,9 @@
 # DEPLOYMENT — PrimePower CRM v1.0.0
 
-> Local dev runs on `docker compose` Postgres. Production runs on **Neon Postgres**.
+> Local dev runs on `docker compose` Postgres. Production uses the **deployment-managed
+> Postgres** (same version family). Everything — integrations, AI, OTP transport —
+> stays on **mocks in prod** (v2 decision, locked): mock services are hard-bound
+> in `AppServiceProvider`, so the `*_MODE` env flags are informational only.
 > Same migrations, same seeders — only connection values change.
 
 ## 1. Architecture recap
@@ -9,7 +12,7 @@
 |---|---|---|
 | Laravel API | `php artisan serve :8000` | PHP 8.2 + Laravel Octane/Forge/VPS, or Render/Railway free tier |
 | React SPA | `npm run dev :5173` | Static host (Netlify/Vercel/Cloudflare Pages) via `npm run build` |
-| Database | `docker compose up db` (Postgres 16) | **Neon Postgres** (free tier, PITR + autosuspend) |
+| Database | `docker compose up db` (Postgres 16) | Deployment-managed Postgres (same migrations/seeds) |
 | Scheduler | `php artisan schedule:work` | Cron: `* * * * * php artisan schedule:run >> /dev/null 2>&1` |
 | Queue | `database` driver | Same (single instance) — run `php artisan queue:work` via supervisor/systemd |
 
@@ -22,11 +25,11 @@ APP_URL=https://api.your-domain.ph
 APP_TIMEZONE=Asia/Manila
 
 DB_CONNECTION=pgsql
-DB_HOST=<neon-host>              # from Neon dashboard, e.g. ep-xxx.ap-southeast-1.aws.neon.tech
+DB_HOST=<db-host>                # provided by the deployment (Postgres service)
 DB_PORT=5432
 DB_DATABASE=crm_primepower
-DB_USERNAME=<neon-user>
-DB_PASSWORD=<neon-password>      # plus ?sslmode=require if your driver needs it
+DB_USERNAME=<db-user>
+DB_PASSWORD=<db-password>        # from the deployment's secret manager, never in git
 
 FRONTEND_URL=https://crm.your-domain.ph   # exact SPA origin(s), comma-separated — CORS allowlist
 JWT_TTL=60
@@ -64,13 +67,14 @@ VITE_SESSION_TIMEOUT_ENABLED=true
 
 Build with `npm run build`, deploy `dist/` as static files. The SPA origin **must exactly match** `FRONTEND_URL` or browsers block every call (see CORS saga in `BUILD_TRACKER.md`).
 
-## 4. Neon setup (5 minutes)
+## 4. Database setup (deployment-managed Postgres)
 
-1. Create project → region closest to users (Singapore for PH).
-2. Create database `crm_primepower`, copy the pooled connection string.
-3. Run migrations from any machine with `psql`/backend access (see §2).
-4. Enable **Point-in-Time Recovery** + set autosuspend (1–5 min idle) to stay on the free tier.
-5. Restrict: store the password in your host's secret manager, never in git.
+1. Provision the Postgres service in the deployment (region closest to users — Singapore for PH).
+2. Create database `crm_primepower` and copy the connection values into §2 env vars.
+3. Run migrations from the backend container/host (see §2).
+4. Backups are handled by the deployment platform (snapshots + retention per its policy);
+   additionally take weekly logical dumps (see §6).
+5. Restrict: store the password in the deployment's secret manager, never in git.
 
 ## 5. Cron (scheduler = reminders + weekly reports)
 
@@ -82,10 +86,10 @@ Covers `reminders:dispatch` (every minute) and `reports:generate --type=weekly -
 
 ## 6. Backup & restore runbook
 
-- **Neon:** PITR covers point restores; additionally take weekly logical dumps:
-  `pg_dump "$NEON_URL" -Fc -f crm-$(date +%F).dump`
+- **Prod:** platform snapshots cover point restores; additionally take weekly logical dumps:
+  `pg_dump "$DATABASE_URL" -Fc -f crm-$(date +%F).dump`
 - **Local:** `docker compose exec db pg_dump -U crm crm_primepower > backup.sql`
-- **Restore:** `pg_restore -d "$NEON_URL" crm-YYYY-MM-DD.dump` (test restores on a Neon branch first).
+- **Restore:** `pg_restore -d "$DATABASE_URL" crm-YYYY-MM-DD.dump` (test restores against a staging copy first).
 - **Retention:** soft-deleted rows kept 90 days (`retention_days` org setting), then hard-purge by policy.
 
 ## 7. Go-live smoke checklist
@@ -97,7 +101,7 @@ Covers `reminders:dispatch` (every minute) and `reports:generate --type=weekly -
 - [ ] `FRONTEND_URL` matches the deployed SPA origin exactly (no CORS errors)
 - [ ] Scheduler cron installed; `schedule:list` shows both jobs
 - [ ] `APP_DEBUG=false`, no `.env` in git, `SEED_PASSWORD` unset
-- [ ] First backup taken and restore-tested on a Neon branch
+- [ ] First backup taken and restore-tested against a staging copy
 
 ## 8. Rollback
 

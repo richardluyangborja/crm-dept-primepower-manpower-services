@@ -22,6 +22,6 @@ Fixtures: job_orders.json, invoices.json, headcount.json, bi_pull.json
 5 users, 2 teams + 10 leads, 8 clients (+14 contacts), 10 opps (spread stages), 30 activities, 3 templates + 8 surveys (5 responded), 12 followups (incl. overdue/escalated). All linked so every tab/calendar has content and no screen is empty on first run.
 - AI (`15`): 2 high-risk clients (45d inactive + NPS ≤6 + 2 overdue), 1 low-risk (weekly activity + NPS 9); prefilled `insights_cache` so dashboard renders offline.
 - OTP/session (`16`): `otp.demo@primepower.ph` (mock code `123456`, `OTP_MODE=mock` only); no enforcement in v1 seeds.
+## 5. Managed-database note
 
-## 5. Neon/cloud note
-Same seeders run against `NEON_DATABASE_URL` (`php artisan migrate --force --seed` in CI). No `faker` in `composer.json` require-dev path that seeds depend on.
+Same seeders run against the deployment-managed Postgres (`php artisan migrate --force --seed` in CI/prod). No `faker` in `composer.json` require-dev path that seeds depend on. No Neon or any vendor-specific database: connection values come from the deployment.

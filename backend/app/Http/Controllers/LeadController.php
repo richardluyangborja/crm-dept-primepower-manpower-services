@@ -24,7 +24,7 @@ class LeadController extends Controller
             ->search($request->query('q'), ['company_name', 'contact_name', 'contact_email'])
             ->latest()->paginate(min(100, (int) $request->query('per_page', 15)));
 
-        return $this->paginated($leads);
+        return $this->paginated(LeadResource::collection($leads));
     }
 
     public function store(StoreLeadRequest $request, LeadService $service)

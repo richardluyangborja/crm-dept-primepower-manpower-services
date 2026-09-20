@@ -103,8 +103,8 @@ export function CommsPage() {
                   </div>
                   <p className="text-xs text-[var(--text-muted)]">{a.client_name} · {rel(a.occurred_at)}</p>
                   {a.body && <p className="mt-1 whitespace-pre-wrap text-sm">{highlight(a.body, q)}</p>}
-                  {a.attachments.length > 0 && (
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">📎 {a.attachments.map((f) => f.name).join(', ')}</p>
+                  {(a.attachments ?? []).length > 0 && (
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">📎 {(a.attachments ?? []).map((f) => f.name).join(', ')}</p>
                   )}
                 </div>
               </div>

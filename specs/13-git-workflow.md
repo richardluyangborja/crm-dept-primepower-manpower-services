@@ -50,6 +50,6 @@ git add -A && git rebase --continue && git push --force-with-lease  # own featur
 ```
 
 ## 5. Files policy — what lives where
-- `docker-compose.yml` lives in **ALL branches (including `main`) — deliberately.** It defines only the *local dev* Postgres (dummy password `crm_secret`, no real secrets); CI uses its own service definition and prod uses Neon via env. Keeping it out of `main` is technically possible but rejected: every `develop` → `main` merge would then fight over adding/deleting it, and fresh clones of `main` couldn't run the documented setup. Rule: dev-only conveniences with no secrets stay tracked everywhere.
+- `docker-compose.yml` lives in **ALL branches (including `main`) — deliberately.** It defines only the *local dev* Postgres (dummy password `crm_secret`, no real secrets); CI uses its own service definition and prod uses the deployment-managed Postgres via env. Keeping it out of `main` is technically possible but rejected: every `develop` → `main` merge would then fight over adding/deleting it, and fresh clones of `main` couldn't run the documented setup. Rule: dev-only conveniences with no secrets stay tracked everywhere.
 - Real `.env` files: never tracked, any branch. Templates (`.env.example`): tracked everywhere.
 - Precedent (2026-09-19): an accidental feature→`main` merge was reconciled by merging `develop`'s flow over it (one `BUILD_TRACKER.md` conflict, newer entry kept) and converging both branches. If it happens again: do NOT revert — merge the correct flow forward.

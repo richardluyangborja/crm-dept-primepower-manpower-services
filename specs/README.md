@@ -1,6 +1,6 @@
 # CRM — Spec Index
 
-Source of truth for PrimePower Manpower Services CRM (Laravel API + React SPA, JWT, Postgres/Neon).
+Source of truth for PrimePower Manpower Services CRM (Laravel API + React SPA, JWT, Postgres — deployment-managed in prod, `docker compose` locally; mocks stay on everywhere, including prod).
 
 | # | File | Covers |
 |---|---|---|

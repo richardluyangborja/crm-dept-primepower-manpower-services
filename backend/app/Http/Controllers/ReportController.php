@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ReportResource;
 use App\Models\Report;
 use App\Services\ReportService;
 use App\Traits\ApiResponse;
@@ -61,7 +62,7 @@ class ReportController extends Controller
     {
         if ($err = $this->gate()) return $err;
 
-        return $this->paginated(Report::orderByDesc('id')->paginate(15));
+        return $this->paginated(ReportResource::collection(Report::orderByDesc('id')->paginate(15)));
     }
 
     public function generate(Request $request, ReportService $service)

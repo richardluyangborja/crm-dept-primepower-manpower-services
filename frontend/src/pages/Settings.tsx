@@ -711,7 +711,7 @@ function DataSection() {
       </div>
       <div className="card p-6">
         <h2 className="font-semibold">Backup & retention</h2>
-        <p className="text-xs text-[var(--text-muted)]">Cloud database (Neon) snapshots automatically — no action needed. Local Postgres: <code>docker compose exec db pg_dump -U crm crm_primepower &gt; backup.sql</code>. Soft-deleted records are retained 90 days (see <code>retention_days</code> in General).</p>
+        <p className="text-xs text-[var(--text-muted)]">The deployment snapshots the database automatically — no action needed. Local Postgres: <code>docker compose exec db pg_dump -U crm crm_primepower &gt; backup.sql</code>. Soft-deleted records are retained 90 days (see <code>retention_days</code> in General).</p>
       </div>
     </div>
   );

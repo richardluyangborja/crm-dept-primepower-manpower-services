@@ -32,7 +32,7 @@ class FollowupController extends Controller
             $query->whereDate('due_at', today());
         }
 
-        return $this->paginated($query->orderBy('due_at')->paginate(min(100, (int) $request->query('per_page', 50))));
+        return $this->paginated(FollowupResource::collection($query->orderBy('due_at')->paginate(min(100, (int) $request->query('per_page', 50)))));
     }
 
     public function store(StoreFollowupRequest $request)

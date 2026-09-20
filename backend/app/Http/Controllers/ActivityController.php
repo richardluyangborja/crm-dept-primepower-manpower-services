@@ -29,7 +29,7 @@ class ActivityController extends Controller
             $query->where('occurred_at', '<=', $request->query('to'));
         }
 
-        return $this->paginated($query->orderByDesc('occurred_at')->paginate(min(100, (int) $request->query('per_page', 25))));
+        return $this->paginated(ActivityResource::collection($query->orderByDesc('occurred_at')->paginate(min(100, (int) $request->query('per_page', 25)))));
     }
 
     public function store(StoreActivityRequest $request, ActivityService $service)

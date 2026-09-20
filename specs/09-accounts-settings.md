@@ -12,7 +12,7 @@ Mirrors reference Settings UX (`dark-mode.webp`): left submenu + content + top-r
 | Users & Access | admin+ | invite (email+role+team), activate/deactivate, reset password, role change (audit; v2 step-up OTP per `16`); manager sees team read-only |
 | Security | all/admin | change password, active JWT sessions (list + revoke), **OTP toggle + 5-min idle-timeout notice (v1 scaffolded, enforced v2 per `16`)**, login history (audit) |
 | AI & Reports (`15`) | manager+ | insight visibility, report schedule (weekly/monthly), feedback review |
-| Data & Backup | superadmin | export CSV per entity, DB backup note (Neon auto + `pg_dump` runbook), retention (soft-delete 90d) |
+| Data & Backup | superadmin | export CSV per entity, DB backup note (deployment-managed snapshots + `pg_dump` runbook), retention (soft-delete 90d) |
 | Integrations | superadmin/admin | `INTEGRATIONS_MODE=mock|live` toggle per dept, endpoint URLs, test-connection (mock returns fixture), webhook log stub |
 
 ## 2. Rules

@@ -19,7 +19,7 @@ crm-dept-primepower-manpower-services/
 - CORS: `fruitcake/laravel-cors` (or L11 built-in `HandleCors`); `FRONTEND_URL` allowlisted, `supports_credentials=false` (bearer, not cookies).
 - Reuse pattern (mandatory): `FormRequest` (validate) → `Controller` (thin) → `Service/Action` (logic) → `Repository/Eloquent` → `Resource` (shape). Shared: `ApiResponse` trait, `HasAuditLog` trait, `BelongsToTeam` scope, `Filterable` trait.
 - Queue: `database` driver in dev (reminders/notifications); Redis optional later. Scheduler runs `reminders:dispatch` every minute (cron in prod, `schedule:work` locally).
-- Config: all secrets via `.env` (`JWT_SECRET`, `DB_*`, `INTEGRATIONS_MODE=mock`, `NEON_DATABASE_URL` for cloud).
+- Config: all secrets via `.env` (`JWT_SECRET`, `DB_*`). Mock services are hard-bound in code, so `INTEGRATIONS_MODE`/`AI_MODE`/`OTP_MODE` are informational — mocks stay on even in prod (v2 decision, locked).
 
 ## 3. Frontend — React SPA
 Locked stack (all OSS):
@@ -35,7 +35,7 @@ Locked stack (all OSS):
 
 ## 4. Data & environments
 - **Local DB:** `docker compose up db` → Postgres 16, `crm_primepower` db, persistent volume. See root `docker-compose.yml`.
-- **Cloud DB:** Neon Postgres (free tier). Same migrations; connection via `NEON_DATABASE_URL`; SSL `sslmode=require`. No code change — only env.
+- **Prod DB:** deployment-managed Postgres. Same migrations and seeders; connection values come from the deployment. No code change — only env. (Neon was evaluated and removed: the deployment already provides the database.)
 - Migrations are the schema source of truth; **no Faker** in factories/seeders (Faker breaks offline/prod builds). Use static PH arrays (`12-seeding-strategy.md`).
 
 ## 5. Cross-cutting

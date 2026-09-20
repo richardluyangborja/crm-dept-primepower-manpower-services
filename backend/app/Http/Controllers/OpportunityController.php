@@ -25,7 +25,7 @@ class OpportunityController extends Controller
             ->search($request->query('q'), ['title'])
             ->orderBy('expected_close_date')->paginate(min(100, (int) $request->query('per_page', 50)));
 
-        return $this->paginated($opps);
+        return $this->paginated(OpportunityResource::collection($opps));
     }
 
     public function store(StoreOpportunityRequest $request)
