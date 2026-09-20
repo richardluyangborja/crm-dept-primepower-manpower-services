@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             CrmCoreSeeder::class,
             CrmActivitySeeder::class,
             SettingsSeeder::class,
+            InsightsCacheSeeder::class,
         ]);
     }
 }

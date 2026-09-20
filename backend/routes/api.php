@@ -8,7 +8,6 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\InsightController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\OpportunityController;
-use App\Http\Controllers\ModuleStubController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
@@ -80,7 +79,11 @@ Route::prefix('v1')->group(function () {
         Route::get('integrations/{service}/test', [\App\Http\Controllers\IntegrationController::class, 'test']);
         Route::put('integrations/mode', [\App\Http\Controllers\IntegrationController::class, 'updateMode']);
         Route::get('exports/{entity}.csv', [\App\Http\Controllers\ExportController::class, 'csv']);
-        Route::get('/reports/weekly', [ModuleStubController::class, '__invoke']);  // Step 7
-        Route::get('/reports/monthly', [ModuleStubController::class, '__invoke']); // Step 7
+        // Step 7 — AI Analytics + Reports (specs/15).
+        Route::get('/reports/weekly', [\App\Http\Controllers\ReportController::class, 'weekly']);
+        Route::get('/reports/monthly', [\App\Http\Controllers\ReportController::class, 'monthly']);
+        Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index']);
+        Route::post('/reports/generate', [\App\Http\Controllers\ReportController::class, 'generate']);
+        Route::post('/insights/feedback', [\App\Http\Controllers\InsightFeedbackController::class, 'store']);
     });
 });

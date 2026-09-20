@@ -6,7 +6,7 @@ import { Toaster } from './components/ui/Toaster';
 import { applyTheme, hasRole, useSession } from './store/session';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
-import { ReportsPage } from './pages/shells';
+import { ReportsPage } from './pages/Reports';
 import { SettingsPage } from './pages/Settings';
 import { SurveysPage } from './pages/Surveys';
 import { RespondPage } from './pages/Respond';
