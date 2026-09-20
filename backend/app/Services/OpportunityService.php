@@ -77,7 +77,7 @@ class OpportunityService
                     $jobOrder->restore();
                 }
                 $meta['job_order_id'] = $jobOrder->id;
-                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", "/leads?client={$opp->client_id}");
+                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", "/clients/{$opp->client_id}");
             }
             if ($to === 'lost') {
                 $meta['lost_reason'] = $opp->lost_reason;

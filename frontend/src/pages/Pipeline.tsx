@@ -112,7 +112,7 @@ export function PipelinePage() {
             🎉 Won! Job Order {wonInfo.ref} created — staffing starts <span className="text-xs font-normal">(mock)</span>.
           </p>
           <div className="mt-2 flex gap-2">
-            <Link to={`/leads?client=${wonInfo.clientId}`} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">
+            <Link to={`/clients/${wonInfo.clientId}`} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">
               View client timeline →
             </Link>
             <button onClick={() => setWonInfo(null)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs">Dismiss</button>
