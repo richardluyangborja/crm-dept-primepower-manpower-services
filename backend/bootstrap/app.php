@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['role' => \App\Http\Middleware\RoleMiddleware::class]);
+        // Prod runs behind a platform proxy (Render/Railway): trust X-Forwarded-*
+        // so audit/session IPs are the real client, not the proxy.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
