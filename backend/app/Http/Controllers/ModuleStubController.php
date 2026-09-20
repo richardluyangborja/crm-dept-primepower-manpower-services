@@ -32,7 +32,6 @@ class ModuleStubController extends Controller
     {
         $owner = [
             'surveys' => 'Step 5 (specs/06)',
-            'users' => 'Step 6 (specs/09)',
             'reports' => 'Step 7 (specs/15)',
         ];
         $segment = $request->segment(3) ?? 'unknown';

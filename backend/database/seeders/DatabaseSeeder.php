@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             TeamUserSeeder::class,
             CrmCoreSeeder::class,
             CrmActivitySeeder::class,
+            SettingsSeeder::class,
         ]);
     }
 }

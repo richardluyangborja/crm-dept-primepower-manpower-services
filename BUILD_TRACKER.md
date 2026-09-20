@@ -13,8 +13,8 @@
 | 2 | Opportunity Pipeline (`05`) | ✅ | `feature/crm-pipeline` | to open (base `develop`) | Pushed (d06423c), CI green — 5 new tests, kanban + win/loss + reopen guards; open PR to `develop`, then step 3 |
 | 3 | Follow-up Reminders (`08`) | ✅ | `feature/crm-followup` | to open (base `develop`) | Pushed (78b053b), CI green — 4 new tests, dispatch command, queue+calendar+badge; open PR to `develop`, then step 4 |
 | 4 | Communication History (`07`) | ✅ | `feature/crm-comms` | to open (base `develop`) | Pushed (6124075), CI green — 5 new tests, timeline+templates+hook; open PR to `develop`, then step 5 |
-| 5 | Satisfaction & Surveys (`06`) | ⬜ | — | — | Includes public `/s/{token}` page |
-| 6 | Accounts & Settings (`09`) | ⬜ | — | — | — |
+| 5 | Satisfaction & Surveys (`06`) | 🔄 | `feature/crm-surveys` | #7 (open) | Awaiting merge — no file overlap with step 6 |
+| 6 | Accounts & Settings (`09`) | 🔄 | `feature/crm-settings` | — | Backend+Settings page built, tests green (51 assertions), live smoke OK (settings seed, users, mock status, CSV); pushing for CI |
 | 7 | AI Analytics + Reports (`15`) | ⬜ | — | — | Rules → mock-AI; real models later |
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
 | 9 | Release hardening + `crm-v1.0.0` | ⬜ | — | — | Neon guide, prod env docs |

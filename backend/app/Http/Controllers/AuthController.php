@@ -22,6 +22,17 @@ class AuthController extends Controller
         $refresh = JWTAuth::claims(['refresh' => true])->fromUser($user);
         $user->update(['last_login_at' => now()]);
         $user->audit('login', $user->id, ['ip' => $request->ip()]);
+        try {
+            \App\Models\UserSession::create([
+                'user_id' => $user->id,
+                'jti' => JWTAuth::setToken($token)->getPayload()->get('jti', \Illuminate\Support\Str::uuid()->toString()),
+                'ip' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                'last_activity_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // session tracking must never break login
+        }
 
         return $this->ok([
             'access_token' => $token,
@@ -44,7 +55,11 @@ class AuthController extends Controller
     public function logout()
     {
         try {
-            JWTAuth::parseToken()->invalidate();
+            $jti = JWTAuth::parseToken()->getPayload()->get('jti');
+            JWTAuth::invalidate();
+            if ($jti) {
+                \App\Models\UserSession::where('jti', $jti)->update(['expired_at' => now()]);
+            }
         } catch (\Throwable) {
         }
 
