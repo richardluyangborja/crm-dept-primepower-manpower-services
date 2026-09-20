@@ -32,6 +32,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Named per-endpoint limiters (specs/16): unnamed `throttle:N,1` limiters
+        // share one bucket per user/IP, so login attempts would eat the OTP
+        // budget and vice versa. Names isolate each endpoint's budget.
+        $byUserOrIp = fn (\Illuminate\Http\Request $r) => $r->user()?->id ?: $r->ip();
+        \Illuminate\Support\Facades\RateLimiter::for('auth-login', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(10)->by($r->ip()));
+        \Illuminate\Support\Facades\RateLimiter::for('otp-send', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(5)->by($byUserOrIp($r)));
+        \Illuminate\Support\Facades\RateLimiter::for('otp-verify', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(10)->by($byUserOrIp($r)));
+        \Illuminate\Support\Facades\RateLimiter::for('survey-public', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(30)->by($r->ip()));
+
         // Explicit policy map (Gate also auto-discovers *Policy by convention).
         Gate::policy(\App\Models\Lead::class, \App\Policies\LeadPolicy::class);
         Gate::policy(\App\Models\Client::class, \App\Policies\ClientPolicy::class);

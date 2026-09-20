@@ -54,12 +54,18 @@ class UserController extends Controller
         return $this->ok(new UserResource($user->load('team')));
     }
 
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user, \App\Services\StepUpService $stepUp)
     {
         $this->authorize('update', $user);
         $data = $request->validated();
-        if (array_key_exists('role', $data) && $user->id === $request->user()->id && $data['role'] !== $user->role) {
-            return $this->fail('You cannot change your own role.', 422);
+        if (array_key_exists('role', $data) && $data['role'] !== $user->role) {
+            // Privilege change = step-up (specs/16): fresh OTP grant required.
+            if (! $stepUp->consume($request->header('X-StepUp-Token'), $request->user()->id)) {
+                return response()->json(['message' => 'Role change needs a fresh verification code.', 'otp_required' => true], 428);
+            }
+            if ($user->id === $request->user()->id) {
+                return $this->fail('You cannot change your own role.', 422);
+            }
         }
         if (array_key_exists('is_active', $data) && $data['is_active'] === false) {
             if ($user->id === $request->user()->id) return $this->fail('You cannot deactivate your own account.', 422);

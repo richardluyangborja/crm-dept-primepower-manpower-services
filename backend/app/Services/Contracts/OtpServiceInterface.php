@@ -8,4 +8,6 @@ interface OtpServiceInterface
     public function send(int $userId, string $purpose = 'login'): array; // ['challenge_id'=>…]
 
     public function verify(int $userId, string $code, string $purpose = 'login'): bool;
+
+    public function lockedOut(int $userId): bool;
 }

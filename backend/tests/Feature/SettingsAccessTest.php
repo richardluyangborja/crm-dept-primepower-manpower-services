@@ -29,6 +29,14 @@ class SettingsAccessTest extends TestCase
 
     protected function token(User $u): string { return auth('api')->login($u); }
 
+    /** Step-up grant via mock OTP (code 123456) for 428-gated actions. */
+    protected function stepUpToken(string $accessToken): string
+    {
+        $this->postJson('/api/v1/auth/otp/send', ['purpose' => 'step_up'], ['Authorization' => "Bearer $accessToken"])->assertCreated();
+        return $this->postJson('/api/v1/auth/otp/verify', ['code' => '123456', 'purpose' => 'step_up'], ['Authorization' => "Bearer $accessToken"])
+            ->assertOk()->json('data.step_up_token');
+    }
+
     public function test_admin_invites_and_rep_forbidden_and_manager_scoped_readonly(): void
     {
         $o = $this->setupOrg();
@@ -63,7 +71,12 @@ class SettingsAccessTest extends TestCase
         $at = $this->token($o['admin']);
 
         $this->postJson("/api/v1/users/{$o['admin']->id}/deactivate", [], ['Authorization' => "Bearer $at"])->assertStatus(422);
-        $this->putJson("/api/v1/users/{$o['admin']->id}", ['role' => 'sales_rep'], ['Authorization' => "Bearer $at"])->assertStatus(422);
+        // Role change without step-up grant → 428; with grant → self-role guard (422).
+        $this->putJson("/api/v1/users/{$o['admin']->id}", ['role' => 'sales_rep'], ['Authorization' => "Bearer $at"])->assertStatus(428);
+        $grant = $this->stepUpToken($at);
+        $this->putJson("/api/v1/users/{$o['admin']->id}", ['role' => 'sales_rep'], ['Authorization' => "Bearer $at", 'X-StepUp-Token' => $grant])->assertStatus(422);
+        // Grant is single-use: replay → 428 again.
+        $this->putJson("/api/v1/users/{$o['rep']->id}", ['role' => 'manager'], ['Authorization' => "Bearer $at", 'X-StepUp-Token' => $grant])->assertStatus(428);
 
         $st = $this->token($o['super']);
         $this->postJson("/api/v1/users/{$o['super']->id}/deactivate", [], ['Authorization' => "Bearer $st"])->assertStatus(422);
@@ -103,11 +116,16 @@ class SettingsAccessTest extends TestCase
 
         $sessions = $this->getJson('/api/v1/users-sessions', ['Authorization' => "Bearer $t"])->assertOk()->json('data');
         $this->assertNotEmpty($sessions);
-        $sid = $sessions[0]['id'];
-        $this->deleteJson("/api/v1/users-sessions/$sid", [], ['Authorization' => "Bearer $t"])->assertOk();
-        $this->assertDatabaseHas('user_sessions', ['id' => $sid]);
+        // Revoking sessions kills their tokens: wipe all rows, same token rejected next.
+        foreach ($sessions as $s) {
+            $this->deleteJson("/api/v1/users-sessions/{$s['id']}", [], ['Authorization' => "Bearer $t"])->assertOk();
+        }
+        $this->getJson('/api/v1/auth/me', ['Authorization' => "Bearer $t"])
+            ->assertUnauthorized()->assertJsonPath('code', 'session_expired');
 
-        $logins = $this->getJson('/api/v1/me/logins', ['Authorization' => "Bearer $t"])->assertOk()->json('data');
+        // Fresh login for the remaining assertions.
+        $t2 = $this->postJson('/api/v1/auth/login', ['email' => $o['rep']->email, 'password' => 'password'])->assertOk()->json('data.access_token');
+        $logins = $this->getJson('/api/v1/me/logins', ['Authorization' => "Bearer $t2"])->assertOk()->json('data');
         $this->assertNotEmpty($logins);
     }
 
