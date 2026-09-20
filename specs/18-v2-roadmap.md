@@ -99,3 +99,53 @@ verified live against seeded Postgres (`attachments: []`, 5 followups, flat meta
 2. Patch release `v1.0.1` tag on `main` after merge (regression fixes only).
 3. v2 workstreams as `feature/crm-journey-*` branches in §4 order, each with
    spec acceptance + live smoke + screenshots, same per-PR checklist.
+
+## 6. Phase 2 — submodule expansion toward a working system (locked 2026-09-20)
+
+Locked decisions: detail pages + Finance first; Finance gets light workflows;
+Core-1 section is see-only; drawer replaced by full pages; OTP mock untouched —
+business flow has absolute priority. Target release vehicle: **`crm-v1.2.0`**.
+
+### Phase 2A — Client/Lead detail pages (replace drawer)
+- New routes `/clients/:id` and `/leads/:id` (drawer removed everywhere, deep links
+  updated: win banner, NBA actions, notifications, tour copy).
+- Tabs per profile, all backed by existing endpoints: Overview (header + ops cards
+  + journey summary), Contacts, Opportunities, Communications, Surveys, Follow-ups,
+  Job Orders, Finance (summary card linking to §2B section).
+- Lead page: 360° progress checklist (capture → qualify → convert), score
+  explainer, inline convert wizard (replaces modal), duplicate-warning panel.
+- Acceptance: every tab loads with loading/empty/error states; no tab dead-ends;
+  full suite + build green; light + dark screenshots.
+
+### Phase 2B — Finance section (mock Dept 5, light workflows)
+- New `invoices` table (mock-sourced, first-class like `job_orders`): ref, client,
+  job order link, amount/balance, status `draft → sent → paid | overdue`, due date.
+- Seeded from won deals + fixtures (deterministic refs, no Faker).
+- Section UI: AR dashboard (aging buckets 0-30/31-60/61-90/90+, outstanding per
+  client), invoice list with filters, **record mock payment** (applies amount,
+  audit-logged), **mark paid**, overdue → **collection follow-up** (ties into 08).
+- Client Finance tab reads the same endpoints.
+- Acceptance: peso totals reconcile across dashboard/invoice/client views;
+  every money action has confirm + toast + audit entry.
+
+### Phase 2C — Core-1 Operations section (see-only) + submodule gaps
+- Read-only Operations board: all job orders across clients (status columns),
+  deployment read-backs per client, links into client pages. No advance buttons
+  here (advancing stays on the client timeline from journey A).
+- Submodule gaps, in order: leads **CSV import** (mock template download +
+  row-error report); **configurable pipeline stages/labels** (admin master data);
+  survey overdue → **auto follow-up**; follow-up **week/day views + drag
+  reschedule**; comms **duration field + owner/date filters**; admin
+  **master-data UI** (industries, sources, lost reasons); win/loss
+  **effective date**.
+- Acceptance per gap: seeded demo covers it; validation + toasts per spec.
+
+### Phase 2D — BI expansion + release
+- KPI monitoring strip (win rate trend, cycle length, NPS trend — mostly exists;
+  surface consistently), predictive hints stay rule-based + badged.
+- `docs/METHODOLOGY.md` gains Phase 2 rows; release `develop` → `main`, tag
+  **`crm-v1.2.0`**.
+
+### Explicit Phase 2 non-goals (unchanged from §E)
+Mock-everywhere locked (incl. prod); no Neon/vendor DB; no real email/SMS/SSO/
+mobile app/ML; **OTP stays exactly as mocked** — zero auth changes in Phase 2.

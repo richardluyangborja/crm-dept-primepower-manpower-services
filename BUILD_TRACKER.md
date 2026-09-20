@@ -56,6 +56,17 @@
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
 | 9 | Release hardening + `crm-v1.0.0` | ✅ | `feature/crm-release` | #12 | Merged — **released to `main` + tagged `crm-v1.0.0`**. Reports schedule, spec-volume seeds, DEPLOYMENT.md, trustProxies |
 
+## Phase 2 — submodule expansion (target `crm-v1.2.0`)
+
+| Phase | Scope | Status | Branch | Notes |
+|---|---|---|---|---|
+| 2A | Client/Lead detail pages (replace drawer) | ⬜ | — | Tabs: overview/contacts/opps/comms/surveys/followups/job orders/finance; inline convert wizard; deep links updated |
+| 2B | Finance section (mock + light workflows) | ⬜ | — | `invoices` table, AR aging, record payment, mark paid, collection follow-ups |
+| 2C | Core-1 Operations (see-only) + submodule gaps | ⬜ | — | Read-only ops board; CSV import; configurable stages; survey→followup auto; week/day + drag; duration/owner-date filters; master-data UI; effective dates |
+| 2D | BI expansion + `crm-v1.2.0` release | ⬜ | — | KPI consistency, METHODOLOGY rows, release + tag |
+
+Locked: pages replace drawer · light finance workflows · Core-1 see-only · OTP mock untouched.
+
 ## Per-step verification checklist (paste into each PR)
 
 - [ ] `php artisan test` green (backend)
