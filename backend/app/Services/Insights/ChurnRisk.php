@@ -42,6 +42,6 @@ class ChurnRisk
             $drivers[] = 'Healthy engagement';
         }
 
-        return ['level' => $level, 'drivers' => $drivers, 'confidence' => 60, 'rules_based' => true];
+        return ['level' => $level, 'drivers' => $drivers, 'points' => $points, 'confidence' => 60, 'rules_based' => true];
     }
 }

@@ -31,13 +31,12 @@ class AuthTest extends TestCase
         $this->getJson('/api/v1/auth/me', ['Authorization' => "Bearer {$token}"])->assertOk();
     }
 
-    public function test_module_stubs_return_501_with_owner(): void
+    public function test_reports_require_manager_role(): void
     {
-        $user = User::factory()->create(['email' => 'rep.stub@primepower.ph']);
+        // All stubs retired after Step 7 — reports are real and manager+.
+        $user = User::factory()->create(['email' => 'rep.stub@primepower.ph', 'role' => 'sales_rep']);
         $token = auth('api')->login($user);
-        // Reports land in Step 7 — still a stub with its owner note.
-        $res = $this->getJson('/api/v1/reports/weekly', ['Authorization' => "Bearer {$token}"])
-            ->assertStatus(501);
-        $this->assertStringContainsString('Step 7', $res->getContent());
+        $this->getJson('/api/v1/reports/weekly', ['Authorization' => "Bearer {$token}"])
+            ->assertForbidden();
     }
 }
