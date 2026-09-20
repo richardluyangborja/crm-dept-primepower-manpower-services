@@ -19,8 +19,16 @@ trait ApiResponse
 
     protected function paginated(mixed $paginator, ?string $message = null): JsonResponse
     {
-        $payload = $paginator->toArray();
-        $response = ['data' => $payload['data'], 'meta' => collect($payload)->except('data')->toArray()];
+        // Resource collections shape each row (specs/14) while keeping the
+        // flat meta envelope ({current_page, per_page, total, ...}) the SPA
+        // relies on. Raw paginators still work for scalar-only lists.
+        if ($paginator instanceof \Illuminate\Http\Resources\Json\AnonymousResourceCollection) {
+            $payload = $paginator->response()->getData(true);
+            $response = ['data' => $payload['data'] ?? [], 'meta' => $payload['meta'] ?? []];
+        } else {
+            $payload = $paginator->toArray();
+            $response = ['data' => $payload['data'], 'meta' => collect($payload)->except('data')->toArray()];
+        }
         if ($message) {
             $response['message'] = $message;
         }

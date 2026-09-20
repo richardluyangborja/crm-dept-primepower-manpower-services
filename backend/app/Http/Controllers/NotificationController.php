@@ -23,7 +23,7 @@ class NotificationController extends Controller
             $query->whereNull('read_at');
         }
 
-        return $this->paginated($query->latest()->paginate(min(100, (int) $request->query('per_page', 20))));
+        return $this->paginated(NotificationResource::collection($query->latest()->paginate(min(100, (int) $request->query('per_page', 20)))));
     }
 
     public function read(Notification $notification)

@@ -177,7 +177,7 @@ function MonthCalendar({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: 
     return out;
   }, [base]);
   const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const forDay = (k: string) => rows.filter((r) => r.due_at.slice(0, 10) === k && r.status !== 'done');
+  const forDay = (k: string) => rows.filter((r) => (r.due_at ?? '').slice(0, 10) === k && r.status !== 'done');
   const selected = forDay(day);
 
   return (

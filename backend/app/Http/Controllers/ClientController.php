@@ -24,7 +24,7 @@ class ClientController extends Controller
             ->search($request->query('q'), ['name', 'contact_email', 'address_city'])
             ->latest()->paginate(min(100, (int) $request->query('per_page', 15)));
 
-        return $this->paginated($clients);
+        return $this->paginated(ClientResource::collection($clients));
     }
 
     public function store(StoreClientRequest $request)

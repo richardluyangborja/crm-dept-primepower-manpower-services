@@ -35,7 +35,7 @@ class UserController extends Controller
             $q->where(fn ($qq) => $qq->where('name', $op, "%{$term}%")->orWhere('email', $op, "%{$term}%"));
         }
 
-        return $this->paginated($q->orderBy('name')->paginate(min(100, (int) $request->query('per_page', 25))));
+        return $this->paginated(UserResource::collection($q->orderBy('name')->paginate(min(100, (int) $request->query('per_page', 25)))));
     }
 
     public function store(StoreUserRequest $request)
