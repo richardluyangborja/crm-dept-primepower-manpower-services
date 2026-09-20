@@ -14,6 +14,8 @@ import { RespondPage } from './pages/Respond';
 import { CommsPage } from './pages/Comms';
 import { FollowupsPage } from './pages/Followups';
 import { LeadsPage } from './pages/Leads';
+import { LeadPage } from './pages/LeadPage';
+import { ClientPage } from './pages/ClientPage';
 import { PipelinePage } from './pages/Pipeline';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } } });
@@ -46,6 +48,8 @@ export default function App() {
             >
               <Route index element={<DashboardPage />} />
               <Route path="leads" element={<LeadsPage />} />
+              <Route path="leads/:id" element={<LeadPage />} />
+              <Route path="clients/:id" element={<ClientPage />} />
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="comms" element={<CommsPage />} />
               <Route path="surveys" element={<SurveysPage />} />

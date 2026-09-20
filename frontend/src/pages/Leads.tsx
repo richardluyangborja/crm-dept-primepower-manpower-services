@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/apiClient';
-import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
+import { apiErr } from '../components/crm/ClientWidgets';
 
 interface Lead {
   id: number;
@@ -27,28 +27,7 @@ interface Client {
   address_city: string | null;
   status: string;
   contact_phone: string | null;
-  contacts?: { id: number; full_name: string; email: string | null; phone: string | null; is_primary: boolean }[];
 }
-
-interface JobOrder {
-  id: number;
-  ref: string;
-  title: string;
-  headcount: number | null;
-  value_centavos: number;
-  status: string;
-  next_status: string | null;
-  invoice_ref: string | null;
-}
-
-interface ClientOps {
-  deployment: { deployed?: number; site?: string; mock?: boolean };
-  billing: { outstanding_centavos?: number; status?: string; mock?: boolean };
-  job_orders: { count: number; active: number; by_status: Record<string, number> };
-  mock: boolean;
-}
-
-const JO_STAGES = ['draft', 'staffed', 'deployed', 'billed'];
 
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 
@@ -69,20 +48,8 @@ export function LeadsPage() {
   const [status, setStatus] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [convertId, setConvertId] = useState<number | null>(null);
-  const [detailId, setDetailId] = useState<number | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
-  const [params] = useSearchParams();
-
-  // Deep link: /leads?client=<id> opens the 360° drawer (win narration lands here).
-  useEffect(() => {
-    const cid = params.get('client');
-    if (cid) {
-      setTab('clients');
-      setDetailId(Number(cid));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const leadsQ = useQuery({
     queryKey: ['leads', q, status],
@@ -91,11 +58,6 @@ export function LeadsPage() {
   const clientsQ = useQuery({
     queryKey: ['clients'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 50 } })).data,
-  });
-  const detailQ = useQuery({
-    queryKey: ['client', detailId],
-    queryFn: async () => (await api.get(`/clients/${detailId}`)).data.data as Client,
-    enabled: detailId !== null,
   });
 
   const invalidate = () => {
@@ -169,9 +131,9 @@ export function LeadsPage() {
             <DataTable<Lead>
               rows={leadsQ.data.data}
               columns={[
-                { key: 'co', header: 'Company', render: (r) => <button className="font-medium text-sky-700 dark:text-sky-300" onClick={() => toast('info', `Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`)}>{r.company_name}</button> },
+                { key: 'co', header: 'Company', render: (r) => <Link to={`/leads/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.company_name}</Link> },
                 { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },
-                { key: 'sc', header: 'Score', render: (r) => <ScoreBar v={r.score} /> },
+                { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
                 { key: 'st', header: 'Status', render: (r) => (
                   <select value={r.status} disabled={r.status === 'converted'} onChange={(e) => {
                     const st = e.target.value;
@@ -200,37 +162,13 @@ export function LeadsPage() {
             <DataTable<Client>
               rows={clientsQ.data?.data ?? []}
               columns={[
-                { key: 'n', header: 'Client', render: (r) => <button className="font-medium text-sky-700 dark:text-sky-300" onClick={() => setDetailId(r.id)}>{r.name}</button> },
+                { key: 'n', header: 'Client', render: (r) => <Link to={`/clients/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.name}</Link> },
                 { key: 'i', header: 'Industry', render: (r) => r.industry ?? '—' },
                 { key: 'c', header: 'City', render: (r) => r.address_city ?? '—' },
                 { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
               ]}
               empty={<EmptyState title="No clients yet" hint="Convert a qualified lead to create your first client profile." action={<button onClick={() => setTab('leads')} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Find a lead to convert →</button>} />}
             />
-          )}
-          {detailId !== null && (
-            <div className="card p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold">{detailQ.data?.name ?? 'Client 360°'}</h2>
-                <button onClick={() => setDetailId(null)} className="text-sm text-[var(--text-muted)]">Close ✕</button>
-              </div>
-              {detailQ.isLoading ? <p className="text-sm">Loading profile…</p> : detailQ.data && (
-                <div className="mt-2 text-sm">
-                  <p><StatusBadge value={detailQ.data.status} /> {detailQ.data.industry} · {detailQ.data.address_city}</p>
-                  <h3 className="mt-3 font-medium">Contacts</h3>
-                  <ul className="mt-1 flex flex-col gap-1">
-                    {detailQ.data.contacts?.map((c) => (
-                      <li key={c.id} className="flex justify-between border-b border-[var(--border)] py-1 last:border-0">
-                        <span>{c.full_name} {c.is_primary && <span className="text-xs text-sky-600">(primary)</span>}</span>
-                        <span className="text-xs text-[var(--text-muted)]">{c.phone ?? c.email}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <ClientOpsCards clientId={detailQ.data.id} />
-                  <ClientJourney clientId={detailQ.data.id} />
-                </div>
-              )}
-            </div>
           )}
         </>
       )}
@@ -239,108 +177,12 @@ export function LeadsPage() {
       <ConfirmDialog
         open={convertId !== null}
         title="Convert lead to client?"
-        body="This creates the client profile with the lead's contact as primary. Optionally also open an opportunity (step 2 manages it after)."
+        body="Quick-convert creates the client profile with the lead's contact as primary. For the full 3-step wizard, open the lead instead."
         onCancel={() => setConvertId(null)}
         onConfirm={() => convertId !== null && convertMut.mutate({ id: convertId, withOpp: true })}
       />
     </div>
   );
-}
-
-function ClientOpsCards({ clientId }: { clientId: number }) {
-  const opsQ = useQuery({
-    queryKey: ['client-ops', clientId],
-    queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as ClientOps,
-    enabled: clientId > 0,
-  });
-  if (opsQ.isLoading || !opsQ.data) return null;
-  const ops = opsQ.data;
-  return (
-    <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-      <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Mock Dept-2 read-back">Ⓜ</span></p>
-        <p className="font-semibold tabular-nums">{ops.deployment.deployed ?? 0} staff</p>
-      </div>
-      <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Mock Dept-5 read-back">Ⓜ</span></p>
-        <p className="font-semibold tabular-nums">{formatPHP(ops.billing.outstanding_centavos ?? 0)}</p>
-      </div>
-      <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">Job orders</p>
-        <p className="font-semibold tabular-nums">{ops.job_orders.active} active / {ops.job_orders.count}</p>
-      </div>
-    </div>
-  );
-}
-
-function ClientJourney({ clientId }: { clientId: number }) {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const jobsQ = useQuery({
-    queryKey: ['job-orders', clientId],
-    queryFn: async () => (await api.get('/job-orders', { params: { client_id: clientId, per_page: 50 } })).data.data as JobOrder[],
-    enabled: clientId > 0,
-  });
-  const advanceMut = useMutation({
-    mutationFn: async (id: number) => (await api.post(`/job-orders/${id}/advance`)).data,
-    onSuccess: (d) => {
-      toast('success', d.message ?? 'Advanced.');
-      qc.invalidateQueries({ queryKey: ['job-orders', clientId] });
-      qc.invalidateQueries({ queryKey: ['client-ops', clientId] });
-    },
-    onError: (e) => toast('error', apiErr(e, 'Could not advance.')),
-  });
-
-  const jobs = jobsQ.data ?? [];
-  if (jobsQ.isLoading) return <p className="mt-3 text-xs">Loading journey…</p>;
-  if (jobs.length === 0) {
-    return (
-      <div className="mt-3 rounded-lg border border-dashed border-[var(--border)] p-3 text-xs text-[var(--text-muted)]">
-        No job orders yet — win an opportunity and the staffing journey starts here automatically.
-      </div>
-    );
-  }
-  return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 1 → 2 → 5)</span></h3>
-        <Link to={`/pipeline?client=${clientId}`} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">+ New deal</Link>
-      </div>
-      <ul className="mt-1 flex flex-col gap-2">
-        {jobs.map((j) => (
-          <li key={j.id} className="rounded-lg border border-[var(--border)] p-2.5 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium">{j.ref} · {j.title}</span>
-              <StatusBadge value={j.status} />
-            </div>
-            <div className="mt-1.5 flex items-center gap-1" aria-label={`Stage ${j.status}`}>
-              {JO_STAGES.map((s) => (
-                <span key={s} title={s} className={`h-1.5 flex-1 rounded ${JO_STAGES.indexOf(s) <= JO_STAGES.indexOf(j.status) ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-              ))}
-            </div>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              {j.headcount !== null ? `${j.headcount} headcount` : 'Headcount estimating'} · {formatPHP(j.value_centavos)}
-              {j.invoice_ref ? ` · ${j.invoice_ref}` : ''}
-            </p>
-            {j.next_status && (
-              <button onClick={() => advanceMut.mutate(j.id)} className="mt-1.5 rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
-                Advance → {j.next_status}
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function apiErr(e: unknown, fallback: string): string {
-  if (typeof e === 'object' && e !== null && 'response' in e) {
-    const r = (e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response;
-    if (r?.data?.errors) return Object.values(r.data.errors).flat().join(' ');
-    if (r?.data?.message) return r.data.message;
-  }
-  return fallback;
 }
 
 function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
