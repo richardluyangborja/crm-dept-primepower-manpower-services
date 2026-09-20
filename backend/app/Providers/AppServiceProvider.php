@@ -41,5 +41,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(\App\Models\Activity::class, \App\Policies\ActivityPolicy::class);
         Gate::policy(\App\Models\User::class, \App\Policies\UserPolicy::class);
         Gate::policy(\App\Models\Team::class, \App\Policies\TeamPolicy::class);
+        Gate::policy(\App\Models\SurveyTemplate::class, \App\Policies\SurveyTemplatePolicy::class);
+        Gate::policy(\App\Models\Survey::class, \App\Policies\SurveyPolicy::class);
     }
 }
