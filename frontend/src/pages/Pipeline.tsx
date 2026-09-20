@@ -23,6 +23,32 @@ interface Opp {
 
 const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'] as const;
 
+/** Admin-configurable stage labels (Settings → Master data); keys stay fixed for logic. */
+function useStageLabels(): Record<string, string> {
+  const q = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+    staleTime: 60000,
+  });
+  const list = Array.isArray(q.data?.pipeline_stages) ? (q.data.pipeline_stages as { key: string; label: string }[]) : [];
+  const map: Record<string, string> = {};
+  for (const s of STAGES) map[s] = s;
+  for (const s of list) {
+    if (s.key && s.label) map[s.key] = s.label;
+  }
+  return map;
+}
+
+function useLostReasons(): string[] {
+  const q = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+    staleTime: 60000,
+  });
+  const list = q.data?.lost_reasons;
+  return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : [];
+}
+
 function pesoToCentavos(v: string): number {
   return Math.round((parseFloat(v) || 0) * 100);
 }
@@ -49,12 +75,13 @@ export function PipelinePage() {
   });
 
   const rows = oppsQ.data ?? [];
+  const labels = useStageLabels();
   const byStage = (s: string) => rows.filter((r) => r.stage === s);
   const openVal = rows.filter((r) => !['won', 'lost'].includes(r.stage)).reduce((a, r) => a + r.value_centavos, 0);
 
   const moveMut = useMutation({
-    mutationFn: async ({ id, stage, lost_reason }: { id: number; stage: string; lost_reason?: string }) =>
-      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason })).data,
+    mutationFn: async ({ id, stage, lost_reason, effective_date }: { id: number; stage: string; lost_reason?: string; effective_date?: string }) =>
+      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date })).data,
     onMutate: async ({ id, stage }) => {
       await qc.cancelQueries({ queryKey: ['opportunities'] });
       const prev = qc.getQueryData<Opp[]>(['opportunities', q]);
@@ -73,18 +100,20 @@ export function PipelinePage() {
   });
 
   const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: number } | null>(null);
+  const [wonId, setWonId] = useState<number | null>(null);
   const winMut = useMutation({
-    mutationFn: async (id: number) => (await api.post(`/opportunities/${id}/win`)).data,
-    onSuccess: async (d, id) => {
+    mutationFn: async ({ id, effective_date }: { id: number; effective_date?: string }) =>
+      (await api.post(`/opportunities/${id}/win`, effective_date ? { effective_date } : {})).data,
+    onSuccess: async (d, vars) => {
       toast('success', d.message ?? 'Won!');
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       // Narrate the handoff: fetch the freshly persisted mock job order.
       try {
-        const opp = rows.find((o) => o.id === id);
+        const opp = rows.find((o) => o.id === vars.id);
         if (opp) {
           const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: number | null }[];
-          const mine = jobs.find((j) => j.opportunity_id === id) ?? jobs[0];
+          const mine = jobs.find((j) => j.opportunity_id === vars.id) ?? jobs[0];
           if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id });
         }
       } catch {
@@ -144,7 +173,7 @@ export function PipelinePage() {
                   setDragId(null);
                 } }} className="w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-2">
                   <div className="flex items-center justify-between px-1 py-1">
-                    <p className="text-xs font-bold uppercase">{s} <span className="text-[var(--text-muted)]">{col.length}</span></p>
+                    <p className="text-xs font-bold uppercase">{labels[s]} <span className="text-[var(--text-muted)]">{col.length}</span></p>
                     <p className="text-[11px] tabular-nums text-[var(--text-muted)]">{formatPHP(sum)}</p>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -171,13 +200,14 @@ export function PipelinePage() {
             <div><p className="text-xs text-[var(--text-muted)]">Lost reason</p><p>{detail.lost_reason ?? '—'}</p></div>
           </div>
           <div className="mt-3 flex gap-2">
-            {detail.stage !== 'won' && <button onClick={() => { winMut.mutate(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won</button>}
+            {detail.stage !== 'won' && <button onClick={() => { setWonId(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
             {detail.stage !== 'lost' && <button onClick={() => { setDetailId(null); setLostId(detail.id); }} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">Mark lost…</button>}
           </div>
         </div>
       )}
 
-      {lostId !== null && <LostModal onClose={() => setLostId(null)} onDone={(reason) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason }); setLostId(null); }} />}
+      {lostId !== null && <LostModal onClose={() => setLostId(null)} onDone={(reason, effectiveDate) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate }); setLostId(null); }} />}
+      {wonId !== null && <WinModal onClose={() => setWonId(null)} onDone={(effectiveDate) => { winMut.mutate({ id: wonId, effective_date: effectiveDate }); setWonId(null); }} />}
       {showNew && <NewOppForm initialClientId={preselectClient} onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
     </div>
   );
@@ -199,29 +229,63 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
 }
 
 function StageStepper({ stage }: { stage: string }) {
+  const labels = useStageLabels();
   const open = ['new', 'contacted', 'qualified', 'proposal', 'negotiation'];
   if (stage === 'won' || stage === 'lost') return <p className="mt-2 text-sm font-semibold">{stage === 'won' ? '🎉 Won' : 'Lost'}</p>;
   const idx = open.indexOf(stage);
   return (
-    <div className="mt-2 flex items-center gap-1" aria-label={`Stage ${stage}`}>
+    <div className="mt-2 flex items-center gap-1" aria-label={`Stage ${labels[stage] ?? stage}`}>
       {open.map((s, i) => (
-        <span key={s} title={s} className={`h-1.5 flex-1 rounded ${i <= idx ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+        <span key={s} title={labels[s] ?? s} className={`h-1.5 flex-1 rounded ${i <= idx ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
       ))}
     </div>
   );
 }
 
-function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: string) => void }) {
+function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: string, effectiveDate?: string) => void }) {
   const [reason, setReason] = useState('');
+  const [date, setDate] = useState('');
+  const suggestions = useLostReasons();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Why was this lost?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Required — it powers win/loss analytics.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">Required — it powers win/loss analytics. Pick a suggestion or write your own.</p>
+        {suggestions.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {suggestions.map((s) => (
+              <button key={s} type="button" onClick={() => setReason(s)} className={`rounded-full border px-2.5 py-1 text-xs ${reason === s ? 'border-sky-600 bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border-[var(--border)]'}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="e.g. Chose competitor pricing" className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
+        <label className="mt-2 block text-sm">Effective date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
+          <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+        </label>
         <div className="mt-3 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button disabled={!reason.trim()} onClick={() => onDone(reason.trim())} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Mark lost</button>
+          <button disabled={!reason.trim()} onClick={() => onDone(reason.trim(), date || undefined)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Mark lost</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WinModal({ onClose, onDone }: { onClose: () => void; onDone: (effectiveDate?: string) => void }) {
+  const [date, setDate] = useState('');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="card w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold">🎉 Mark as won?</h2>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">This creates the job order and draft invoice (mock) and starts staffing.</p>
+        <label className="block text-sm">Effective close date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
+          <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+        </label>
+        <div className="mt-3 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
+          <button onClick={() => onDone(date || undefined)} className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white">Confirm win</button>
         </div>
       </div>
     </div>

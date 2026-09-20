@@ -146,7 +146,7 @@ export function FollowupsPage() {
               empty={<EmptyState title="Nothing here" hint="Try a different status filter." />}
             />
         ) : (
-          <MonthCalendar rows={rows} day={day} onDay={setDay} />
+          <CalendarSection rows={rows} day={day} onDay={setDay} />
         )}
 
       {showNew && <NewReminderForm onClose={() => setShowNew(false)} onDone={invalidate} />}
@@ -165,7 +165,124 @@ export function FollowupsPage() {
   }
 }
 
-function MonthCalendar({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: (d: string) => void }) {
+function CalendarSection({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: (d: string) => void }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [mode, setMode] = useState<'month' | 'week' | 'day'>('month');
+
+  const reschedMut = useMutation({
+    mutationFn: async ({ id, due_at }: { id: number; due_at: string }) => api.put(`/followups/${id}`, { due_at }),
+    onSuccess: () => {
+      toast('success', 'Rescheduled.');
+      qc.invalidateQueries({ queryKey: ['followups'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (e) => toast('error', apiErr(e, 'Only the owner or a manager can reschedule.')),
+  });
+
+  const dropTo = (dateKey: string) => (e: React.DragEvent) => {
+    e.preventDefault();
+    const id = Number(e.dataTransfer.getData('text/followup-id'));
+    if (!id) return;
+    const [y, m, d] = dateKey.split('-').map(Number);
+    reschedMut.mutate({ id, due_at: new Date(y, m - 1, d, 12).toISOString() });
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-1.5">
+        {(['month', 'week', 'day'] as const).map((v) => (
+          <button key={v} onClick={() => setMode(v)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${mode === v ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border border-[var(--border)]'}`}>
+            {v}
+          </button>
+        ))}
+        <span className="self-center text-[11px] text-[var(--text-muted)]">Drag items onto a day to reschedule</span>
+      </div>
+      {mode === 'month' && <MonthCalendar rows={rows} day={day} onDay={onDay} onDropDay={dropTo} />}
+      {mode === 'week' && <WeekView rows={rows} day={day} onDay={onDay} onDropDay={dropTo} />}
+      {mode === 'day' && <DayView rows={rows} day={day} onDay={onDay} />}
+    </div>
+  );
+}
+
+function DraggableItem({ r }: { r: Fup }) {
+  return (
+    <span draggable onDragStart={(e) => e.dataTransfer.setData('text/followup-id', String(r.id))}
+      title="Drag onto a calendar day to reschedule"
+      className="cursor-grab active:cursor-grabbing">
+      <StatusBadge value={r.priority} /> {r.title}
+    </span>
+  );
+}
+
+const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const shiftDay = (key: string, delta: number) => {
+  const [y, m, d] = key.split('-').map(Number);
+  const t = new Date(y, m - 1, d);
+  t.setDate(t.getDate() + delta);
+  return dayKey(t);
+};
+
+function WeekView({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: string; onDay: (d: string) => void; onDropDay: (k: string) => (e: React.DragEvent) => void }) {
+  const [y, m, d] = day.split('-').map(Number);
+  const base = new Date(y, m - 1, d);
+  const start = new Date(base);
+  start.setDate(base.getDate() - base.getDay());
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const t = new Date(start);
+    t.setDate(start.getDate() + i);
+    return t;
+  });
+  const forDay = (k: string) => rows.filter((r) => (r.due_at ?? '').slice(0, 10) === k && r.status !== 'done');
+  return (
+    <div className="card p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button onClick={() => onDay(shiftDay(day, -7))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">← Prev</button>
+        <p className="font-semibold">{days[0].toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} – {days[6].toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+        <button onClick={() => onDay(shiftDay(day, 7))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Next →</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((dt) => {
+          const k = dayKey(dt);
+          const items = forDay(k);
+          return (
+            <div key={k} onDragOver={(e) => e.preventDefault()} onDrop={onDropDay(k)}
+              onClick={() => onDay(k)} className={`min-h-24 cursor-pointer rounded-lg border p-1.5 text-xs ${k === day ? 'border-sky-500' : 'border-[var(--border)]'}`}>
+              <p className={`font-semibold ${k === day ? 'text-sky-600' : ''}`}>{dt.getDate()}</p>
+              {items.map((r) => <div key={r.id} className="mt-1 truncate"><DraggableItem r={r} /></div>)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DayView({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: (d: string) => void }) {
+  const items = rows.filter((r) => (r.due_at ?? '').slice(0, 10) === day && r.status !== 'done');
+  return (
+    <div className="card p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <button onClick={() => onDay(shiftDay(day, -1))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">← Prev</button>
+        <p className="font-semibold">{new Date(day + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        <button onClick={() => onDay(shiftDay(day, 1))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Next →</button>
+      </div>
+      {items.length === 0 ? <p className="text-sm text-[var(--text-muted)]">Nothing due — enjoy the quiet.</p> : (
+        <ul className="flex flex-col gap-2 text-sm">
+          {items.map((r) => (
+            <li key={r.id} className="border-b border-[var(--border)] pb-1 last:border-0">
+              <DraggableItem r={r} />
+              <br /><span className="text-xs text-[var(--text-muted)]">{fmtDT(r.due_at)} · {r.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function MonthCalendar({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: string; onDay: (d: string) => void; onDropDay: (k: string) => (e: React.DragEvent) => void }) {
   const base = useMemo(() => new Date(day.slice(0, 7) + '-01T00:00:00'), [day]);
   const cells = useMemo(() => {
     const y = base.getFullYear();
@@ -188,7 +305,7 @@ function MonthCalendar({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: 
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
           {cells.map((d, i) =>
             d === null ? <span key={i} /> : (
-              <button key={i} onClick={() => onDay(key(d))}
+              <button key={i} onClick={() => onDay(key(d))} onDragOver={(e) => e.preventDefault()} onDrop={onDropDay(key(d))}
                 className={`rounded-lg py-1.5 ${key(d) === day ? 'bg-sky-600 text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
                 {d.getDate()}
                 {forDay(key(d)).length > 0 && <span className="mx-auto mt-0.5 block h-1 w-1 rounded-full bg-amber-500" />}
@@ -203,7 +320,7 @@ function MonthCalendar({ rows, day, onDay }: { rows: Fup[]; day: string; onDay: 
           <ul className="mt-2 flex flex-col gap-2 text-sm">
             {selected.map((r) => (
               <li key={r.id} className="border-b border-[var(--border)] pb-1 last:border-0">
-                <StatusBadge value={r.priority} /> {r.title}
+                <DraggableItem r={r} />
                 <br /><span className="text-xs text-[var(--text-muted)]">{fmtDT(r.due_at)} · {r.status}</span>
               </li>
             ))}

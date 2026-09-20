@@ -19,6 +19,7 @@ class ActivityResource extends JsonResource
             'subject' => $this->subject,
             'body' => $this->body,
             'outcome' => $this->outcome,
+            'duration_minutes' => $this->duration_minutes,
             'occurred_at' => $this->occurred_at,
             'attachments' => collect($this->attachments ?? [])->map(fn ($a) => collect($a)->except('path'))->values(),
             'created_at' => $this->created_at,

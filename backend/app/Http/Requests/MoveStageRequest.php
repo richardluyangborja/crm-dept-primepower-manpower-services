@@ -16,6 +16,8 @@ class MoveStageRequest extends FormRequest
             'probability' => ['sometimes', 'integer', 'min:0', 'max:100'],
             // reopen_note required only when reopening won/lost — enforced in OpportunityService (needs current stage).
             'reopen_note' => ['nullable', 'string', 'max:500'],
+            // Effective close date for terminal moves (defaults to now).
+            'effective_date' => ['sometimes', 'date', 'before_or_equal:today'],
         ];
     }
 

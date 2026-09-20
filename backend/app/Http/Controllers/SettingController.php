@@ -15,6 +15,7 @@ class SettingController extends Controller
     public const EDITABLE = [
         'org_name', 'timezone', 'currency', 'date_format', 'language',
         'appearance_default', 'report_schedule', 'retention_days', 'industries',
+        'lead_sources', 'pipeline_stages', 'lost_reasons',
     ];
 
     public function index()

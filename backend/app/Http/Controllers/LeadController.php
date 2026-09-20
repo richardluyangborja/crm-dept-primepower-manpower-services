@@ -80,6 +80,26 @@ class LeadController extends Controller
         return $this->ok(null, 'Lead archived.');
     }
 
+    public function importTemplate()
+    {
+        $this->authorize('create', Lead::class);
+
+        return response(
+            app(\App\Services\LeadImportService::class)->template(),
+            200,
+            ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="leads-template.csv"']
+        );
+    }
+
+    public function import(Request $request, \App\Services\LeadImportService $importer, LeadService $service)
+    {
+        $this->authorize('create', Lead::class);
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+        $result = $importer->import($request->file('file'), $request->user()->id, $service);
+
+        return $this->ok($result, "{$result['imported']} imported, ".count($result['failed'])." failed.");
+    }
+
     public function convert(ConvertLeadRequest $request, Lead $lead, LeadService $service)
     {
         $this->authorize('update', $lead);

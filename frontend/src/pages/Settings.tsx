@@ -222,10 +222,95 @@ function OrganizationSection() {
           <button className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">Add team</button>
         </form>
       </div>
-      <div className="card p-6">
-        <h2 className="font-semibold">Master data</h2>
-        <p className="text-xs text-[var(--text-muted)]">Industries, sources, pipeline stages and lost reasons are managed here in a later iteration — stage labels and lost reasons currently follow specs/05. Industry list seeds from Settings (BPO, Manufacturing, Hospitality, Retail, Healthcare, Logistics).</p>
+      <MasterDataSection />
+    </div>
+  );
+}
+
+function MasterDataSection() {
+  const { user } = useSession();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const canEdit = hasRole(user, 'superadmin');
+  const settingsQ = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+  });
+  const [draft, setDraft] = useState<Record<string, unknown> | null>(null);
+  const data = (draft ?? settingsQ.data ?? {}) as Record<string, unknown>;
+  const strList = (k: string): string[] => (Array.isArray(data[k]) && (data[k] as unknown[]).every((x) => typeof x === 'string') ? (data[k] as string[]) : []);
+  const stageList = (): { key: string; label: string }[] =>
+    Array.isArray(data.pipeline_stages) ? (data.pipeline_stages as { key: string; label: string }[]) : [];
+
+  const setList = (k: string, v: string[]) => setDraft({ ...data, [k]: v });
+  const editItem = (k: string, i: number, v: string) => {
+    const next = [...strList(k)];
+    next[i] = v;
+    setList(k, next);
+  };
+  const addItem = (k: string) => setList(k, [...strList(k), 'New item']);
+  const delItem = (k: string, i: number) => setList(k, strList(k).filter((_, j) => j !== i));
+  const setStageLabel = (key: string, label: string) =>
+    setDraft({ ...data, pipeline_stages: stageList().map((s) => (s.key === key ? { ...s, label } : s)) });
+
+  const save = async () => {
+    try {
+      const clean = { ...data };
+      for (const k of ['industries', 'lead_sources', 'lost_reasons']) {
+        clean[k] = strList(k).map((s) => s.trim()).filter(Boolean);
+      }
+      await api.put('/settings', { settings: clean });
+      toast('success', 'Master data saved.');
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ['settings'] });
+    } catch (e) {
+      toast('error', apiErr(e, 'Could not save master data.'));
+    }
+  };
+
+  if (settingsQ.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading…</p>;
+  const groups: [string, string][] = [
+    ['industries', 'Industries (client form dropdown)'],
+    ['lead_sources', 'Lead sources (capture form dropdown)'],
+    ['lost_reasons', 'Lost-reason suggestions (win/loss dialog)'],
+  ];
+
+  return (
+    <div className="card p-6">
+      <h2 className="font-semibold">Master data</h2>
+      <p className="mb-3 text-xs text-[var(--text-muted)]">Controlled vocabularies used across forms. {canEdit ? 'Stage keys stay fixed for logic; only labels are editable.' : 'Read-only — superadmin only.'}</p>
+      {groups.map(([k, label]) => (
+        <div key={k} className="mb-3">
+          <p className="text-sm font-medium">{label}</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {strList(k).map((v, i) => (
+              <span key={i} className="flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-xs">
+                {canEdit ? (
+                  <>
+                    <input value={v} onChange={(e) => editItem(k, i, e.target.value)} className="w-28 bg-transparent outline-none" aria-label={`${label} item ${i + 1}`} />
+                    <button onClick={() => delItem(k, i)} className="text-red-500" aria-label={`Remove ${v}`}>✕</button>
+                  </>
+                ) : v}
+              </span>
+            ))}
+            {canEdit && <button onClick={() => addItem(k)} className="rounded-full border border-dashed border-[var(--border)] px-2 py-0.5 text-xs">+ Add</button>}
+          </div>
+        </div>
+      ))}
+      <div className="mb-3">
+        <p className="text-sm font-medium">Pipeline stage labels</p>
+        <div className="mt-1 grid gap-1.5 sm:grid-cols-2">
+          {stageList().map((s) => (
+            <label key={s.key} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
+              <code className="text-[var(--text-muted)]">{s.key}</code>
+              {canEdit
+                ? <input value={s.label} onChange={(e) => setStageLabel(s.key, e.target.value)} className="w-full bg-transparent text-sm outline-none" aria-label={`Label for ${s.key}`} />
+                : <span className="text-sm">{s.label}</span>}
+            </label>
+          ))}
+        </div>
       </div>
+      {canEdit && <div className="mt-2 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">💾 Save Changes</button></div>}
     </div>
   );
 }

@@ -14,7 +14,7 @@ class Activity extends Model
 
     protected $fillable = [
         'owner_id', 'client_id', 'opportunity_id', 'type',
-        'subject', 'body', 'outcome', 'occurred_at', 'attachments',
+        'subject', 'body', 'outcome', 'duration_minutes', 'occurred_at', 'attachments',
     ];
 
     protected function casts(): array

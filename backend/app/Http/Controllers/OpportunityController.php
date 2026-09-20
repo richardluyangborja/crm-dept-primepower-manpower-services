@@ -88,7 +88,7 @@ class OpportunityController extends Controller
         $this->authorize('update', $opportunity);
         $user = $request->user();
         $validated = validator(
-            ['stage' => 'won'] + $request->only(['probability']),
+            ['stage' => 'won'] + $request->only(['probability', 'effective_date']),
             (new MoveStageRequest)->rules(),
             (new MoveStageRequest)->messages()
         )->validate();
@@ -103,7 +103,7 @@ class OpportunityController extends Controller
         $this->authorize('update', $opportunity);
         $user = $request->user();
         $validated = validator(
-            ['stage' => 'lost'] + $request->only(['lost_reason', 'probability']),
+            ['stage' => 'lost'] + $request->only(['lost_reason', 'probability', 'effective_date']),
             (new MoveStageRequest)->rules(),
             (new MoveStageRequest)->messages()
         )->validate();
