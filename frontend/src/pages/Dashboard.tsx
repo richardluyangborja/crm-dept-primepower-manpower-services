@@ -6,6 +6,7 @@ import { KpiCard } from '../components/ui/KpiCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
+import { TrendsCard, type MonthPoint } from '../components/crm/TrendCharts';
 
 export function DashboardPage() {
   const { data, isLoading, isError, refetch } = useQuery({
@@ -84,6 +85,8 @@ export function DashboardPage() {
           </ul>
         </div>
       )}
+
+      <TrendsCard trend={(data.trends?.monthly ?? []) as MonthPoint[]} />
 
       {data.next_best_actions.length === 0 ? (
         <EmptyState title="All clear" hint="No overdue follow-ups or stale clients. Log activity to unlock AI insights." />

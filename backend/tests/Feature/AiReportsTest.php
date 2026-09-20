@@ -36,6 +36,7 @@ class AiReportsTest extends TestCase
             ->assertJsonStructure(['data' => [
                 'forecast', 'by_stage', 'nps_avg', 'at_risk', 'leaderboard',
                 'win_rate_90d', 'next_best_actions', 'meta',
+                'trends' => ['monthly'],
             ]])
             ->assertJsonPath('data.forecast.ai_adjusted_centavos', fn ($v) => is_int($v))
             ->assertJsonPath('data.meta.ai_preview', true);
@@ -108,6 +109,50 @@ class AiReportsTest extends TestCase
         $this->postJson('/api/v1/insights/feedback', ['insight_key' => 'at_risk:1', 'rating' => 'down', 'note' => 'Already contacted'], ['Authorization' => "Bearer $t"])
             ->assertCreated();
         $this->assertDatabaseHas('insight_feedback', ['insight_key' => 'at_risk:1', 'rating' => 'down']);
+    }
+
+    public function test_dashboard_trends_bucket_by_month(): void
+    {
+        $o = $this->org();
+        $t = auth('api')->login($o['mgr']);
+        $client = $this->clientFor($o['rep']);
+        // Note: created_at/updated_at are backdated via query builder because
+        // Eloquent::create() overwrites explicit timestamps.
+        $backdate = fn ($id, $daysAgo) => \Illuminate\Support\Facades\DB::table('opportunities')
+            ->where('id', $id)->update(['created_at' => now()->subDays($daysAgo), 'updated_at' => now()->subDays($daysAgo)]);
+        $mkOpp = function ($stage, $daysAgo, $extra = []) use ($client, $o, $backdate) {
+            $opp = Opportunity::create(array_merge([
+                'client_id' => $client->id, 'owner_id' => $o['rep']->id, 'title' => 'Trend '.uniqid(),
+                'stage' => $stage, 'value_centavos' => 100000, 'probability' => 50,
+            ], $extra));
+            $backdate($opp->id, $daysAgo);
+
+            return $opp->refresh();
+        };
+        $won = $mkOpp('won', 70, ['won_at' => now()->subDays(40)]);
+        $lost = $mkOpp('lost', 75, ['lost_at' => now()->subDays(45)]);
+        $mkOpp('proposal', 5);
+
+        $trend = $this->getJson('/api/v1/dashboard/summary', ['Authorization' => "Bearer $t"])
+            ->assertOk()->json('data.trends.monthly');
+        $this->assertCount(6, $trend);
+        $this->assertSame(now()->format('Y-m'), $trend[5]['month']);
+        $this->assertSame(1, $trend[5]['new_opps']);
+        $byMonth = collect($trend)->keyBy('month');
+        $wm = $won->refresh()->won_at->format('Y-m');
+        $lm = $lost->refresh()->lost_at->format('Y-m');
+        $this->assertSame(1, $byMonth[$wm]['won']);
+        $expectRate = $wm === $lm ? 50 : 100;
+        $this->assertEquals($expectRate, $byMonth[$wm]['win_rate']);
+        if ($wm !== $lm) {
+            $this->assertEquals(0, $byMonth[$lm]['win_rate']);
+        }
+
+        // A rep from another team sees none of it (scope respected).
+        $outsider = User::factory()->create(['email' => 'out.trend@primepower.ph', 'role' => 'sales_rep']);
+        $ot = auth('api')->login($outsider);
+        $other = $this->getJson('/api/v1/dashboard/summary', ['Authorization' => "Bearer $ot"])->assertOk()->json('data.trends.monthly');
+        $this->assertSame(0, array_sum(array_column($other, 'won')));
     }
 
     protected function token(User $u): string { return auth('api')->login($u); }

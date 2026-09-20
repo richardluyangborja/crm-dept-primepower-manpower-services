@@ -8,6 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { DataTable } from '../components/ui/DataTable';
 import { useToast } from '../components/ui/Toaster';
+import { TrendsCard, type MonthPoint } from '../components/crm/TrendCharts';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
 
 interface Pack {
@@ -101,6 +102,7 @@ export function ReportsPage() {
         </div>
       </div>
 
+      <ReportTrends />
       {packQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Building your {type} pack…</p>
         : packQ.isError ? (
           <div className="card p-6 text-sm">
@@ -128,6 +130,16 @@ export function ReportsPage() {
       )}
     </div>
   );
+}
+
+/** Trailing-6-month trend, shared with the Dashboard (viewer scope). */
+function ReportTrends() {
+  const dashQ = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => (await api.get('/dashboard/summary')).data.data as { trends?: { monthly: MonthPoint[] } },
+  });
+  if (dashQ.isLoading || dashQ.isError || !dashQ.data?.trends) return null;
+  return <TrendsCard trend={dashQ.data.trends.monthly} />;
 }
 
 function PackView({ pack, type }: { pack: Pack; type: string }) {

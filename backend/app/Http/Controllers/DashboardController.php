@@ -63,8 +63,35 @@ class DashboardController extends Controller
                 'value_centavos' => (int) $r->value,
             ])->values()->all();
 
+        // Trailing-6-month trends (specs/15 BI expansion): closes, win rate,
+        // new pipeline, and NPS — all in the viewer's scope.
+        $trend = [];
+        foreach (range(5, 0) as $i) {
+            $start = now()->subMonths($i)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $won = \App\Models\Opportunity::visibleTo($user)->where('stage', 'won')
+                ->whereBetween('won_at', [$start, $end])->count();
+            $lost = \App\Models\Opportunity::visibleTo($user)->where('stage', 'lost')
+                ->whereBetween('lost_at', [$start, $end])->count();
+            $newOpps = \App\Models\Opportunity::visibleTo($user)
+                ->whereBetween('created_at', [$start, $end])->count();
+            $monthNps = \App\Models\SurveyResponse::query()
+                ->whereHas('survey', fn ($q) => $q->visibleTo($user))
+                ->whereBetween('responded_at', [$start, $end])->pluck('score');
+            $closedMo = $won + $lost;
+            $trend[] = [
+                'month' => $start->format('Y-m'),
+                'won' => $won,
+                'lost' => $lost,
+                'win_rate' => $closedMo ? round($won / $closedMo * 100, 1) : null,
+                'new_opps' => $newOpps,
+                'nps_avg' => $monthNps->isNotEmpty() ? round($monthNps->avg(), 2) : null,
+            ];
+        }
+
         return $this->ok([
             'forecast' => $forecast,
+            'trends' => ['monthly' => $trend],
             'by_stage' => $byStage,
             'nps_avg' => $nps->isNotEmpty() ? round($nps->avg(), 2) : null,
             'nps_count' => $nps->count(),

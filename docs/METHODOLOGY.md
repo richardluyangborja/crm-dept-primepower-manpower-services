@@ -27,6 +27,17 @@ a panelist can open; "How to verify" is runnable in under 5 minutes.
 | 9 | One-click weekly/monthly management packs | `specs/15` §2 | `ReportService::pack()` (narrative + 7 tables) + `reports:generate` scheduled Mon 08:00 | `Services/ReportService.php`, `routes/console.php`, `Reports.tsx` (CSV + Print) | Reports → Generate → download CSV → Print/PDF |
 | 10 | Insight feedback loop trains future models | `specs/15` §2 | `insight_feedback` table + 👍/👎 on every insight card | `InsightFeedbackController.php`, `InsightBits.tsx` | Vote on any at-risk row; row lands in `insight_feedback` |
 
+## 2b. Phase 2 depth (working system, not demo)
+
+| # | Claim | Spec | Implementation | Evidence | How to verify |
+|---|---|---|---|---|---|
+| 17 | Full-page client/lead profiles replace the drawer | `specs/18` §6-2A | `/clients/:id` (8 tabs), `/leads/:id` (journey + wizard); shared `ClientWidgets.tsx` | `ClientPage.tsx`, `LeadPage.tsx` | Open any client → all tabs load; convert inline |
+| 18 | Finance is a working mock ledger, not a card | `specs/18` §6-2B | `invoices` table; AR aging; partial/full pay; collect→followup; win persists invoice | `InvoiceController.php`, `InvoiceFinanceTest.php`, `Finance.tsx` | Finance section → pay partial → collect → buckets reconcile |
+| 19 | Operations is visible but read-only | `specs/18` §6-2C | `Operations.tsx` board; no mutations; advancing stays on client timeline | `Operations.tsx` | Board shows all JOs; no advance buttons present |
+| 20 | Trailing trends charted, not just KPI'd | `specs/18` §6-2D | `trends.monthly` in dashboard summary; shared Recharts `TrendsCard` on Dashboard + Reports | `DashboardController.php` (trends), `TrendCharts.tsx`, `AiReportsTest::test_dashboard_trends_bucket_by_month` | Dashboard → 6-month won/lost + win-rate + NPS charts |
+| 21 | Master data is admin-editable, not hardcoded | `specs/18` §6-2C | `pipeline_stages`/`lost_reasons`/`industries`/`lead_sources` settings keys + editor; kanban + dialogs read them | `SettingController.php` (EDITABLE), `Settings.tsx` `MasterDataSection`, `useSettings.ts` | Rename a stage → kanban header updates |
+| 22 | Every import row reports success or the exact error | `specs/18` §6-2C | `LeadImportService` (template, 500-row cap, per-row report) + modal UI | `LeadImportService.php`, `Phase2CGapsTest.php`, Leads import modal | Import mixed CSV → 1 in, row 3 error shown |
+
 ## 3. Main process (v2 journey — the demonstrable story)
 
 | # | Claim | Spec | Implementation | Evidence | How to verify |
