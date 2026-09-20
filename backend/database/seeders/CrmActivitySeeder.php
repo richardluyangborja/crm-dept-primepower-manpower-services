@@ -114,6 +114,22 @@ class CrmActivitySeeder extends Seeder
             );
         }
 
+        // Phase 2B: mock AR across aging buckets (deterministic refs, no Faker).
+        $med = Client::where('name', 'Makati Medical Center')->firstOrFail();
+        $seedInvoices = [
+            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'INV-2026-0101', 'title' => '80 security guards — Davao Prime', 'amount_centavos' => 240000000, 'balance_centavos' => 240000000, 'status' => 'sent', 'due_at' => now()->addDays(20)->toDateString()],
+            ['opportunity_id' => $smWon?->id, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'INV-2026-0102', 'title' => '60 promo staff — SM Cebu', 'amount_centavos' => 210000000, 'balance_centavos' => 60000000, 'status' => 'sent', 'due_at' => now()->subDays(10)->toDateString()],
+            ['opportunity_id' => null, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'INV-2026-0103', 'title' => 'Promo booth staff — SM Cebu (Q3)', 'amount_centavos' => 90000000, 'balance_centavos' => 0, 'status' => 'paid', 'due_at' => now()->subDays(60)->toDateString()],
+            ['opportunity_id' => null, 'client_id' => $med->id, 'owner_id' => $med->owner_id, 'ref' => 'INV-2026-0104', 'title' => 'Ward aides — Makati Med (Q2)', 'amount_centavos' => 320000000, 'balance_centavos' => 320000000, 'status' => 'overdue', 'due_at' => now()->subDays(75)->toDateString()],
+            ['opportunity_id' => null, 'client_id' => $calamba->id, 'owner_id' => $calamba->owner_id, 'ref' => 'INV-2026-0105', 'title' => 'Line relievers — Calamba (draft)', 'amount_centavos' => 120000000, 'balance_centavos' => 120000000, 'status' => 'draft', 'due_at' => now()->addDays(45)->toDateString()],
+        ];
+        foreach ($seedInvoices as $inv) {
+            \App\Models\Invoice::firstOrCreate(
+                ['ref' => $inv['ref']],
+                $inv + ['payload' => ['mock' => true, 'seeded' => true]]
+            );
+        }
+
         $fups = [
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'Follow up quotation — SM Cebu headcount', 'due_at' => now()->addHours(3), 'priority' => 'high', 'status' => 'open'],
             ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => 'Confirm reliever for Sunday shift', 'due_at' => now()->subHours(26), 'priority' => 'high', 'status' => 'overdue'],

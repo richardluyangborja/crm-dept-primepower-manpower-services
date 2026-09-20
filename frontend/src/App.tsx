@@ -8,6 +8,7 @@ import { applyTheme, hasRole, useSession } from './store/session';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
 import { ReportsPage } from './pages/Reports';
+import { FinancePage } from './pages/Finance';
 import { SettingsPage } from './pages/Settings';
 import { SurveysPage } from './pages/Surveys';
 import { RespondPage } from './pages/Respond';
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="surveys" element={<SurveysPage />} />
               <Route path="followups" element={<FollowupsPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="finance" element={<FinancePage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

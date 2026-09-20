@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -27,6 +27,7 @@ const groups: { label: string; links: { to: string; label: string; icon: React.R
     ],
   },
   { label: 'AI & Analytics', links: [{ to: '/reports', label: 'Reports', icon: <BarChart3 size={18} /> }] },
+  { label: 'Finance', links: [{ to: '/finance', label: 'Receivables', icon: <Wallet size={18} /> }] },
   { label: 'System', links: [{ to: '/settings', label: 'Settings', icon: <Settings size={18} /> }] },
 ];
 

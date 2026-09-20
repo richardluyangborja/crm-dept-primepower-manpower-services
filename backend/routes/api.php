@@ -46,6 +46,11 @@ Route::prefix('v1')->group(function () {
         // v2 journey A — visible mock job-order timeline (specs/18).
         Route::apiResource('job-orders', \App\Http\Controllers\JobOrderController::class)->only(['index', 'show']);
         Route::post('job-orders/{job_order}/advance', [\App\Http\Controllers\JobOrderController::class, 'advance']);
+        // Phase 2B — Finance (mock Dept 5 + light workflows).
+        Route::get('finance/summary', [\App\Http\Controllers\InvoiceController::class, 'summary']);
+        Route::apiResource('invoices', \App\Http\Controllers\InvoiceController::class)->only(['index', 'show']);
+        Route::post('invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'pay']);
+        Route::post('invoices/{invoice}/collect', [\App\Http\Controllers\InvoiceController::class, 'collect']);
         // Step 2 — Opportunity Pipeline (specs/05).
         Route::apiResource('opportunities', OpportunityController::class);
         Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);
