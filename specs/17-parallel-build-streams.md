@@ -24,7 +24,7 @@
 | 6 | `feature/crm-settings` | 09 | Users & access + org settings + appearance + sessions list |
 | 7 | `feature/crm-ai-reports` | 15 | Insights wiring + weekly/monthly packs + feedback loop |
 | 8 | `feature/crm-otp-session` | 16 | OTP enforcement + 5-min idle timeout (LAST — touches auth globally) |
-| 9 | `release/crm-v1` | — | Hardening: audit pass, prod env docs, Neon guide, tag `crm-v1.0.0` |
+| 9 | `release/crm-v1` | — | Hardening: audit pass, prod env docs, deployment-managed DB guide, tag `crm-v1.0.0` |
 
 ## 3. Per-step loop (same every time)
 ```bash
