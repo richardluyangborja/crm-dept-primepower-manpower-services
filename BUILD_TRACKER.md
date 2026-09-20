@@ -12,6 +12,16 @@
 | Empty-state CTAs + deep links | ✅ | Clients→leads CTA; `?client=` preselects Pipeline form + auto-opens; journey “New deal” link |
 | Dashboard narrative strip | ✅ | Plain-language paragraph from live KPIs, above the cards |
 
+## v2 journey A+B — MERGED to `main` (no tag yet; v1.1.0 vs v2.0.0 decision pending)
+
+| Item | Status | Notes |
+|---|---|---|
+| Hotfix PR #13 merged → journey rebased clean | ✅ | Zero conflicts |
+| Journey B merged (tour, deep links, narrative) | ✅ | Tour auto-starts, `?client=` preselect, narrative strip |
+| Robustness (envelope show/update tests, storage guard) | ✅ | Suite 278+ assertions green |
+| `docs/METHODOLOGY.md` (16 claims mapped) | ✅ | Includes 15-min panel demo script |
+| Branches cleaned (local + remote) | ✅ | Only `main` + `develop` remain |
+
 ## v2 journey A (branch `feature/crm-journey-a`, stacked on the v1.0.1 fix)
 
 | Item | Status | Notes |
