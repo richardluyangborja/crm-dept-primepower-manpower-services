@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
 import { hasRole, useSession } from '../../store/session';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useToast } from '../ui/Toaster';
+import { useIdleTimer } from '../../hooks/useIdleTimer';
 
 const groups: { label: string; links: { to: string; label: string; icon: React.ReactNode; roles?: string[] }[] }[] = [
   { label: '', links: [{ to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
@@ -31,6 +33,25 @@ export function AppShell() {
   const { user, logout } = useSession();
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
+  const toast = useToast();
+
+  // 5-min idle timeout (specs/16): warn at 4:00, force logout at 5:00.
+  // The backend is authoritative — any silence past 300s gets 401 anyway.
+  const idle = useIdleTimer({
+    onTimeout: () => {
+      logout();
+      toast('info', 'Signed out after 5 minutes of inactivity.');
+      nav('/login?expired=1');
+    },
+  });
+  const staySignedIn = async () => {
+    try {
+      await api.get('/auth/me'); // bumps server-side activity
+    } catch {
+      /* expired already — interceptor redirects */
+    }
+    idle.stay();
+  };
   const unreadQ = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => (await api.get('/notifications', { params: { unread: 1, per_page: 1 } })).data.meta.total as number,
@@ -101,6 +122,19 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      {idle.warning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-label="Session expiring">
+          <div className="card w-full max-w-sm p-6 text-center">
+            <h2 className="text-lg font-semibold">Still there?</h2>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
+              You'll be logged out in <strong className="tabular-nums">{idle.secondsLeft}s</strong> after 5 minutes of inactivity.
+            </p>
+            <button onClick={staySignedIn} className="mt-4 w-full rounded-lg bg-sky-600 py-2 text-sm font-semibold text-white">
+              Stay signed in
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
+import { OtpModal } from '../components/auth/OtpModal';
 import { hasRole, useSession, type Role } from '../store/session';
 
 type Section = 'general' | 'appearance' | 'organization' | 'notifications' | 'users' | 'security' | 'integrations' | 'data' | 'reports';
@@ -418,18 +419,31 @@ function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onD
   const [role, setRole] = useState(user.role);
   const [teamId, setTeamId] = useState(user.team_id ? String(user.team_id) : '');
   const [busy, setBusy] = useState(false);
+  const [stepUp, setStepUp] = useState(false);
   const teamsQ = useQuery({ queryKey: ['teams'], queryFn: async () => (await api.get('/teams')).data.data as Team[] });
+
+  const save = async (headers?: Record<string, string>) => {
+    await api.put(`/users/${user.id}`, { role, team_id: teamId ? Number(teamId) : null }, { headers });
+  };
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
+    // Role actually changing → backend demands a fresh OTP grant (specs/16).
+    const needsStepUp = role !== user.role;
     setBusy(true);
     try {
-      await api.put(`/users/${user.id}`, { role, team_id: teamId ? Number(teamId) : null });
+      await save();
       toast('success', 'Account updated.');
       onDone();
       onClose();
-    } catch (e) {
-      toast('error', apiErr(e, 'Could not update (last superadmin is protected).'));
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 428 && needsStepUp) {
+        setStepUp(true);
+        toast('info', 'Role changes need a fresh verification code.');
+      } else {
+        toast('error', apiErr(e, 'Could not update (last superadmin is protected).'));
+      }
     } finally {
       setBusy(false);
     }
@@ -453,6 +467,25 @@ function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onD
           <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Save</button>
         </div>
       </form>
+      {stepUp && (
+        <OtpModal
+          email=""
+          purpose="step_up"
+          onVerified={async (payload) => {
+            const grant = (payload as { step_up_token: string }).step_up_token;
+            try {
+              await save({ 'X-StepUp-Token': grant });
+              toast('success', 'Account updated.');
+              onDone();
+              onClose();
+            } catch (e) {
+              toast('error', apiErr(e, 'Verification expired — try saving again.'));
+              setStepUp(false);
+            }
+          }}
+          onClose={() => setStepUp(false)}
+        />
+      )}
     </div>
   );
 }

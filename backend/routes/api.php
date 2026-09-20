@@ -19,16 +19,16 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('/health', fn () => response()->json(['ok' => true, 'time' => now()->toIso8601String()]));
 
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);
-    Route::post('/auth/otp/send', [OtpController::class, 'send'])->middleware('throttle:5,1');
-    Route::post('/auth/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:10,1');
+    Route::post('/auth/otp/send', [OtpController::class, 'send'])->middleware('throttle:otp-send');
+    Route::post('/auth/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:otp-verify');
     // Step 5 — Public survey respond (specs/06): no auth, 30/min per IP.
-    Route::get('/s/{token}', [\App\Http\Controllers\SurveyController::class, 'publicShow'])->middleware('throttle:30,1');
-    Route::post('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'respond'])->middleware('throttle:30,1');
-    Route::put('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'updateResponse'])->middleware('throttle:30,1');
+    Route::get('/s/{token}', [\App\Http\Controllers\SurveyController::class, 'publicShow'])->middleware('throttle:survey-public');
+    Route::post('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'respond'])->middleware('throttle:survey-public');
+    Route::put('/s/{token}/respond', [\App\Http\Controllers\SurveyController::class, 'updateResponse'])->middleware('throttle:survey-public');
 
-    Route::middleware('auth:api')->group(function () {
+    Route::middleware(['auth:api', \App\Http\Middleware\SessionTimeout::class])->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
 

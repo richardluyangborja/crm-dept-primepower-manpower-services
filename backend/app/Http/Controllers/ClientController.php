@@ -59,9 +59,13 @@ class ClientController extends Controller
         return $this->ok(new ClientResource($client->refresh()), 'Client updated.');
     }
 
-    public function destroy(Client $client)
+    public function destroy(Request $request, Client $client, \App\Services\StepUpService $stepUp)
     {
         $this->authorize('delete', $client);
+        // Destructive + irreversible = step-up (specs/16).
+        if (! $stepUp->consume($request->header('X-StepUp-Token'), $request->user()->id)) {
+            return response()->json(['message' => 'Deleting a client needs a fresh verification code.', 'otp_required' => true], 428);
+        }
         $client->delete();
         $client->audit('deleted', auth('api')->id(), []);
 

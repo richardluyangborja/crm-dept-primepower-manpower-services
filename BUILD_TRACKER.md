@@ -15,7 +15,8 @@
 | 4 | Communication History (`07`) | ✅ | `feature/crm-comms` | #6 | Merged (timeline, loggers, templates, follow-up hook) |
 | 5 | Satisfaction & Surveys (`06`) | ✅ | `feature/crm-surveys` | #7 | Merged (inbox, builder+preview, analytics, public 3-step respond) |
 | 6 | Accounts & Settings (`09`) | ✅ | `feature/crm-settings` | #9 | Merged (users/teams/prefs/sessions/integrations/CSV, 9-section Settings page). Stale #8 (→main) closed unmerged — code already in via #9 |
-| 7 | AI Analytics + Reports (`15`) | ✅ | `feature/crm-ai-reports` | to open (base `develop`) | Pushed (0e71dff), CI green — 6 new tests, forecast bar + at-risk + leaderboard + packs + feedback; open PR to `develop`, then step 8 |
+| 7 | AI Analytics + Reports (`15`) | ✅ | `feature/crm-ai-reports` | #10 | Merged to `develop` |
+| 8 | OTP + 5-min Session (`16`) | 🔄 | `feature/crm-otp-session` | — | Backend+OTP modal+idle UX built, tests green, live smoke OK (challenge, 410/429, 401 idle, 428+grant); pushing for CI |
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
 | 9 | Release hardening + `crm-v1.0.0` | ⬜ | — | — | Neon guide, prod env docs |
 
