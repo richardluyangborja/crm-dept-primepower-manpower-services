@@ -20,8 +20,26 @@ interface SessionState {
 const initialTheme = (): 'light' | 'dark' | 'system' =>
   (sessionStorage.getItem('crm.theme') as 'light' | 'dark' | 'system') || 'system';
 
+// Corrupted storage must never blank the app: fall back to signed-out state
+// and drop the bad value so the next load is clean too.
+function initialUser(): SessionUser | null {
+  try {
+    const raw = sessionStorage.getItem('crm.user');
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && 'id' in parsed && 'email' in parsed) {
+      return parsed as SessionUser;
+    }
+    sessionStorage.removeItem('crm.user');
+    return null;
+  } catch {
+    sessionStorage.removeItem('crm.user');
+    return null;
+  }
+}
+
 export const useSession = create<SessionState>((set) => ({
-  user: JSON.parse(sessionStorage.getItem('crm.user') ?? 'null'),
+  user: initialUser(),
   theme: initialTheme(),
   setUser: (u) => {
     if (u) sessionStorage.setItem('crm.user', JSON.stringify(u));

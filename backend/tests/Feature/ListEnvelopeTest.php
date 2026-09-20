@@ -87,4 +87,44 @@ class ListEnvelopeTest extends TestCase
         $client = $this->getJson('/api/v1/clients', $this->auth($rep))->assertOk()->json('data.0');
         $this->assertSame('Env Client 4', $client['name']);
     }
+
+    public function test_show_endpoints_are_resource_shaped(): void
+    {
+        $rep = $this->rep('rep.env5@primepower.ph');
+        $client = Client::create(['owner_id' => $rep->id, 'name' => 'Env Client 5', 'status' => 'active']);
+        $act = \App\Models\Activity::create([
+            'owner_id' => $rep->id, 'client_id' => $client->id, 'type' => 'note',
+            'subject' => 'Show shape', 'occurred_at' => now(),
+        ]);
+        $fup = \App\Models\Followup::create([
+            'owner_id' => $rep->id, 'client_id' => $client->id, 'title' => 'Show shape',
+            'due_at' => now()->addDay(),
+        ]);
+        $opp = \App\Models\Opportunity::create([
+            'owner_id' => $rep->id, 'client_id' => $client->id, 'title' => 'Show shape',
+            'stage' => 'proposal', 'value_centavos' => 100000, 'probability' => 60,
+        ]);
+
+        $a = $this->getJson("/api/v1/activities/{$act->id}", $this->auth($rep))->assertOk()->json('data');
+        $this->assertIsArray($a['attachments']);
+        $this->assertSame('Env Client 5', $a['client_name']);
+
+        $f = $this->getJson("/api/v1/followups/{$fup->id}", $this->auth($rep))->assertOk()->json('data');
+        $this->assertSame('Env Client 5', $f['client_name']);
+        $this->assertArrayHasKey('is_overdue', $f);
+
+        $o = $this->getJson("/api/v1/opportunities/{$opp->id}", $this->auth($rep))->assertOk()->json('data');
+        $this->assertSame(60000, $o['weighted_centavos']);
+    }
+
+    public function test_update_endpoints_stay_resource_shaped(): void
+    {
+        $rep = $this->rep('rep.env6@primepower.ph');
+        $lead = \App\Models\Lead::create(['owner_id' => $rep->id, 'company_name' => 'Env Co 6', 'contact_name' => 'Env Person']);
+
+        $row = $this->putJson("/api/v1/leads/{$lead->id}", ['notes' => 'Updated'], $this->auth($rep))
+            ->assertOk()->json('data');
+        $this->assertArrayHasKey('score', $row);
+        $this->assertSame('Updated', $row['notes']);
+    }
 }
