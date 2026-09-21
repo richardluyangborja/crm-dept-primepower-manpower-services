@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Star } from 'lucide-react';
 
 // Bare instance: no staff JWT attached, no login redirect on errors.
 const pub = axios.create({
@@ -105,7 +106,7 @@ export function RespondPage() {
 
       {done && (
         <div className="card mt-4 p-8 text-center">
-          <p className="text-4xl">🙏</p>
+          
           <h2 className="mt-2 text-lg font-semibold">Salamat! Response recorded.</h2>
           <p className="mt-1 text-sm text-[var(--text-muted)]">Your feedback helps PrimePower serve you better.</p>
         </div>
@@ -140,7 +141,7 @@ function SurveyForm(props: {
   if (existing && !editing && step === 0) {
     return (
       <div className="card mt-4 p-6 text-sm">
-        <p>You already answered with <strong>★ {existing.score}</strong>{existing.comment ? ` — “${existing.comment}”` : ''}.</p>
+        <p>You already answered with <strong><Star size={13} className="mr-0.5 inline" />{existing.score}</strong>{existing.comment ? ` — “${existing.comment}”` : ''}.</p>
         <button onClick={() => { setScore(existing.score); setComment(existing.comment ?? ''); setEditing(true); }} className="mt-3 rounded-lg border border-[var(--border)] px-4 py-2 text-sm">
           Edit my response (within 24 hours)
         </button>
@@ -184,7 +185,7 @@ function SurveyForm(props: {
       {step === 2 && (
         <>
           <h2 className="mt-3 font-semibold">Review</h2>
-          <p className="mt-1 text-sm">Score: <strong>★ {score}</strong></p>
+          <p className="mt-1 text-sm">Score: <strong><Star size={13} className="mr-0.5 inline" />{score}</strong></p>
           {comment && <p className="mt-1 text-sm">“{comment}”</p>}
           {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
           <div className="mt-4 flex gap-2">

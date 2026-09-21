@@ -6,6 +6,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { Download, Upload } from 'lucide-react';
 import { useToast } from '../components/ui/Toaster';
 import { useSettingsList } from '../hooks/useSettings';
 import { apiErr } from '../components/crm/ClientWidgets';
@@ -99,7 +100,7 @@ export function LeadsPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowImport(true)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold">
-            ⬆ Import CSV
+            <span className="inline-flex items-center gap-1.5"><Upload size={14} /> Import CSV</span>
           </button>
           <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">
             + New lead
@@ -196,7 +197,7 @@ export function LeadsPage() {
 function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const sources = useSettingsList('lead_sources', ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event']);
-  const [f, setF] = useState({ company_name: '', contact_name: '', contact_email: '', contact_phone: '', source: 'referral' });
+  const [f, setF] = useState({ company_name: '', contact_name: '', contact_email: '', contact_phone: '', headcount: '', positions: '', source: 'facebook' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
@@ -207,7 +208,13 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
     setBusy(true);
     setErr('');
     try {
-      const r = await api.post('/leads', { ...f, contact_email: f.contact_email || undefined, contact_phone: f.contact_phone || undefined });
+      const r = await api.post('/leads', {
+        ...f,
+        contact_email: f.contact_email || undefined,
+        contact_phone: f.contact_phone || undefined,
+        headcount_needed: f.headcount ? Number(f.headcount) : undefined,
+        positions: f.positions || undefined,
+      });
       const dup = r.data.meta?.duplicate_warning;
       toast('success', dup ? `Lead created — heads up: possible duplicate ${dup.type} #${dup.id}.` : 'Lead created — qualify it next.');
       onDone();
@@ -229,6 +236,10 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
           <label>Contact person *<input required value={f.contact_name} onChange={set('contact_name')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.ph (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Mobile<input value={f.contact_phone} onChange={set('contact_phone')} placeholder="+639XXXXXXXXX (+25 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <div className="grid grid-cols-2 gap-2">
+            <label>Heads needed<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40 (+10 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Positions<input value={f.positions} onChange={set('positions')} placeholder="e.g. Guards, Janitors" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
           <label>Source<select value={f.source} onChange={set('source')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             {sources.map((s) => <option key={s} value={s}>{s}</option>)}
           </select></label>
@@ -294,7 +305,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           Columns: company_name, contact_name, contact_email, contact_phone, source, notes. Max 500 rows —
           bad rows are reported, good rows still import.
         </p>
-        <button type="button" onClick={downloadTemplate} className="text-xs text-sky-600 underline">⬇ Download template</button>
+        <button type="button" onClick={downloadTemplate} className="text-xs text-sky-600 underline"><span className="inline-flex items-center gap-1"><Download size={12} /> Download template</span></button>
         <input type="file" accept=".csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-3 w-full text-sm" />
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         {result && (

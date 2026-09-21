@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Phone, Mail, Users, MapPin, StickyNote } from 'lucide-react';
+import { Phone, Mail, Users, MapPin, StickyNote, Paperclip } from 'lucide-react';
 import api from '../lib/apiClient';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toaster';
@@ -120,7 +120,7 @@ export function CommsPage() {
                   <p className="text-xs text-[var(--text-muted)]">{a.client_name} · {rel(a.occurred_at)}{a.duration_minutes ? ` · ${a.duration_minutes} min` : ''}</p>
                   {a.body && <p className="mt-1 whitespace-pre-wrap text-sm">{highlight(a.body, q)}</p>}
                   {(a.attachments ?? []).length > 0 && (
-                    <p className="mt-1 text-xs text-[var(--text-muted)]">📎 {(a.attachments ?? []).map((f) => f.name).join(', ')}</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]"><Paperclip size={12} className="mr-1 inline" />{(a.attachments ?? []).map((f) => f.name).join(', ')}</p>
                   )}
                 </div>
               </div>

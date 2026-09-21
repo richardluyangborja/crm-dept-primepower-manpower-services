@@ -33,10 +33,15 @@ Reference: `light-mode.png` (light) + `dark-mode.webp` (Settings → Appearance)
 - Instructions: page subtitle ("Configure system preferences…"), field hints, stepper captions on lead-convert wizard, coach marks on first pipeline visit (dismissible).
 
 ## 4. Reusable components (frontend, all in `components/ui` + `components/crm`)
-`AppSidebar, Topbar, QuickSearch, KpiCard(delta chip ▲▼), TrendChart(Recharts line), DonutChart, DataTable(server pagination/sort/filter + CSV export), StatusBadge, FormField, EmptyState, ConfirmDialog, Timeline, KanbanBoard(drag-drop, WIP count), SurveyBuilder, ReminderCalendar, ThemeToggle, Toaster`. Props documented with Storybook-style examples in code comments; no duplicated table/kanban logic per module.
+`AppSidebar, Topbar, QuickSearch, KpiCard(delta chip via TrendingUp/Down icons), TrendChart(Recharts line), DonutChart, DataTable(server pagination/sort/filter + CSV export), StatusBadge, FormField, EmptyState, ConfirmDialog, Timeline, KanbanBoard(drag-drop, WIP count), SurveyBuilder, ReminderCalendar, ThemeToggle, Toaster`. Props documented with Storybook-style examples in code comments; no duplicated table/kanban logic per module.
 - AI/report additions (`15`): `InsightCard(score + drivers + CTA), RiskPill, ForecastBar, ReportPreviewModal, AiBadge("AI preview — verify")`.
 - Auth additions (`16`, scaffolded v1): `OtpModal` (6 boxes, 05:00 countdown, resend), idle-warning modal ("Stay signed in?", 60s countdown).
 
-## 5. Responsive & a11y
+## 5. Iconography — no emoji, ever (locked UI constraint)
+- No emoji or pictographic symbols anywhere in the UI (buttons, toasts, badges, empty states, success screens). Rationale: inconsistent rendering across devices, unprofessional in B2B, inaccessible to screen readers.
+- Use `lucide-react` (already a dependency, tree-shaken, free): `ThumbsUp/ThumbsDown` (votes), `Paperclip` (attachments), `Printer` (print/PDF), `Save` (save buttons), `Check`/`X` (affirm/close), `Upload`/`Download` (import/export/template), `Star` (scores, sentiments), `PenLine`/`FileText`/`Handshake` (contract actions).
+- Text symbols `★✓✕▲▼→` are also out — same replacements apply. Arrows in copy (`→` inside link labels) are acceptable as typographic punctuation, not iconography.
+
+## 6. Responsive & a11y
 - ≥1280: full sidebar; 768–1279: icons; <768: drawer + bottom nav for Follow-ups/Comms. Charts stack; kanban → horizontal scroll with sticky stage headers.
 - Contrast AA, focus rings, keyboard: `/` focuses search, `n` new lead (when not in input), Esc closes dialogs. `aria-label` on icon buttons; `prefers-reduced-motion` disables chart animation.

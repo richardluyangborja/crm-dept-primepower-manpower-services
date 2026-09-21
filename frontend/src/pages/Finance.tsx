@@ -8,6 +8,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
+import { Check } from 'lucide-react';
 
 interface Invoice {
   id: number;
@@ -138,7 +139,7 @@ export function FinancePage() {
             { key: 's', header: 'Status', render: (r) => r.is_overdue ? <StatusBadge value="overdue" /> : <StatusBadge value={r.status} /> },
             { key: 'd', header: 'Due', render: (r) => (r.due_at ? new Date(r.due_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : '—') },
             {
-              key: 'x', header: 'Actions', render: (r) => r.status === 'paid' ? <span className="text-xs text-[var(--text-muted)]">Paid ✓</span> : (
+              key: 'x', header: 'Actions', render: (r) => r.status === 'paid' ? <span className="text-[var(--text-muted)]"><Check size={12} className="mr-1 inline" />Paid</span> : (
                 <span className="flex gap-1">
                   <button onClick={() => setPayId(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Record payment</button>
                   {(r.is_overdue || r.status === 'overdue') && <button onClick={() => collectMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Collect →</button>}

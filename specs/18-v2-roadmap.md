@@ -149,3 +149,20 @@ business flow has absolute priority. Target release vehicle: **`crm-v1.2.0`**.
 ### Explicit Phase 2 non-goals (unchanged from §E)
 Mock-everywhere locked (incl. prod); no Neon/vendor DB; no real email/SMS/SSO/
 mobile app/ML; **OTP stays exactly as mocked** — zero auth changes in Phase 2.
+
+## 7. Pipeline↔finance refinement (locked 2026-09-21, branch `feature/crm-pipeline-finance`)
+Business truth: monthly per-head billing (heads × rate × months); FB inquiry →
+Quotation → Approval → **Contract** → Won/Lost; sources channel-flexible
+(Facebook default, Gmail/Phone included); no-emoji UI; stable UI (additive only).
+
+- **Stages**: keys frozen (`proposal`→“Quotation”, `negotiation`→“Approval” labels;
+  existing rows untouched); new `contract` key @ 90% between Approval and Won.
+- **Financing**: `headcount`, `rate_per_head_centavos`, `contract_months` on deals;
+  server-computed `monthly_billing`/`contract_total`; cards + columns show ₱/mo.
+- **Contract step**: entering Contract requires terms + start date → mock
+  `contracts` row (`CTR-2026-XXXX`, Core-3/Governance/Facilities paper-backed);
+  idempotent re-sign; shown on timeline + Finance tab.
+- **Win invoice**: first monthly invoice (one month), not contract total; fallback
+  to lump value when terms absent.
+- **Capture**: `headcount_needed` + `positions`; +10 score for stated need.
+- Merge path for this cycle: feature → `develop` → fast release to `main`.

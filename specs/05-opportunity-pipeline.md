@@ -1,10 +1,12 @@
 # 05 — Opportunity Pipeline Visualization
 
 ## 1. Submodules
-1. **Kanban stages** — New, Contacted, Qualified, Proposal, Negotiation, Won/Lost (configurable labels via master data; admin only).
-2. **Drag-drop + value** — optimistic move, WIP counts, weighted value.
+1. **Kanban stages** — New (Inquiry), Contacted, Qualified, Quotation (Proposal), Approval (Negotiation), **Contract**, Won/Lost (labels via master data; admin only; keys stay fixed for logic).
+2. **Drag-drop + value** — optimistic move, WIP counts, weighted value **plus expected monthly billing per column**.
 3. **Win/Loss capture** — reason required on terminal move, comment, effective date.
-4. **Forecasting** — weighted pipeline (`value × probability`), expected-close month bar, aging alert (>30d no activity → amber, >60d → red).
+4. **Contract signing** — moving into Contract requires agreed terms (headcount, monthly rate/head, months) + start date; persists a mock `contracts` row (Core-3 docs, Governance legal, Facilities contracts — all paper-backed mocks). Terms editable until win; re-signing updates, never duplicates.
+5. **Financing** — per-head monthly billing (`headcount × rate`), contract total (`monthly × months`), computed server-side; win issues the **first monthly invoice** (not the contract total).
+6. **Forecasting** — weighted pipeline (`value × probability`), expected-close month bar, aging alert (>30d no activity → amber, >60d → red).
 
 ## 2. User stories & acceptance
 - As rep I drag a card between stages → card animates, column totals update instantly, toast "Moved to Proposal — undo?" (5s); on failure rollback + error toast; `lost_reason` modal when dropping to Lost.
@@ -18,7 +20,7 @@ GET|PUT|DELETE /opportunities/{id}
 POST /opportunities/{id}/move {stage, lost_reason?}  POST /opportunities/{id}/win|lose
 GET /dashboard/summary → {open_value, weighted, win_rate, by_stage[], closes_by_month[]}
 ```
-Rules: `move` validates transition (can't Won→New without manager note); probability defaults per stage (New 10 … Negotiation 80, Won 100); `value_centavos` integer ≥0.
+Rules: `move` validates transition (can't Won→New without manager note); probability defaults per stage (New 10 … Negotiation 80, **Contract 90**, Won 100); `value_centavos` integer ≥0; financing fields (`headcount`, `rate_per_head_centavos`, `contract_months`) optional on create/update, required (with `start_date`) when entering Contract.
 
 ## 4. UI
 - `KanbanBoard` columns with sum + count, cards (client, title, ₱ value, probability chip, days-in-stage, owner avatar, next-followup dot). Search + owner filter sticky. List-view toggle for mobile/a11y (same data, table).

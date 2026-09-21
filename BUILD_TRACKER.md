@@ -56,6 +56,16 @@
 | 8 | OTP + 5-min Session (`16`) | ⬜ | — | — | LAST — touches auth globally |
 | 9 | Release hardening + `crm-v1.0.0` | ✅ | `feature/crm-release` | #12 | Merged — **released to `main` + tagged `crm-v1.0.0`**. Reports schedule, spec-volume seeds, DEPLOYMENT.md, trustProxies |
 
+## Pipeline↔finance refinement (branch `feature/crm-pipeline-finance` → `develop` → fast `main` release for testing)
+
+| Item | Status | Notes |
+|---|---|---|
+| Contract stage + signing terms flow | 🔄 | Keys frozen, labels via master data; terms-gated signing; mock contracts row |
+| Per-head financing on deals + cards + columns | 🔄 | Server-computed monthly/total; win issues first monthly invoice |
+| Flexible sources + capture headcount/positions | 🔄 | Facebook default; +10 score for stated need |
+| No-emoji pass + specs/10 constraint | 🔄 | lucide-only, verified icons |
+| Suite + build + smoke green | ⬜ | Then PR to `develop` |
+
 ## Phase 2 — submodule expansion (target `crm-v1.2.0`)
 
 | Phase | Scope | Status | Branch | Notes |

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
@@ -14,6 +14,11 @@ interface Opp {
   title: string;
   stage: string;
   value_centavos: number;
+  headcount: number | null;
+  rate_per_head_centavos: number | null;
+  contract_months: number | null;
+  monthly_billing_centavos: number | null;
+  contract_total_centavos: number | null;
   probability: number;
   weighted_centavos: number;
   expected_close_date: string | null;
@@ -21,7 +26,7 @@ interface Opp {
   days_in_stage: number | null;
 }
 
-const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'] as const;
+const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract', 'won', 'lost'] as const;
 
 /** Admin-configurable stage labels (Settings → Master data); keys stay fixed for logic. */
 function useStageLabels(): Record<string, string> {
@@ -79,9 +84,13 @@ export function PipelinePage() {
   const byStage = (s: string) => rows.filter((r) => r.stage === s);
   const openVal = rows.filter((r) => !['won', 'lost'].includes(r.stage)).reduce((a, r) => a + r.value_centavos, 0);
 
+  const [contractId, setContractId] = useState<number | null>(null);
   const moveMut = useMutation({
-    mutationFn: async ({ id, stage, lost_reason, effective_date }: { id: number; stage: string; lost_reason?: string; effective_date?: string }) =>
-      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date })).data,
+    mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date }: {
+      id: number; stage: string; lost_reason?: string; effective_date?: string;
+      headcount?: number; rate_per_head_centavos?: number; contract_months?: number; start_date?: string;
+    }) =>
+      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date })).data,
     onMutate: async ({ id, stage }) => {
       await qc.cancelQueries({ queryKey: ['opportunities'] });
       const prev = qc.getQueryData<Opp[]>(['opportunities', q]);
@@ -99,7 +108,7 @@ export function PipelinePage() {
     },
   });
 
-  const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: number } | null>(null);
+  const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: number; monthly: number | null; total: number | null } | null>(null);
   const [wonId, setWonId] = useState<number | null>(null);
   const winMut = useMutation({
     mutationFn: async ({ id, effective_date }: { id: number; effective_date?: string }) =>
@@ -108,13 +117,14 @@ export function PipelinePage() {
       toast('success', d.message ?? 'Won!');
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      // Narrate the handoff: fetch the freshly persisted mock job order.
+      // Narrate the handoff: fetch the freshly persisted mock job order + terms.
       try {
         const opp = rows.find((o) => o.id === vars.id);
         if (opp) {
           const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: number | null }[];
           const mine = jobs.find((j) => j.opportunity_id === vars.id) ?? jobs[0];
-          if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id });
+          const fresh = (await api.get(`/opportunities/${vars.id}`)).data.data as { monthly_billing_centavos: number | null; contract_total_centavos: number | null };
+          if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id, monthly: fresh.monthly_billing_centavos, total: fresh.contract_total_centavos });
         }
       } catch {
         // Narration is best-effort; the win itself succeeded.
@@ -138,7 +148,12 @@ export function PipelinePage() {
       {wonInfo && (
         <div className="card border-l-4 border-l-green-500 p-4">
           <p className="font-semibold text-green-700 dark:text-green-400">
-            🎉 Won! Job Order {wonInfo.ref} created — staffing starts <span className="text-xs font-normal">(mock)</span>.
+            Won! Job Order {wonInfo.ref} created — staffing starts <span className="text-xs font-normal">(mock)</span>.
+            {wonInfo.monthly !== null && (
+              <span className="block text-sm font-normal tabular-nums">
+                First invoice {formatPHP(wonInfo.monthly)}/mo{wonInfo.total !== null ? ` · ${formatPHP(wonInfo.total)} contract total` : ''}
+              </span>
+            )}
           </p>
           <div className="mt-2 flex gap-2">
             <Link to={`/clients/${wonInfo.clientId}`} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">
@@ -166,15 +181,17 @@ export function PipelinePage() {
             {STAGES.map((s) => {
               const col = byStage(s);
               const sum = col.reduce((a, r) => a + r.value_centavos, 0);
+              const monthly = col.reduce((a, r) => a + (r.monthly_billing_centavos ?? 0), 0);
               return (
                 <div key={s} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (dragId !== null) {
                   if (s === 'lost') { setLostId(dragId); setDragId(null); }
+                  else if (s === 'contract') { setContractId(dragId); setDragId(null); }
                   else moveMut.mutate({ id: dragId, stage: s });
                   setDragId(null);
                 } }} className="w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-2">
                   <div className="flex items-center justify-between px-1 py-1">
                     <p className="text-xs font-bold uppercase">{labels[s]} <span className="text-[var(--text-muted)]">{col.length}</span></p>
-                    <p className="text-[11px] tabular-nums text-[var(--text-muted)]">{formatPHP(sum)}</p>
+                    <p className="text-[11px] tabular-nums text-[var(--text-muted)]" title={monthly > 0 ? `${formatPHP(monthly)}/mo expected billing` : undefined}>{formatPHP(sum)}{monthly > 0 ? ` · ${formatPHP(monthly)}/mo` : ''}</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {col.map((o) => <OppCard key={o.id} o={o} onOpen={() => setDetailId(o.id)} onDrag={() => setDragId(o.id)} />)}
@@ -190,16 +207,27 @@ export function PipelinePage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">{detail.title}</h2>
-            <button onClick={() => setDetailId(null)} className="text-sm text-[var(--text-muted)]">Close ✕</button>
+            <button onClick={() => setDetailId(null)} className="text-sm text-[var(--text-muted)]"aria-label="Close">Close</button>
           </div>
           <StageStepper stage={detail.stage} />
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
             <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? `#${detail.client_id}`}</p></div>
             <div><p className="text-xs text-[var(--text-muted)]">Value</p><p className="tabular-nums">{formatPHP(detail.value_centavos)} × {detail.probability}%</p></div>
+            <div><p className="text-xs text-[var(--text-muted)]">Billing</p><p className="tabular-nums">{detail.monthly_billing_centavos ? `${formatPHP(detail.monthly_billing_centavos)}/mo × ${detail.contract_months ?? '?'} mo` : 'Terms not set'}</p></div>
             <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ?? '—'}</p></div>
-            <div><p className="text-xs text-[var(--text-muted)]">Lost reason</p><p>{detail.lost_reason ?? '—'}</p></div>
           </div>
+          {(detail.headcount !== null || detail.stage === 'contract') && (
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              Terms: {detail.headcount ?? '?'} heads
+              {detail.rate_per_head_centavos !== null ? ` × ${formatPHP(detail.rate_per_head_centavos)}/mo` : ''}
+              {detail.contract_months ? ` × ${detail.contract_months} mo` : ''}
+              {detail.contract_total_centavos ? ` = ${formatPHP(detail.contract_total_centavos)} total` : ''}
+            </p>
+          )}
           <div className="mt-3 flex gap-2">
+            {detail.stage !== 'contract' && detail.stage !== 'won' && detail.stage !== 'lost' && (
+              <button onClick={() => { setDetailId(null); setContractId(detail.id); }} className="rounded-lg border border-sky-600 px-4 py-1.5 text-sm text-sky-700 dark:text-sky-300">Sign contract…</button>
+            )}
             {detail.stage !== 'won' && <button onClick={() => { setWonId(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
             {detail.stage !== 'lost' && <button onClick={() => { setDetailId(null); setLostId(detail.id); }} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">Mark lost…</button>}
           </div>
@@ -208,6 +236,7 @@ export function PipelinePage() {
 
       {lostId !== null && <LostModal onClose={() => setLostId(null)} onDone={(reason, effectiveDate) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate }); setLostId(null); }} />}
       {wonId !== null && <WinModal onClose={() => setWonId(null)} onDone={(effectiveDate) => { winMut.mutate({ id: wonId, effective_date: effectiveDate }); setWonId(null); }} />}
+      {contractId !== null && <ContractModal dealId={contractId} onClose={() => setContractId(null)} onDone={(terms) => { moveMut.mutate({ id: contractId, stage: 'contract', ...terms }); setContractId(null); }} />}
       {showNew && <NewOppForm initialClientId={preselectClient} onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
     </div>
   );
@@ -220,7 +249,7 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
       <p className="text-sm font-medium">{o.title}</p>
       <p className="truncate text-xs text-[var(--text-muted)]">{o.client_name ?? ''}</p>
       <div className="mt-1 flex items-center justify-between text-xs">
-        <span className="font-semibold tabular-nums">{formatPHP(o.value_centavos)}</span>
+        <span className="font-semibold tabular-nums">{o.monthly_billing_centavos ? `${formatPHP(o.monthly_billing_centavos)}/mo` : formatPHP(o.value_centavos)}</span>
         <span className="rounded-full bg-sky-100 px-1.5 text-[11px] text-sky-800">{o.probability}%</span>
       </div>
       <p className={`mt-0.5 text-[11px] ${stale}`}>{o.days_in_stage ?? 0}d in stage</p>
@@ -230,8 +259,8 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
 
 function StageStepper({ stage }: { stage: string }) {
   const labels = useStageLabels();
-  const open = ['new', 'contacted', 'qualified', 'proposal', 'negotiation'];
-  if (stage === 'won' || stage === 'lost') return <p className="mt-2 text-sm font-semibold">{stage === 'won' ? '🎉 Won' : 'Lost'}</p>;
+  const open = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract'];
+  if (stage === 'won' || stage === 'lost') return <p className="mt-2 text-sm font-semibold">{stage === 'won' ? 'Won' : 'Lost'}</p>;
   const idx = open.indexOf(stage);
   return (
     <div className="mt-2 flex items-center gap-1" aria-label={`Stage ${labels[stage] ?? stage}`}>
@@ -273,12 +302,72 @@ function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: 
   );
 }
 
+function ContractModal({ dealId, onClose, onDone }: {
+  dealId: number;
+  onClose: () => void;
+  onDone: (terms: { headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }) => void;
+}) {
+  const qc = useQueryClient();
+  const dealQ = useQuery({
+    queryKey: ['opportunity', dealId],
+    queryFn: async () => (await api.get(`/opportunities/${dealId}`)).data.data as Opp,
+  });
+  const [headcount, setHeadcount] = useState('');
+  const [rate, setRate] = useState('');
+  const [months, setMonths] = useState('12');
+  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  const [err, setErr] = useState('');
+  const d = dealQ.data;
+  useEffect(() => {
+    if (d) {
+      if (d.headcount) setHeadcount(String(d.headcount));
+      if (d.rate_per_head_centavos) setRate(String(d.rate_per_head_centavos / 100));
+      if (d.contract_months) setMonths(String(d.contract_months));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d?.id]);
+  const monthly = (Number(headcount) || 0) * pesoToCentavos(rate || '0');
+  const valid = Number(headcount) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0 && !!start;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="card w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold">Sign contract{d ? ` — ${d.title}` : ''}?</h2>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">Records the agreed terms as a mock contract (Core-3 docs, Governance legal, Facilities contracts). Winning starts from here.</p>
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads *<input value={headcount} onChange={(e) => setHeadcount(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
+          <label>Start date *<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
+            {formatPHP(monthly)}/mo{Number(months) > 0 ? ` × ${months} mo = ${formatPHP(monthly * Number(months))}` : ''} total
+          </p>
+        </div>
+        {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
+          <button disabled={!valid} onClick={() => {
+            const h = Number(headcount);
+            const r = pesoToCentavos(rate);
+            const m = Number(months);
+            if (!(h > 0 && r > 0 && m > 0 && start)) { setErr('Heads, rate, months, and start date are all required.'); return; }
+            onDone({ headcount: h, rate_per_head_centavos: r, contract_months: m, start_date: start });
+            qc.invalidateQueries({ queryKey: ['opportunities'] });
+          }} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Sign contract</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WinModal({ onClose, onDone }: { onClose: () => void; onDone: (effectiveDate?: string) => void }) {
   const [date, setDate] = useState('');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
-        <h2 className="text-lg font-semibold">🎉 Mark as won?</h2>
+        <h2 className="text-lg font-semibold">Mark as won?</h2>
         <p className="mb-2 text-xs text-[var(--text-muted)]">This creates the job order and draft invoice (mock) and starts staffing.</p>
         <label className="block text-sm">Effective close date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
           <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
@@ -298,7 +387,7 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
     queryKey: ['clients-mini'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
   });
-  const [f, setF] = useState({ client_id: initialClientId, title: '', value: '', expected_close_date: '' });
+  const [f, setF] = useState({ client_id: initialClientId, title: '', value: '', headcount: '', rate: '', months: '12', expected_close_date: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
@@ -311,6 +400,9 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
       await api.post('/opportunities', {
         client_id: Number(f.client_id), title: f.title,
         value_centavos: pesoToCentavos(f.value),
+        headcount: f.headcount ? Number(f.headcount) : undefined,
+        rate_per_head_centavos: f.rate ? pesoToCentavos(f.rate) : undefined,
+        contract_months: f.months ? Number(f.months) : undefined,
         expected_close_date: f.expected_close_date || undefined,
       });
       toast('success', 'Deal created on the board.');
@@ -334,6 +426,11 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
           </select></label>
           <label>Title *<input required value={f.title} onChange={set('title')} placeholder="e.g. 80 guards — Davao Prime" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Value (₱)<input value={f.value} onChange={set('value')} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱)<input value={f.rate} onChange={set('rate')} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months<input value={f.months} onChange={set('months')} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
           <label>Expected close<input type="date" value={f.expected_close_date} onChange={set('expected_close_date')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
