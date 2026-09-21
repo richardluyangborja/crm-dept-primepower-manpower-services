@@ -25,6 +25,7 @@ Rules: `move` validates transition (can't Won→New without manager note); proba
 ## 4. UI
 - `KanbanBoard` columns with sum + count, cards (client, title, ₱ value, probability chip, days-in-stage, owner avatar, next-followup dot). Search + owner filter sticky. List-view toggle for mobile/a11y (same data, table).
 - Detail drawer: stage stepper, activities mini-timeline, followups, win/loss banner. Confetti-lite on Won (respect reduced-motion).
+- **Pipeline hub (sidebar, collapsible):** the Pipeline nav item expands to Kanban Board (default landing/summary) + Finance + Core-1 Staffing + Contracts + BI Drilldown (manager+). Auto-expands on the active child; collapsed state persists in `localStorage`. Kanban cards link per-client into each child (`?client=` deep links). Children are per-client detailed lists over the same scoped queries — no duplicated logic, no new mutations (Staffing read-only; Finance/Contracts reuse existing actions).
 
 ## 5. Seeds
 6–10 opps across stages with ₱ values (e.g. "120 janitors — SM Cebu — ₱4.8M — Negotiation 80%"), one Won, one Lost with reason "chose competitor pricing".

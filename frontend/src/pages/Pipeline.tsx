@@ -243,7 +243,8 @@ export function PipelinePage() {
 }
 
 function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: () => void }) {
-  const stale = (o.days_in_stage ?? 0) > 60 ? 'text-red-600' : (o.days_in_stage ?? 0) > 30 ? 'text-amber-600' : 'text-[var(--text-muted)]';
+  const stale = (o.days_in_stage ?? 0) > 60 ? 'text-red-600' : (o.days_in_stage ?? 0) > 30 ? 'amber-600' : 'text-[var(--text-muted)]';
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
   return (
     <div draggable onDragStart={onDrag} onClick={onOpen} className="cursor-grab rounded-lg border border-[var(--border)] bg-[var(--bg-app)] p-2.5 active:cursor-grabbing">
       <p className="text-sm font-medium">{o.title}</p>
@@ -253,6 +254,11 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
         <span className="rounded-full bg-sky-100 px-1.5 text-[11px] text-sky-800">{o.probability}%</span>
       </div>
       <p className={`mt-0.5 text-[11px] ${stale}`}>{o.days_in_stage ?? 0}d in stage</p>
+      <p className="mt-1 flex gap-2 text-[11px]" onClick={stop}>
+        <Link to={`/pipeline/finance?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Finance</Link>
+        <Link to={`/pipeline/staffing?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Staffing</Link>
+        <Link to={`/pipeline/contracts?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Contracts</Link>
+      </p>
     </div>
   );
 }

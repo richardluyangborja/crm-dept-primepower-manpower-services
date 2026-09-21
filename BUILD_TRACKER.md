@@ -12,6 +12,16 @@
 | Empty-state CTAs + deep links | ✅ | Clients→leads CTA; `?client=` preselects Pipeline form + auto-opens; journey “New deal” link |
 | Dashboard narrative strip | ✅ | Plain-language paragraph from live KPIs, above the cards |
 
+## Pipeline hub iteration (branch `feature/crm-pipeline-hub`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Collapsible Pipeline hub (auto-expand, persisted) | 🔄 | Chevron toggle, `aria-expanded`, localStorage, light/dark + mobile parity |
+| Kanban card deep links per client | 🔄 | Finance/Staffing/Contracts via `?client=`, click-safe (stopPropagation) |
+| Children: Finance, Staffing, Contracts, BI drilldown | 🔄 | Per-client lists, shared `ClientPicker`; BI manager+ with 403 message |
+| Backend: `/staffing`, `/bi/client-breakdown` | 🔄 | Scoped, mock-labeled, tested |
+| Specs 05/10/11/18 + this tracker | 🔄 | Hub model + contracts documented |
+
 ## v2 journey A+B — MERGED to `main` (no tag yet; v1.1.0 vs v2.0.0 decision pending)
 
 | Item | Status | Notes |

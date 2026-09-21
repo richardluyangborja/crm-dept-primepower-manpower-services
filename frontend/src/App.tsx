@@ -19,6 +19,10 @@ import { LeadsPage } from './pages/Leads';
 import { LeadPage } from './pages/LeadPage';
 import { ClientPage } from './pages/ClientPage';
 import { PipelinePage } from './pages/Pipeline';
+import { PipelineFinancePage } from './pages/PipelineFinance';
+import { PipelineStaffingPage } from './pages/PipelineStaffing';
+import { PipelineContractsPage } from './pages/PipelineContracts';
+import { PipelineBiPage } from './pages/PipelineBi';
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } } });
 
@@ -53,6 +57,10 @@ export default function App() {
               <Route path="leads/:id" element={<LeadPage />} />
               <Route path="clients/:id" element={<ClientPage />} />
               <Route path="pipeline" element={<PipelinePage />} />
+              <Route path="pipeline/finance" element={<PipelineFinancePage />} />
+              <Route path="pipeline/staffing" element={<PipelineStaffingPage />} />
+              <Route path="pipeline/contracts" element={<PipelineContractsPage />} />
+              <Route path="pipeline/bi" element={<PipelineBiPage />} />
               <Route path="comms" element={<CommsPage />} />
               <Route path="surveys" element={<SurveysPage />} />
               <Route path="followups" element={<FollowupsPage />} />

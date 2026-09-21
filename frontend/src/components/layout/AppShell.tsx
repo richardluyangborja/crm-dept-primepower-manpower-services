@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Wallet, Factory } from 'lucide-react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Wallet, Factory, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -9,13 +9,39 @@ import { useToast } from '../ui/Toaster';
 import { useIdleTimer } from '../../hooks/useIdleTimer';
 import { TourCard, useTour } from '../ui/Tour';
 
-const groups: { label: string; links: { to: string; label: string; icon: React.ReactNode; roles?: string[] }[] }[] = [
+interface NavChild {
+  to: string;
+  label: string;
+  roles?: string[];
+}
+interface NavLinkItem {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+  roles?: string[];
+  children?: NavChild[];
+  storageKey?: string;
+}
+
+const groups: { label: string; links: NavLinkItem[] }[] = [
   { label: '', links: [{ to: '/', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
   {
     label: 'Sales',
     links: [
       { to: '/leads', label: 'Leads & Clients', icon: <Users size={18} /> },
-      { to: '/pipeline', label: 'Opportunity Pipeline', icon: <KanbanSquare size={18} /> },
+      {
+        to: '/pipeline',
+        label: 'Opportunity Pipeline',
+        icon: <KanbanSquare size={18} />,
+        storageKey: 'crm.nav.pipeline',
+        children: [
+          { to: '/pipeline', label: 'Kanban Board' },
+          { to: '/pipeline/finance', label: 'Finance' },
+          { to: '/pipeline/staffing', label: 'Core-1 Staffing' },
+          { to: '/pipeline/contracts', label: 'Contracts' },
+          { to: '/pipeline/bi', label: 'BI Drilldown', roles: ['manager', 'admin', 'superadmin'] },
+        ],
+      },
       { to: '/followups', label: 'Follow-ups', icon: <BellRing size={18} /> },
     ],
   },
@@ -75,6 +101,26 @@ export function AppShell() {
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`;
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('crm.nav.collapsed') ?? '{}');
+    } catch {
+      return {};
+    }
+  });
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem('crm.nav.collapsed', JSON.stringify(next));
+      } catch {
+        /* storage full/blocked — collapse state just won't persist */
+      }
+      return next;
+    });
+  const childActive = (children?: NavChild[]) =>
+    !!children?.some((c) => location.pathname === c.to || location.pathname.startsWith(c.to + '/'));
 
   return (
     <div className="flex min-h-screen">
@@ -86,12 +132,57 @@ export function AppShell() {
             {g.label && <p className="px-3 pb-1 text-[11px] font-semibold uppercase text-[var(--text-muted)]">{g.label}</p>}
             {g.links
               .filter((l) => !l.roles || hasRole(user, ...(l.roles as ('admin' | 'manager' | 'sales_rep' | 'superadmin')[])))
-              .map((l) => (
-                <NavLink key={l.to} to={l.to} end={l.to === '/'} className={linkCls} onClick={() => setOpen(false)}>
-                  {l.icon}
-                  {l.label}
-                </NavLink>
-              ))}
+              .map((l) => {
+                if (!l.children) {
+                  return (
+                    <NavLink key={l.to} to={l.to} end={l.to === '/'} className={linkCls} onClick={() => setOpen(false)}>
+                      {l.icon}
+                      {l.label}
+                    </NavLink>
+                  );
+                }
+                const isOpen = childActive(l.children) || !collapsed[l.storageKey ?? l.to];
+                const kids = l.children.filter(
+                  (c) => !c.roles || hasRole(user, ...(c.roles as ('admin' | 'manager' | 'sales_rep' | 'superadmin')[])),
+                );
+                return (
+                  <div key={l.to}>
+                    <div className="flex items-center gap-1">
+                      <NavLink to={l.to} end className={linkCls} onClick={() => setOpen(false)}>
+                        <span className="flex items-center gap-3">
+                          {l.icon}
+                          {l.label}
+                        </span>
+                      </NavLink>
+                      <button
+                        aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${l.label} submenu`}
+                        aria-expanded={isOpen}
+                        onClick={() => toggleGroup(l.storageKey ?? l.to)}
+                        className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <ChevronDown size={16} className={`transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                      </button>
+                    </div>
+                    {isOpen && kids.length > 0 && (
+                      <div className="ml-9 flex flex-col gap-0.5 border-l border-[var(--border)] pl-2">
+                        {kids.map((c) => (
+                          <NavLink
+                            key={c.to}
+                            to={c.to}
+                            end
+                            onClick={() => setOpen(false)}
+                            className={({ isActive }: { isActive: boolean }) =>
+                              `rounded-lg px-3 py-1.5 text-[13px] ${isActive ? 'bg-sky-100 font-medium text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'text-[var(--text-muted)] hover:bg-slate-100 hover:text-inherit dark:hover:bg-slate-800'}`
+                            }
+                          >
+                            {c.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         ))}
         <div className="card mt-6 flex items-center gap-2 p-3">
