@@ -19,7 +19,7 @@
 | Collapsible hub, card links, 4 children, staffing/BI endpoints | ✅ | Merged via develop; Core-2 gap + BI drilldown closed |
 | Branches cleaned | ✅ | `feature/crm-pipeline-hub` local + remote deleted |
 
-## Hub polish iteration (branch `feature/crm-hub-polish`)
+## Hub polish iteration — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
