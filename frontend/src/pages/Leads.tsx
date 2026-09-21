@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { KpiCard } from '../components/ui/KpiCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Download, Upload } from 'lucide-react';
@@ -38,6 +39,7 @@ function ScoreBar({ v }: { v: number }) {
 export function LeadsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [needsOnly, setNeedsOnly] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [convertId, setConvertId] = useState<number | null>(null);
@@ -47,6 +49,11 @@ export function LeadsPage() {
   const leadsQ = useQuery({
     queryKey: ['leads', q, status],
     queryFn: async () => (await api.get('/leads', { params: { q: q || undefined, status: status || undefined, per_page: 50 } })).data,
+  });
+  // Unfiltered totals for the KPI strip (queues are small; same cap as the table).
+  const totalsQ = useQuery({
+    queryKey: ['leads', 'totals'],
+    queryFn: async () => (await api.get('/leads', { params: { per_page: 100 } })).data.data as Lead[],
   });
 
   const invalidate = () => {
@@ -84,7 +91,16 @@ export function LeadsPage() {
   };
 
   const all: Lead[] = leadsQ.data?.data ?? [];
-  const queue = all.filter((l) => ['new', 'contacted'].includes(l.status)).sort((a, b) => b.score - a.score);
+  const rows = (needsOnly ? all.filter((l) => ['new', 'contacted'].includes(l.status)).sort((a, b) => b.score - a.score) : all);
+  const totals: Lead[] = totalsQ.data ?? [];
+  const waiting = totals.filter((l) => ['new', 'contacted'].includes(l.status));
+  const hot = totals.filter((l) => !['converted', 'unqualified'].includes(l.status) && l.score >= 70);
+  const won = totals.filter((l) => l.status === 'converted');
+
+  const toggleNeeds = () => {
+    if (!needsOnly) setStatus('');
+    setNeedsOnly((v) => !v);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -102,56 +118,42 @@ export function LeadsPage() {
           </button>
         </div>
       </div>
-      <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
-        <a href="#needs-response" className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
-          Needs a response{queue.length > 0 ? ` (${queue.length})` : ''}
-        </a>
-        <a href="#all-inquiries" className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
-          All inquiries
-        </a>
-      </nav>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick filter">
+        <button onClick={toggleNeeds} aria-pressed={needsOnly}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${needsOnly ? 'bg-sky-600 text-white' : 'border border-[var(--border)]'}`}>
+          Needs a response{waiting.length > 0 ? ` (${waiting.length})` : ''}
+        </button>
+      </div>
 
-      <section id="needs-response" aria-label="Needs a response" className="flex scroll-mt-24 flex-col gap-2">
-        <h2 className="text-base font-semibold">Needs a response</h2>
-        <p className="text-sm text-[var(--text-muted)]">New and contacted leads, hottest score first. Qualify, disqualify, or convert — don't let them sit.</p>
-        {leadsQ.isLoading ? (
-          <p className="text-sm text-[var(--text-muted)]">Loading queue…</p>
-        ) : leadsQ.isError ? (
-          <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
-        ) : (
-          <LeadTable
-            rows={queue}
-            onStatus={changeStatus}
-            onConvert={setConvertId}
-            empty={<EmptyState title="All caught up" hint="Nothing waiting for a first response. New inquiries will land here." />}
-          />
-        )}
-      </section>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <KpiCard label="Waiting on you" value={totalsQ.isLoading ? '…' : String(waiting.length)} sub="new + contacted — work these first" />
+        <KpiCard label="Hot leads" value={totalsQ.isLoading ? '…' : String(hot.length)} sub="open leads scoring 70+" />
+        <KpiCard label="Won over" value={totalsQ.isLoading ? '…' : String(won.length)} sub="converted to clients" />
+      </div>
 
-      <section id="all-inquiries" aria-label="All inquiries" className="flex scroll-mt-24 flex-col gap-2">
-        <h2 className="text-base font-semibold">All inquiries</h2>
-        <div className="flex gap-2">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
-            <option value="">All statuses</option>
-            {LEAD_STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        {leadsQ.isLoading ? (
-          <p className="text-sm text-[var(--text-muted)]">Loading leads…</p>
-        ) : leadsQ.isError ? (
-          <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
-        ) : (
-          <LeadTable
-            rows={all}
-            onStatus={changeStatus}
-            onConvert={setConvertId}
-            empty={<EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
-          />
-        )}
-      </section>
+      <div className="flex gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
+        <select value={status} onChange={(e) => { setStatus(e.target.value); setNeedsOnly(false); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          {LEAD_STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+      {leadsQ.isLoading ? (
+        <p className="text-sm text-[var(--text-muted)]">Loading leads…</p>
+      ) : leadsQ.isError ? (
+        <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
+      ) : (
+        <LeadTable
+          rows={rows}
+          onStatus={changeStatus}
+          onConvert={setConvertId}
+          empty={needsOnly
+            ? <EmptyState title="All caught up" hint="Nothing waiting for a first response. New inquiries will land here." />
+            : <EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
+        />
+      )}
 
       {showNew && <NewLeadForm onClose={() => setShowNew(false)} onDone={invalidate} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={invalidate} />}

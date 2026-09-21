@@ -39,8 +39,8 @@ export function OperationsPage() {
       <div>
         <h1 className="text-xl font-bold">Operations</h1>
         <p className="text-sm text-[var(--text-muted)]">
-          Read-only view into mock Core-1 execution: job orders across clients and deployed headcount.
-          Staffing advances on each client's timeline — nothing here mutates state.
+          Read-only view into mock Core-1 execution: job orders across every client and total deployed headcount.
+          Staffing advances on each client's timeline — nothing here mutates state. For one client at a time, use <Link to="/pipeline/staffing" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Deployed Staff</Link>.
         </p>
       </div>
 

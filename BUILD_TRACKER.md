@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Filter-first hub pages (branch `feature/crm-hub-filters-kpi`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Leads: KPIs + one table + needs-response chip | ✅ | Queue inline, no sections |
+| Clients: KPIs + directory/people/won-over views | ✅ | No backend changes |
+| Finance/Operations scope subtitles sharpened | ✅ | Kept; "every" vs "one" client |
+| Specs 04/10/18 + this tracker | ✅ | Filter-first pattern recorded |
+
 ## Lead & Client hub iteration — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

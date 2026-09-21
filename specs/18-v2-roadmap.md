@@ -196,3 +196,12 @@ tab toggle deleted; conversion stays the single bridge (lead-row action → 360 
 No new Core-1 surface — Core-1 already lives in Deployed Staff / Operations / client
 journey; this cycle only audits the cross-links (Clients↔Deployed Staff, 360 ops cards
 → staffing/operations, tour copy updated off "8 tabs").
+
+## 11. Filter-first hub pages (branch `feature/crm-hub-filters-kpi`)
+Sections felt off → both hub pages go filter-first: KPI strip + one table.
+Leads: *Waiting on you / Hot leads (70+) / Won over* + *Needs a response* chip
+(queue inline, hottest first). Clients: *Active / Prospects / Collectible now*
++ view switch (directory / People / Recently Won Over). No backend changes.
+Finance/Operations kept (cross-client managers; hub children are per-client
+lenses) with scope-sharpened subtitles stating "every client" vs "one client
+at a time".

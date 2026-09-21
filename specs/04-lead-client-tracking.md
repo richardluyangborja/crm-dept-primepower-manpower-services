@@ -7,9 +7,9 @@
 4. **Conversion** — lead→client→(optional) opportunity wizard, the single bridge between the two pages (action lives on lead rows, lands on the 360 page).
 
 ## 1b. Hub model (no overlaps)
-Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipeline hub) with two sectionized pages — no per-operation sub-routes:
-- **Leads** (`/leads`): *Needs a Response* queue (`new` + `contacted`, score-sorted, inline qualify/disqualify/convert) → *All Inquiries* table (search + status filter). Capture form + CSV import stay header actions, not pages.
-- **Clients** (`/clients`): *All Clients* directory (search, per-row Deployed-staff deep link) → *People* (cross-client contacts via `GET /contacts`, primary first) → *Recently Won Over* (converted leads → client links, no new backend).
+Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipeline hub) with two filter-first pages — no per-operation sub-routes, no stacked sections:
+- **Leads** (`/leads`): KPI strip (*Waiting on you* = new + contacted · *Hot leads* = open & score 70+ · *Won over* = converted) + one table with search, status filter, and a *Needs a response* quick-chip (queue = hottest first). Capture form + CSV import stay header actions, not pages.
+- **Clients** (`/clients`): KPI strip (*Active clients* · *Prospects* · *Collectible now* = open balances) + one table with three views (*All clients* with per-row Deployed-staff deep link · *People* via `GET /contacts` · *Recently Won Over* from `status=converted`).
 - Overlap contract: record views live here; cross-record management stays in Comms/Surveys/Follow-ups/Finance/Operations; Core-1 execution stays read-only in Pipeline/Operations and is only *linked* (never copied) from hub pages.
 
 ## 2. User stories & acceptance
@@ -29,8 +29,8 @@ GET    /contacts?q&client_id (cross-client directory; client-scoped visibility, 
 Validation: `contact_phone` regex `^\+63\d{10}$`, email RFC, company unique-ish (warn not block). Scope: rep=own, manager=team, admin=all (Policy).
 
 ## 4. UI
-- **Leads page:** quick-jump anchors + *Needs a Response* queue (score-sorted, count badge) + *All Inquiries* table; capture/import as header buttons; row click → lead detail.
-- **Clients page:** quick-jump anchors + directory + People + Recently Won Over; per-row staffing deep link (`/pipeline/staffing?client=`).
+- **Leads page:** 3 KPI cards + quick-chip + *All Inquiries* table (search, status filter); capture/import as header buttons; row click → lead detail.
+- **Clients page:** 3 KPI cards + view switch (directory / People / Recently Won Over); per-row staffing deep link (`/pipeline/staffing?client=`).
 - **Client 360:** header + `StatusBadge` + grouped sections (Profile / Deals & Orders / Conversations / Billing) with anchor quick-jump; convert wizard uses stepper + review screen.
 - Feedback: score tooltip explains points; duplicate modal; CSV import shows row errors with line numbers (mock parser, 500-row limit).
 

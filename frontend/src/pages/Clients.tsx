@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
+import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { KpiCard } from '../components/ui/KpiCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 
 interface Client {
@@ -33,49 +35,90 @@ interface ConvertedLead {
   converted_client_id: number | null;
 }
 
-/** Clients hub page (specs/04 hub): directory + people + conversion log, sectionized. */
+interface Invoice {
+  id: number;
+  balance_centavos: number;
+  status: string;
+}
+
+type View = 'clients' | 'people' | 'won';
+
+/** Clients hub page (specs/04 hub): KPIs + one filterable table with three views. */
 export function ClientsPage() {
+  const [view, setView] = useState<View>('clients');
   const [q, setQ] = useState('');
-  const [pq, setPq] = useState('');
+  const [status, setStatus] = useState('');
 
   const clientsQ = useQuery({
-    queryKey: ['clients', q],
-    queryFn: async () => (await api.get('/clients', { params: { q: q || undefined, per_page: 50 } })).data,
+    queryKey: ['clients', q, status],
+    queryFn: async () => (await api.get('/clients', { params: { q: q || undefined, status: status || undefined, per_page: 50 } })).data,
+  });
+  const totalsQ = useQuery({
+    queryKey: ['clients', 'totals'],
+    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as Client[],
+  });
+  const collectQ = useQuery({
+    queryKey: ['invoices', 'collectible'],
+    queryFn: async () => (await api.get('/invoices', { params: { per_page: 100 } })).data.data as Invoice[],
   });
   const peopleQ = useQuery({
-    queryKey: ['contacts', pq],
-    queryFn: async () => (await api.get('/contacts', { params: { q: pq || undefined, per_page: 50 } })).data,
+    queryKey: ['contacts', q],
+    queryFn: async () => (await api.get('/contacts', { params: { q: q || undefined, per_page: 50 } })).data,
+    enabled: view === 'people',
   });
   const wonQ = useQuery({
     queryKey: ['leads', 'converted'],
     queryFn: async () => (await api.get('/leads', { params: { status: 'converted', per_page: 50 } })).data,
+    enabled: view === 'won',
   });
+
+  const totals: Client[] = totalsQ.data ?? [];
+  const active = totals.filter((c) => c.status === 'active').length;
+  const prospects = totals.filter((c) => c.status === 'prospect').length;
+  const collectible = (collectQ.data ?? []).reduce((a, i) => a + (i.balance_centavos > 0 ? i.balance_centavos : 0), 0);
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Clients</h1>
         <p className="text-sm text-[var(--text-muted)]">
-          Everyone you've won over. Per-client staffing lives under{' '}
+          Everyone you've won over — every client, one table. Per-client staffing lives under{' '}
           <Link to="/pipeline/staffing" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Deployed Staff</Link>.
         </p>
       </div>
-      <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
-        {[
-          { id: 'directory', label: 'All clients' },
-          { id: 'people', label: 'People' },
-          { id: 'won-over', label: 'Recently won over' },
-        ].map((s) => (
-          <a key={s.id} href={`#${s.id}`} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
-            {s.label}
-          </a>
-        ))}
-      </nav>
 
-      <section id="directory" aria-label="All clients" className="flex scroll-mt-24 flex-col gap-2">
-        <h2 className="text-base font-semibold">All clients</h2>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, city, email…" className="card px-3 py-2 text-sm outline-none" />
-        {clientsQ.isLoading ? (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <KpiCard label="Active clients" value={totalsQ.isLoading ? '…' : String(active)} sub="doing business with you now" />
+        <KpiCard label="Prospects" value={totalsQ.isLoading ? '…' : String(prospects)} sub="not yet active" />
+        <KpiCard label="Collectible now" value={collectQ.isLoading ? '…' : formatPHP(collectible)} sub="open balances across clients" />
+      </div>
+
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Views">
+        {([['clients', 'All clients'], ['people', 'People'], ['won', 'Recently won over']] as [View, string][]).map(([v, label]) => (
+          <button key={v} onClick={() => setView(v)} aria-pressed={view === v}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${view === v ? 'bg-sky-600 text-white' : 'border border-[var(--border)]'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder={view === 'people' ? 'Search person, position, or company…' : 'Search name, city, email…'}
+          className="card flex-1 px-3 py-2 text-sm outline-none" />
+        {view === 'clients' && (
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="prospect">Prospect</option>
+          </select>
+        )}
+      </div>
+
+      {view === 'clients' && (
+        clientsQ.isLoading ? (
           <p className="text-sm text-[var(--text-muted)]">Loading clients…</p>
         ) : clientsQ.isError ? (
           <div className="card p-6 text-sm">Couldn't load clients. <button className="text-sky-600 underline" onClick={() => clientsQ.refetch()}>Retry</button></div>
@@ -91,14 +134,11 @@ export function ClientsPage() {
             ]}
             empty={<EmptyState title="No clients yet" hint="Convert a qualified lead to create your first client profile." action={<Link to="/leads" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Find a lead to convert →</Link>} />}
           />
-        )}
-      </section>
+        )
+      )}
 
-      <section id="people" aria-label="People" className="flex scroll-mt-24 flex-col gap-2">
-        <h2 className="text-base font-semibold">People</h2>
-        <p className="text-sm text-[var(--text-muted)]">Who you know at each account — across all clients, primary contacts first.</p>
-        <input value={pq} onChange={(e) => setPq(e.target.value)} placeholder="Search person, position, or company…" className="card px-3 py-2 text-sm outline-none" />
-        {peopleQ.isLoading ? (
+      {view === 'people' && (
+        peopleQ.isLoading ? (
           <p className="text-sm text-[var(--text-muted)]">Loading people…</p>
         ) : peopleQ.isError ? (
           <div className="card p-6 text-sm">Couldn't load people. <button className="text-sky-600 underline" onClick={() => peopleQ.refetch()}>Retry</button></div>
@@ -113,13 +153,11 @@ export function ClientsPage() {
             ]}
             empty={<EmptyState title="Nobody here yet" hint="Contacts you add on a client profile will show up in this directory." />}
           />
-        )}
-      </section>
+        )
+      )}
 
-      <section id="won-over" aria-label="Recently won over" className="flex scroll-mt-24 flex-col gap-2">
-        <h2 className="text-base font-semibold">Recently won over</h2>
-        <p className="text-sm text-[var(--text-muted)]">Converted inquiries and the client profiles they became.</p>
-        {wonQ.isLoading ? (
+      {view === 'won' && (
+        wonQ.isLoading ? (
           <p className="text-sm text-[var(--text-muted)]">Loading conversions…</p>
         ) : wonQ.isError ? (
           <div className="card p-6 text-sm">Couldn't load conversions. <button className="text-sky-600 underline" onClick={() => wonQ.refetch()}>Retry</button></div>
@@ -135,8 +173,8 @@ export function ClientsPage() {
             ]}
             empty={<EmptyState title="No conversions yet" hint="Qualified leads you convert will be logged here." action={<Link to="/leads" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Work the queue →</Link>} />}
           />
-        )}
-      </section>
+        )
+      )}
     </div>
   );
 }
