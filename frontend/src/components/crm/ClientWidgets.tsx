@@ -1,13 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../../lib/apiClient';
 import { formatPHP } from '../../lib/format';
 import { StatusBadge } from '../ui/StatusBadge';
-import { useToast } from '../ui/Toaster';
 
 export interface ClientOps {
   deployment: { deployed?: number; site?: string; mock?: boolean };
   billing: { outstanding_centavos?: number; status?: string; mock?: boolean };
+  fulfillment: { required: number; deployed: number; remaining: number; pct: number | null; status: string; mock?: boolean };
   job_orders: { count: number; active: number; by_status: Record<string, number> };
   mock: boolean;
 }
@@ -45,11 +45,11 @@ export function ClientOpsCards({ clientId }: { clientId: number }) {
   return (
     <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
       <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Mock Dept-2 read-back">Ⓜ</span></p>
+        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Read-back from Client Management">ⓘ</span></p>
         <p className="font-semibold tabular-nums"><Link to={`/pipeline/staffing?client=${clientId}`} className="text-sky-700 hover:underline dark:text-sky-300">{ops.deployment.deployed ?? 0} staff</Link></p>
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Mock Dept-5 read-back">Ⓜ</span></p>
+        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Read-back from Finance">ⓘ</span></p>
         <p className="font-semibold tabular-nums">{formatPHP(ops.billing.outstanding_centavos ?? 0)}</p>
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
@@ -61,21 +61,10 @@ export function ClientOpsCards({ clientId }: { clientId: number }) {
 }
 
 export function ClientJourney({ clientId }: { clientId: number }) {
-  const toast = useToast();
-  const qc = useQueryClient();
   const jobsQ = useQuery({
     queryKey: ['job-orders', clientId],
     queryFn: async () => (await api.get('/job-orders', { params: { client_id: clientId, per_page: 50 } })).data.data as JobOrder[],
     enabled: clientId > 0,
-  });
-  const advanceMut = useMutation({
-    mutationFn: async (id: number) => (await api.post(`/job-orders/${id}/advance`)).data,
-    onSuccess: (d) => {
-      toast('success', d.message ?? 'Advanced.');
-      qc.invalidateQueries({ queryKey: ['job-orders', clientId] });
-      qc.invalidateQueries({ queryKey: ['client-ops', clientId] });
-    },
-    onError: (e) => toast('error', apiErr(e, 'Could not advance.')),
   });
 
   const jobs = jobsQ.data ?? [];
@@ -90,7 +79,7 @@ export function ClientJourney({ clientId }: { clientId: number }) {
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 1 → 2 → 5)</span></h3>
+        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(via Client Management — read-only)</span></h3>
         <Link to={`/pipeline?client=${clientId}`} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">+ New deal</Link>
       </div>
       <ul className="mt-1 flex flex-col gap-2">
@@ -109,11 +98,6 @@ export function ClientJourney({ clientId }: { clientId: number }) {
               {j.headcount !== null ? `${j.headcount} headcount` : 'Headcount estimating'} · {formatPHP(j.value_centavos)}
               {j.invoice_ref ? ` · ${j.invoice_ref}` : ''}
             </p>
-            {j.next_status && (
-              <button onClick={() => advanceMut.mutate(j.id)} className="mt-1.5 rounded-lg border border-[var(--border)] px-2 py-1 text-xs">
-                Advance → {j.next_status}
-              </button>
-            )}
           </li>
         ))}
       </ul>

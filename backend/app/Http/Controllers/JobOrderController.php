@@ -30,18 +30,15 @@ class JobOrderController extends Controller
         return $this->ok(new JobOrderResource($jobOrder));
     }
 
-    /** Advance exactly one step along draft → staffed → deployed → billed. */
+    /**
+     * Front-office guard (specs/04): the CRM never advances core execution.
+     * Progression is owned by Client Management; this endpoint stays read-only
+     * so existing clients keep working while the UI no longer calls it.
+     */
     public function advance(JobOrder $jobOrder)
     {
-        $this->authorize('update', $jobOrder);
-        $next = JobOrder::FLOW[$jobOrder->status] ?? null;
-        if (! $next) {
-            return $this->fail('Job order is already fully billed — the journey is complete.', 422);
-        }
-        $from = $jobOrder->status;
-        $jobOrder->update(['status' => $next]);
-        $jobOrder->audit('advanced', auth('api')->id(), ['from' => $from, 'to' => $next]);
+        $this->authorize('view', $jobOrder);
 
-        return $this->ok(new JobOrderResource($jobOrder->refresh()), "Advanced to {$next}.");
+        return $this->fail('Job-order progression is handled by Client Management — the CRM shows read-only status.', 403);
     }
 }

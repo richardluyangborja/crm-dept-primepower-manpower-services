@@ -64,6 +64,7 @@ class ClientController extends Controller
         return $this->ok([
             'deployment' => $workforce->headcountByClient($client->id) + ['mock' => true],
             'billing' => $billing->paymentStatus($client->id) + ['mock' => true],
+            'fulfillment' => \App\Services\Insights\ClientFulfillment::forClient($client),
             'job_orders' => [
                 'count' => $jobs->count(),
                 'active' => $jobs->whereNotIn('status', ['billed'])->count(),

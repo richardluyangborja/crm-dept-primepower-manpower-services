@@ -205,3 +205,17 @@ Leads: *Waiting on you / Hot leads (70+) / Won over* + *Needs a response* chip
 Finance/Operations kept (cross-client managers; hub children are per-client
 lenses) with scope-sharpened subtitles stating "every client" vs "one client
 at a time".
+
+## 12. Front-office reframe (branch `feature/crm-frontoffice`)
+CRM = front office (relationship + decision-support layer); Client Management
+(job orders, fulfillment, deployment) and Finance (billing, invoices, payments)
+are back-office core ops consumed read-only via contract interfaces. UI drops
+"Core-1/Dept-5/mock" badges for "via Client Management" / "via Finance" source
+tags. Client 360 grows a header KPI strip (contracts, open deals, fulfillment %,
+monthly value, satisfaction) plus Contracts, Operations (required/deployed/
+remaining, fulfillment %, Open→Fully Fulfilled), and Insights sections — the
+dormant `GET /insights/clients/{id}` wired up with 4 new rules (unfilled gap,
+renewal ≤60d, satisfaction drop ≥2pts, expansion). Job-order advance is removed
+from the UI and guarded to 403 server-side. Dashboard adds a lifecycle strip
+(contracts, monthly recurring, deployed, AR, renewals ≤60d). Backend adds
+`ClientFulfillment` + `clients/{id}/operations.fulfillment`; no new tables.

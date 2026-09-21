@@ -19,9 +19,9 @@ interface JobOrder {
 const JO_FLOW = ['draft', 'staffed', 'deployed', 'billed'] as const;
 
 /**
- * Phase 2C — read-only Core-1 Operations board (specs/18).
- * Visibility only: staffing stages advance on the client timeline,
- * never here. Everything is mock-labeled.
+ * Phase 2C — read-only Client Management operations board (specs/18).
+ * Visibility only: progression happens on the Client Management side,
+ * never here. Everything is source-tagged.
  */
 export function OperationsPage() {
   const jobsQ = useQuery({
@@ -39,7 +39,7 @@ export function OperationsPage() {
       <div>
         <h1 className="text-xl font-bold">Operations</h1>
         <p className="text-sm text-[var(--text-muted)]">
-          Read-only view into mock Core-1 execution: job orders across every client and total deployed headcount.
+          Read-only view into Client Management execution: job orders across every client and total deployed headcount.
           Staffing advances on each client's timeline — nothing here mutates state. For one client at a time, use <Link to="/pipeline/staffing" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Deployed Staff</Link>.
         </p>
       </div>
@@ -50,7 +50,7 @@ export function OperationsPage() {
           <p className="text-2xl font-bold tabular-nums">{rows.filter((r) => r.status !== 'billed').length}</p>
         </div>
         <div className="card p-4">
-          <p className="text-xs uppercase text-[var(--text-muted)]">Deployed headcount Ⓜ</p>
+          <p className="text-xs uppercase text-[var(--text-muted)]">Deployed headcount ⓘ</p>
           <p className="text-2xl font-bold tabular-nums">{totalHeadcount}</p>
         </div>
         <div className="card p-4">

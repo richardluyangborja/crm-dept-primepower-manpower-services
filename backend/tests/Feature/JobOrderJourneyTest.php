@@ -51,7 +51,7 @@ class JobOrderJourneyTest extends TestCase
         $this->assertSame(1, JobOrder::where('opportunity_id', $opp->id)->count());
     }
 
-    public function test_timeline_lists_and_advances_step_by_step(): void
+    public function test_timeline_lists_and_advance_is_read_only(): void
     {
         $o = $this->org();
         $t = auth('api')->login($o['rep']);
@@ -61,14 +61,12 @@ class JobOrderJourneyTest extends TestCase
         $list = $this->getJson("/api/v1/job-orders?client_id={$opp->client_id}", ['Authorization' => "Bearer $t"])->assertOk();
         $this->assertCount(1, $list->json('data'));
         $id = $list->json('data.0.id');
-        $this->assertSame('staffed', $list->json('data.0.next_status'));
 
-        foreach (['staffed', 'deployed', 'billed'] as $stage) {
-            $this->postJson("/api/v1/job-orders/$id/advance", [], ['Authorization' => "Bearer $t"])
-                ->assertOk()->assertJsonPath('data.status', $stage);
-        }
-        // Terminal: advancing a billed order → 422.
-        $this->postJson("/api/v1/job-orders/$id/advance", [], ['Authorization' => "Bearer $t"])->assertStatus(422);
+        // Front-office guard (specs/04): the CRM never advances core execution.
+        $this->postJson("/api/v1/job-orders/$id/advance", [], ['Authorization' => "Bearer $t"])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Job-order progression is handled by Client Management — the CRM shows read-only status.');
+        $this->assertSame('draft', JobOrder::find($id)->status);
     }
 
     public function test_operations_readbacks_are_mock_labeled_and_scoped(): void

@@ -11,18 +11,19 @@ pushWonOpportunity(Opportunity $opp): array; // -> ['job_order_ref'=>…]
 
 | Contract | Mock reads/writes | Fixture |
 |---|---|---|
-| `JobOrderService` (dept 1) | Won opp → `JO-2026-XXXX` ref; deployment status list | `fixtures/job_orders.json` |
-| `BillingService` (dept 5 finance) | Won opp → **first monthly invoice** `INV-…` (one month's billing, not contract total); payment status | `fixtures/invoices.json` |
-| `WorkforceService` (dept 2 HR) | headcount deployed per client | `fixtures/headcount.json` |
+| `JobOrderService` (Client Management, Core-1) | Won opp → `JO-2026-XXXX` ref (handoff into Client Management); deployment status list (read-only) | `fixtures/job_orders.json` |
+| `BillingService` (Finance) | Won opp → **first monthly invoice** `INV-…` (one month's billing, not contract total); payment status (read-only) | `fixtures/invoices.json` |
+| `WorkforceService` (Client Management headcount) | headcount deployed per client (read-only) | `fixtures/headcount.json` |
 | `AnalyticsExport` (dept 9 BI) | aggregate endpoint consumed by BI (mock consumer script) | `fixtures/bi_pull.json` |
 | `ContractSigning` (Core-3 docs + Governance legal + Facilities contracts — all paper-backed) | Signing persists a mock `contracts` row (`CTR-2026-XXXX`: terms snapshot + start date); surfaced read-only, no live system | — (row payload doubles as the record) |
-| `StaffingBoard` (Core-1/Dept-2 rollup) | `GET /staffing` aggregates visible clients × fixture + linked job orders; totals in meta | `fixtures/headcount.json` |
+| `StaffingBoard` (Client Management rollup) | `GET /staffing` aggregates visible clients × fixture + linked job orders; totals in meta | `fixtures/headcount.json` |
 | `BiBreakdown` (Dept-9 style aggregates) | `GET /bi/client-breakdown` reuses Forecast/Churn/NPS/AR services per visible client; manager+ | — (computed live, mock-labeled) |
 | `NotifyService` | mail/SMS → `Log` + `notifications` row + `mock_outbox.json` | — |
 | `OtpService` (`16`) | OTP send/verify → `Log` + `mock_outbox.json`, `OTP_MODE=mock` | `fixtures/otp_outbox.json` |
 | `AiService` (`15`) | insights/predict → deterministic fixtures, `AI_MODE=mock` | `fixtures/ai/*.json` |
 
 ## 2. Conventions
+- Front-office rule: the CRM reads core-department state and writes only the win handoff (contract + JO draft + first invoice via the contracts above). Progression of job orders, deployment, payments, and collections belongs to Client Management and Finance — `POST /job-orders/{id}/advance` is guarded to 403 and the UI offers no advance action.
 - `INTEGRATIONS_MODE=mock|live` global + per-service override (`JOBORDER_MODE`). Mock latency 100–300ms + `X-Mock: true` header so UI can show "Mock mode" banner.
 - Timeouts 5s, retry once, failure → toast "External system unavailable — saved locally, will sync" + `integration_jobs` row (status pending) for later replay.
 - Webhooks (post-v1): `POST /webhooks/{dept}` HMAC stub, logged to `webhook_logs`.

@@ -29,9 +29,10 @@ export function DashboardPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Dashboard</h1>
-        <p className="text-sm text-[var(--text-muted)]">Pipeline health, satisfaction and next actions. AI insights carry an “AI preview” badge (specs/15).</p>
+        <p className="text-sm text-[var(--text-muted)]">The whole client lifecycle — sales, contracts, Client Management, and Finance summaries. AI insights carry an “AI preview” badge (specs/15).</p>
       </div>
       <NarrativeStrip data={data} />
+      <LifecycleStrip />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} />
         <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" />
@@ -110,8 +111,67 @@ export function DashboardPage() {
   );
 }
 
-function NarrativeStrip({ data }: { data: {
-  forecast: { open_centavos: number; weighted_centavos: number; count: number };
+interface LifecycleContract {
+  id: number; ref: string; client_id: number; client_name?: string;
+  monthly_billing_centavos: number | null; start_date: string | null;
+  contract_months: number | null; status: string;
+}
+
+/** Lifecycle strip (specs/04): contract + Client Management + Finance summaries, read-only. */
+function LifecycleStrip() {
+  const contractsQ = useQuery({
+    queryKey: ['contracts', 'dashboard'],
+    queryFn: async () => (await api.get('/contracts', { params: { status: 'active', per_page: 100 } })).data.data as LifecycleContract[],
+  });
+  const staffingQ = useQuery({
+    queryKey: ['staffing', 'dashboard'],
+    queryFn: async () => (await api.get('/staffing')).data as { meta: { total_deployed: number; total_job_orders: number } },
+  });
+  const financeQ = useQuery({
+    queryKey: ['finance-summary', 'dashboard'],
+    queryFn: async () => (await api.get('/finance/summary')).data.data as { outstanding_total_centavos: number },
+  });
+
+  const contracts = contractsQ.data ?? [];
+  const monthly = contracts.reduce((a, c) => a + (c.monthly_billing_centavos ?? 0), 0);
+  const renewals = contracts
+    .map((c) => {
+      if (!c.start_date || !c.contract_months) return null;
+      const end = new Date(c.start_date);
+      end.setMonth(end.getMonth() + c.contract_months);
+      return { ...c, end };
+    })
+    .filter((c): c is LifecycleContract & { end: Date } => !!c && c.end >= new Date() && c.end <= new Date(Date.now() + 60 * 864e5))
+    .sort((a, b) => a.end.getTime() - b.end.getTime())
+    .slice(0, 3);
+  const loading = contractsQ.isLoading || staffingQ.isLoading || financeQ.isLoading;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard label="Active contracts" value={loading ? '…' : String(contracts.length)} sub="commercial relationships live now" />
+        <KpiCard label="Monthly recurring" value={loading ? '…' : formatPHP(monthly)} sub="via Finance-tracked contracts" />
+        <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="via Client Management" />
+        <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="via Finance" />
+      </div>
+      {renewals.length > 0 && (
+        <div className="card p-4">
+          <h2 className="mb-2 font-semibold">Renewals approaching <span className="text-xs font-normal text-[var(--text-muted)]">(next 60 days)</span></h2>
+          <ul className="flex flex-col gap-1 text-sm">
+            {renewals.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-2 border-b border-[var(--border)] pb-1 last:border-0">
+                <Link to={`/clients/${c.client_id}`} className="font-medium text-sky-700 hover:underline dark:text-sky-300">{c.client_name ?? c.ref}</Link>
+                <span className="text-xs text-[var(--text-muted)] tabular-nums">{c.ref} · ends {c.end.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NarrativeStrip({ data }: { data: {  forecast: { open_centavos: number; weighted_centavos: number; count: number };
   nps_avg?: number | null;
   at_risk?: { client_name: string; level: string }[];
   next_best_actions: { kind: string }[];

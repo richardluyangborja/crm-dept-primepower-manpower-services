@@ -6,12 +6,14 @@
 ## 1. Vision
 Build a modern, intuitive **Client Relationship Management (CRM) system** for **PrimePower Manpower Services**, a manpower company. The CRM manages **client companies** (current + prospective) that request manpower — NOT applicants/workers (owned by other depts).
 
+**Positioning: the CRM is the front office.** It owns the relationship lifecycle — acquiring leads, managing opportunities, maintaining client context, tracking communication and follow-ups, monitoring satisfaction, and decision support. Client Management (job orders, fulfillment, deployment) and Finance (billing, invoices, payments, receivables) are back-office core operations: the CRM displays their summarized status read-only and never performs their transactions. The win handoff (contract + job-order draft + first invoice) is the single sanctioned write into core flow.
+
 Goals:
 - Centralize lead → client → opportunity lifecycle.
 - Visualize pipeline, track satisfaction, log all communications, never miss a follow-up.
 - **AI-assisted data analytics + customer intelligence + management reports for decision support** (required by research title; see `15`). Phase 1 = rule-based insights + mocked AI; Phase 2 = real models.
 - Role-based access (superadmin, admin, manager, sales representative; extensible).
-- API-first, integration-ready with the other 9 departments; mocks + PH-localized seeds for now.
+- API-first, integration-ready with the other 9 departments; mocks + PH-localized seeds for now. Core-department data (deployment, headcount, billing) is consumed read-only through contract interfaces and surfaced with "via …" source tags.
 - Reusable frontend components + reusable backend code; lots of inline instructions + interaction feedback.
 - **Security (required, deferred — not MVP priority due to complexity): OTP + 5-min session timeout** (see `16`). Spec'd now, built after core modules + AI reports.
 
@@ -46,16 +48,16 @@ Source: `list-of-departments.md`. CRM is dept #10.
 
 | # | Dept / system | CRM relationship (v1 = mock) |
 |---|---|---|
-| 1 | Client acquisition, recruitment, deployment | **HIGH** — CRM client → Job Order (mock); deployment status read-back (mock) |
-| 2 | HR info & operations | MED — headcount per client (mock read) |
+| 1 | Client acquisition, recruitment, deployment (**Client Management**) | **HIGH** — CRM hands over the won requirement (mock job order); fulfillment/deployed status reads back read-only (mock) |
+| 2 | HR info & operations | MED — deployed headcount per client (mock read) |
 | 3 | Training/compliance/benefits | LOW — none in v1 |
 | 4 | Governance/safety/admin | LOW — audit export |
-| 5 | Financial management | **HIGH** — Opportunity Won → AR/Collection draft (mock); payment status (mock) |
+| 5 | Financial management (**Finance**) | **HIGH** — Opportunity Won → first-month invoice draft (mock); AR/payment status reads back read-only (mock) |
 | 6 | Supply chain/inventory | LOW — none |
 | 7 | Fleet & transportation | LOW — site-visit transport request stub (optional) |
 | 8 | Facilities/admin | LOW — meeting room stub (optional) |
 | 9 | BI & analytics | **HIGH** — CRM exposes aggregate endpoints; BI pulls (mock consumer) |
-| 10 | CRM (this system) | owner of leads/clients/opps/comms/surveys/followups |
+| 10 | CRM (this system) | front office: leads/clients/opps/comms/surveys/followups + read-only core summaries |
 
 Contract rule: every cross-dept call goes through `App\Services\Contracts\*` with a `Mock*` implementation when `INTEGRATIONS_MODE=mock`. See `11-integrations-mocks.md`.
 

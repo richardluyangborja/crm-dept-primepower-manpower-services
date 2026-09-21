@@ -20,7 +20,7 @@ interface Invoice {
   due_at: string | null;
 }
 
-/** Pipeline hub child: per-client invoice detail (mock Dept-5). */
+/** Pipeline hub child: per-client invoice detail (via Finance). */
 export function PipelineFinancePage() {
   const { clientId, setClientId } = useClientParam();
   const invoicesQ = useQuery({
@@ -35,7 +35,7 @@ export function PipelineFinancePage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Pipeline · Billing</h1>
-        <p className="text-sm text-[var(--text-muted)]">Per-client invoice detail. Mock Dept-5 data — full ledger lives in <Link to="/finance" className="text-sky-700 hover:underline dark:text-sky-300">Finance</Link>.</p>
+        <p className="text-sm text-[var(--text-muted)]">Per-client invoice detail, via Finance — full ledger lives in <Link to="/finance" className="text-sky-700 hover:underline dark:text-sky-300">Finance</Link>.</p>
       </div>
       <div className="flex gap-2">
         <ClientPicker clientId={clientId} onChange={setClientId} />

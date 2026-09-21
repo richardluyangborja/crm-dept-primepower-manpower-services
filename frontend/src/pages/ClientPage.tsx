@@ -7,7 +7,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
-import { ClientJourney, ClientOpsCards, apiErr } from '../components/crm/ClientWidgets';
+import { ClientJourney, apiErr } from '../components/crm/ClientWidgets';
 import { Star } from 'lucide-react';
 
 interface ClientFull {
@@ -26,10 +26,25 @@ interface ClientFull {
 
 const SECTIONS = [
   { id: 'profile', label: 'Profile' },
-  { id: 'deals', label: 'Deals & Orders' },
+  { id: 'deals', label: 'Deals' },
+  { id: 'contracts', label: 'Contracts' },
+  { id: 'operations', label: 'Operations' },
   { id: 'conversations', label: 'Conversations' },
   { id: 'billing', label: 'Billing' },
+  { id: 'insights', label: 'Insights' },
 ];
+
+const FULFILLMENT_LABELS: Record<string, string> = {
+  none: 'No job orders yet',
+  open: 'Open',
+  processing: 'Processing',
+  partially_fulfilled: 'Partially fulfilled',
+  fully_fulfilled: 'Fully fulfilled',
+};
+
+interface HeaderContract { id: number; status: string; monthly_billing_centavos: number | null; }
+interface HeaderFulfillment { required: number; deployed: number; remaining: number; pct: number | null; status: string; }
+interface HeaderSurvey { id: number; response?: { score: number } | null; }
 
 export function ClientPage() {
   const { id = '' } = useParams();
@@ -39,6 +54,35 @@ export function ClientPage() {
     queryFn: async () => (await api.get(`/clients/${id}`)).data.data as ClientFull,
     enabled: id !== '',
   });
+  const cid = detailQ.data?.id ?? 0;
+
+  // Header strip: one number per lifecycle area, each from its owning query.
+  const contractsQ = useQuery({
+    queryKey: ['contracts', `client-${cid}`],
+    queryFn: async () => (await api.get('/contracts', { params: { client_id: cid, per_page: 100 } })).data.data as HeaderContract[],
+    enabled: cid > 0,
+  });
+  const openDealsQ = useQuery({
+    queryKey: ['opportunities', `client-${cid}`],
+    queryFn: async () => (await api.get('/opportunities', { params: { client_id: cid, per_page: 100 } })).data.data as { id: number; stage: string }[],
+    enabled: cid > 0,
+  });
+  const opsQ = useQuery({
+    queryKey: ['client-ops', cid],
+    queryFn: async () => (await api.get(`/clients/${cid}/operations`)).data.data as { fulfillment: HeaderFulfillment; billing: { outstanding_centavos?: number } },
+    enabled: cid > 0,
+  });
+  const satQ = useQuery({
+    queryKey: ['surveys', `client-${cid}`],
+    queryFn: async () => (await api.get('/surveys', { params: { client_id: cid, per_page: 10 } })).data.data as HeaderSurvey[],
+    enabled: cid > 0,
+  });
+
+  const activeContracts = (contractsQ.data ?? []).filter((c) => c.status === 'active');
+  const monthly = activeContracts.reduce((a, c) => a + (c.monthly_billing_centavos ?? 0), 0);
+  const openDeals = (openDealsQ.data ?? []).filter((o) => !['won', 'lost'].includes(o.stage)).length;
+  const ful = opsQ.data?.fulfillment;
+  const latestScore = (satQ.data ?? []).find((s) => s.response)?.response?.score;
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,6 +101,13 @@ export function ClientPage() {
               <StatusBadge value={detailQ.data.status} /> {detailQ.data.industry ?? '—'} · {[detailQ.data.address_city, detailQ.data.address_province].filter(Boolean).join(', ') || '—'}
             </p>
           </div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+            <div className="card p-3"><p className="text-xs text-[var(--text-muted)]">Active contracts</p><p className="text-xl font-bold tabular-nums">{contractsQ.isLoading ? '…' : activeContracts.length}</p></div>
+            <div className="card p-3"><p className="text-xs text-[var(--text-muted)]">Open deals</p><p className="text-xl font-bold tabular-nums">{openDealsQ.isLoading ? '…' : openDeals}</p></div>
+            <div className="card p-3"><p className="text-xs text-[var(--text-muted)]">Fulfillment <span title="Via Client Management">ⓘ</span></p><p className="text-xl font-bold tabular-nums">{opsQ.isLoading ? '…' : ful?.pct !== null && ful?.pct !== undefined ? `${ful.pct}%` : '—'}</p></div>
+            <div className="card p-3"><p className="text-xs text-[var(--text-muted)]">Monthly value</p><p className="text-xl font-bold tabular-nums">{contractsQ.isLoading ? '…' : formatPHP(monthly)}</p></div>
+            <div className="card p-3"><p className="text-xs text-[var(--text-muted)]">Satisfaction</p><p className="text-xl font-bold tabular-nums">{satQ.isLoading ? '…' : latestScore !== undefined ? `${latestScore}/10` : '—'}</p></div>
+          </div>
           <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
             {SECTIONS.map((s) => (
               <a key={s.id} href={`#${s.id}`}
@@ -71,12 +122,18 @@ export function ClientPage() {
             <h3 className="text-sm font-medium text-[var(--text-muted)]">People to talk to</h3>
             <ContactsTab client={detailQ.data} />
           </section>
-          <section id="deals" aria-label="Deals and orders" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Deals & Orders</h2>
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">Open & past deals</h3>
+          <section id="deals" aria-label="Deals" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Deals</h2>
+            <p className="text-sm text-[var(--text-muted)]">Every opportunity under this client — past and present. A new requirement never makes them a lead again.</p>
             <OppsTab clientId={detailQ.data.id} />
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">How the work is going</h3>
-            <ClientJourney clientId={detailQ.data.id} />
+          </section>
+          <section id="contracts" aria-label="Contracts" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Contracts</h2>
+            <ContractsSection clientId={detailQ.data.id} />
+          </section>
+          <section id="operations" aria-label="Operations" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Operations <span className="text-xs font-normal text-[var(--text-muted)]">via Client Management</span></h2>
+            <OperationsSection clientId={detailQ.data.id} />
           </section>
           <section id="conversations" aria-label="Conversations" className="flex scroll-mt-24 flex-col gap-3">
             <h2 className="text-base font-semibold">Conversations</h2>
@@ -88,8 +145,12 @@ export function ClientPage() {
             <FollowupsTab clientId={detailQ.data.id} />
           </section>
           <section id="billing" aria-label="Billing" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Billing</h2>
+            <h2 className="text-base font-semibold">Billing <span className="text-xs font-normal text-[var(--text-muted)]">via Finance</span></h2>
             <FinanceTab clientId={detailQ.data.id} />
+          </section>
+          <section id="insights" aria-label="Insights" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Insights</h2>
+            <InsightsSection clientId={detailQ.data.id} clientName={detailQ.data.name} />
           </section>
         </>
       )}
@@ -264,6 +325,91 @@ function FollowupsTab({ clientId }: { clientId: number }) {
   );
 }
 
+function ContractsSection({ clientId }: { clientId: number }) {
+  const q = useQuery({
+    queryKey: ['contracts', `client-${clientId}`],
+    queryFn: async () => (await api.get('/contracts', { params: { client_id: clientId, per_page: 100 } })).data.data as {
+      id: number; ref: string; title: string; headcount: number | null; contract_months: number | null;
+      monthly_billing_centavos: number | null; start_date: string | null; status: string;
+    }[],
+  });
+  if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading contracts…</p>;
+  return (
+    <DataTable
+      rows={q.data ?? []}
+      columns={[
+        { key: 'r', header: 'Contract', render: (r) => <span className="font-medium">{r.ref}</span> },
+        { key: 't', header: 'Terms', render: (r) => <span className="tabular-nums">{r.headcount ?? '?'} heads{r.contract_months ? ` × ${r.contract_months} mo` : ''}</span> },
+        { key: 'm', header: 'Monthly', render: (r) => <span className="tabular-nums">{r.monthly_billing_centavos ? formatPHP(r.monthly_billing_centavos) : '—'}</span> },
+        { key: 's', header: 'From', render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString('en-PH', { month: 'short', year: 'numeric' }) : '—' },
+        { key: 'st', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
+      ]}
+      empty={<EmptyState title="No contracts yet" hint="Win a deal and the commercial agreement lands here." />}
+    />
+  );
+}
+
+function OperationsSection({ clientId }: { clientId: number }) {
+  const q = useQuery({
+    queryKey: ['client-ops', clientId],
+    queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as {
+      fulfillment: { required: number; deployed: number; remaining: number; pct: number | null; status: string };
+    },
+  });
+  const f = q.data?.fulfillment;
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-[var(--text-muted)]">Summarized from Client Management — the CRM shows status, they run the deployment.</p>
+      {q.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading operations…</p> : !f || f.required === 0 ? (
+        <EmptyState title="Nothing deployed yet" hint="Active contracts will show required vs deployed headcount here." />
+      ) : (
+        <div className="card p-4">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+            <span><strong className="tabular-nums">{f.deployed}</strong> of <strong className="tabular-nums">{f.required}</strong> deployed</span>
+            <span className="text-[var(--text-muted)]"><strong className="tabular-nums">{f.remaining}</strong> remaining</span>
+            <span className="ml-auto"><StatusBadge value={FULFILLMENT_LABELS[f.status] ?? f.status} /></span>
+          </div>
+          <div className="mt-2 h-2.5 overflow-hidden rounded bg-slate-100 dark:bg-slate-800" role="progressbar" aria-valuenow={f.pct ?? 0} aria-valuemin={0} aria-valuemax={100} aria-label="Fulfillment">
+            <div className="h-full rounded bg-sky-500" style={{ width: `${f.pct ?? 0}%` }} />
+          </div>
+        </div>
+      )}
+      <ClientJourney clientId={clientId} />
+    </div>
+  );
+}
+
+function InsightsSection({ clientId, clientName }: { clientId: number; clientName: string }) {
+  const q = useQuery({
+    queryKey: ['client-insights', clientId],
+    queryFn: async () => (await api.get(`/insights/clients/${clientId}`)).data.data as {
+      level: string; drivers: string[]; nba: { kind: string; title: string; link: string }[]; ai_preview?: boolean;
+    },
+  });
+  if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading insights…</p>;
+  if (q.isError || !q.data) return <p className="text-sm text-[var(--text-muted)]">No insights for this client yet.</p>;
+  return (
+    <div className="card flex flex-col gap-2 p-4">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-[var(--text-muted)]">Relationship health:</span>
+        <StatusBadge value={q.data.level} />
+        {q.data.ai_preview && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">AI preview</span>}
+      </div>
+      <ul className="list-disc pl-5 text-sm">
+        {q.data.drivers.map((d, i) => <li key={i}>{d}</li>)}
+      </ul>
+      {q.data.nba.length > 0 && (
+        <div className="mt-1 flex flex-col gap-1.5">
+          {q.data.nba.map((a, i) => (
+            <Link key={i} to={a.link} className="text-sm text-sky-700 hover:underline dark:text-sky-300">→ {a.title}</Link>
+          ))}
+        </div>
+      )}
+      {q.data.nba.length === 0 && <p className="text-sm text-[var(--text-muted)]">{clientName} looks healthy — nothing needs attention.</p>}
+    </div>
+  );
+}
+
 function FinanceTab({ clientId }: { clientId: number }) {
   const opsQ = useQuery({
     queryKey: ['client-ops', clientId],
@@ -275,9 +421,8 @@ function FinanceTab({ clientId }: { clientId: number }) {
   });
   return (
     <div className="flex flex-col gap-3">
-      <ClientOpsCards clientId={clientId} />
       <div className="card p-4">
-        <h3 className="font-medium">Account finance <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 5)</span></h3>
+        <h3 className="font-medium">Account finance <span className="text-xs font-normal text-[var(--text-muted)]">(via Finance)</span></h3>
         {opsQ.isLoading ? <p className="mt-1 text-sm">Loading…</p> : (
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <div className="rounded-lg border border-[var(--border)] p-2">

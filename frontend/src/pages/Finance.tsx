@@ -78,7 +78,7 @@ export function FinancePage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Finance</h1>
-        <p className="text-sm text-[var(--text-muted)]">Every client, full ledger — AR aging, payments, and collection follow-ups. Mock Dept-5 data, no real money moves. For one client at a time, use <Link to="/pipeline/finance" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Billing</Link>.</p>
+        <p className="text-sm text-[var(--text-muted)]">Every client, full ledger — AR aging, payments, and collection follow-ups, via Finance (the CRM shows summaries; Finance owns the transactions). For one client at a time, use <Link to="/pipeline/finance" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Billing</Link>.</p>
       </div>
 
       {summaryQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading receivables…</p>

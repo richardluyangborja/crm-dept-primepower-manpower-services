@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Front-office reframe (branch `feature/crm-frontoffice`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Client Management / Finance naming + source tags | ✅ | No more Core-1/Dept-5/mock badges in UI |
+| Client 360: header KPIs + Contracts/Operations/Insights | ✅ | Fulfillment %, renewal/expansion/gap/drop rules |
+| Advance removed (UI) + guarded 403 (API) | ✅ | `FrontOfficeTest` + journey test updated |
+| Dashboard lifecycle strip | ✅ | Contracts, MRR, deployed, AR, renewals |
+| Specs 00/04/10/11/18 + this tracker, breakdown.txt removed | ✅ | Front-office positioning recorded |
+
 ## Filter-first hub pages — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

@@ -16,7 +16,7 @@ interface StaffRow {
   mock: boolean;
 }
 
-/** Pipeline hub child: per-client staffing detail (mock Core-1/Dept-2). Read-only. */
+/** Pipeline hub child: per-client staffing detail (via Client Management). Read-only. */
 export function PipelineStaffingPage() {
   const { clientId, setClientId } = useClientParam();
   const staffingQ = useQuery({
@@ -32,7 +32,7 @@ export function PipelineStaffingPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Pipeline · Deployed Staff</h1>
-        <p className="text-sm text-[var(--text-muted)]">Deployed headcount per client. Read-only mock Dept-1/Dept-2 data — advancing happens on client timelines.</p>
+        <p className="text-sm text-[var(--text-muted)]">Deployed headcount per client. Read-only, via Client Management — progression happens on their side.</p>
       </div>
       <div className="flex gap-2">
         <ClientPicker clientId={clientId} onChange={setClientId} />
