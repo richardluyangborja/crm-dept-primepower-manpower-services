@@ -60,11 +60,11 @@
 
 | Item | Status | Notes |
 |---|---|---|
-| Contract stage + signing terms flow | 🔄 | Keys frozen, labels via master data; terms-gated signing; mock contracts row |
-| Per-head financing on deals + cards + columns | 🔄 | Server-computed monthly/total; win issues first monthly invoice |
-| Flexible sources + capture headcount/positions | 🔄 | Facebook default; +10 score for stated need |
-| No-emoji pass + specs/10 constraint | 🔄 | lucide-only, verified icons |
-| Suite + build + smoke green | ⬜ | Then PR to `develop` |
+| Contract stage + signing terms flow | ✅ | Keys frozen, labels via master data; terms-gated signing; mock contracts row |
+| Per-head financing on deals + cards + columns | ✅ | Server-computed monthly/total; win issues first monthly invoice |
+| Flexible sources + capture headcount/positions | ✅ | Facebook default; +10 score for stated need |
+| No-emoji pass + specs/10 constraint | ✅ | lucide-only, zero emoji-range chars, KpiCard deltas fixed |
+| Suite + build + smoke green, CI green | ✅ | Pushed (c2d4b85) — open PR to `develop`, then fast release to `main` |
 
 ## Phase 2 — submodule expansion (target `crm-v1.2.0`)
 
