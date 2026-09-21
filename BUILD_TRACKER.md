@@ -12,6 +12,13 @@
 | Empty-state CTAs + deep links | ✅ | Clients→leads CTA; `?client=` preselects Pipeline form + auto-opens; journey “New deal” link |
 | Dashboard narrative strip | ✅ | Plain-language paragraph from live KPIs, above the cards |
 
+## Pipeline hub iteration — MERGED to `main` (fast release, no tag)
+
+| Item | Status | Notes |
+|---|---|---|
+| Collapsible hub, card links, 4 children, staffing/BI endpoints | ✅ | Merged via develop; Core-2 gap + BI drilldown closed |
+| Branches cleaned | ⬜ | `feature/crm-pipeline-hub` remote delete pending |
+
 ## Pipeline hub iteration (branch `feature/crm-pipeline-hub`)
 
 | Item | Status | Notes |
