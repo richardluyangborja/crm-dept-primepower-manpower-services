@@ -4,6 +4,17 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Lead & Client hub iteration (branch `feature/crm-lead-client-hub`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Sidebar parent Lead & Client Tracking → Leads + Clients | ✅ | Collapsible, Pipeline-hub pattern |
+| Leads page sectionized (queue + all inquiries) | ✅ | Score-sorted queue, capture/import as actions |
+| Clients page `/clients` (directory + People + won-over) | ✅ | New route; old tab toggle deleted |
+| Backend `GET /contacts` + scoping/search test | ✅ | `LeadClientHubTest`, client_name included |
+| Core-1 link audit (no new surface) | ✅ | Clients↔staffing, 360 cards→boards, tour copy |
+| Specs 04/10/18 + this tracker | ✅ | Hub model + overlap contract |
+
 ## v2 journey B (same branch `feature/crm-journey-a`)
 
 | Item | Status | Notes |

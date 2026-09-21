@@ -28,7 +28,16 @@ const groups: { label: string; links: NavLinkItem[] }[] = [
   {
     label: 'Sales',
     links: [
-      { to: '/leads', label: 'Leads & Clients', icon: <Users size={18} /> },
+      {
+        to: '/leads',
+        label: 'Lead & Client Tracking',
+        icon: <Users size={18} />,
+        storageKey: 'crm.nav.leadclient',
+        children: [
+          { to: '/leads', label: 'Leads' },
+          { to: '/clients', label: 'Clients' },
+        ],
+      },
       {
         to: '/pipeline',
         label: 'Opportunity Pipeline',

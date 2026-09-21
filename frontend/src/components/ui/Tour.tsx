@@ -21,7 +21,7 @@ const STEPS: Step[] = [
   {
     route: '/leads',
     title: '2/5 · Capture and convert',
-    body: 'Leads become clients here. Open a client for the full profile: 8 tabs covering contacts, deals, journey, and finance — the heart of the main process.',
+    body: 'Leads live here: work the Needs-a-response queue, then browse all inquiries. Converted clients move to Clients — open one for the full profile: profile, deals & orders, conversations, and billing.',
   },
   {
     route: '/pipeline',

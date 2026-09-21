@@ -12,4 +12,9 @@ class Contact extends Model
     {
         return ['is_primary' => 'boolean'];
     }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
 }

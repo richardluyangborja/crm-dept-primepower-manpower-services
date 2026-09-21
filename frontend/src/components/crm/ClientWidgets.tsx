@@ -46,7 +46,7 @@ export function ClientOpsCards({ clientId }: { clientId: number }) {
     <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
       <div className="rounded-lg border border-[var(--border)] p-2">
         <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Mock Dept-2 read-back">Ⓜ</span></p>
-        <p className="font-semibold tabular-nums">{ops.deployment.deployed ?? 0} staff</p>
+        <p className="font-semibold tabular-nums"><Link to={`/pipeline/staffing?client=${clientId}`} className="text-sky-700 hover:underline dark:text-sky-300">{ops.deployment.deployed ?? 0} staff</Link></p>
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
         <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Mock Dept-5 read-back">Ⓜ</span></p>
@@ -54,7 +54,7 @@ export function ClientOpsCards({ clientId }: { clientId: number }) {
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
         <p className="text-xs text-[var(--text-muted)]">Job orders</p>
-        <p className="font-semibold tabular-nums">{ops.job_orders.active} active / {ops.job_orders.count}</p>
+        <p className="font-semibold tabular-nums"><Link to="/operations" className="text-sky-700 hover:underline dark:text-sky-300">{ops.job_orders.active} active / {ops.job_orders.count}</Link></p>
       </div>
     </div>
   );

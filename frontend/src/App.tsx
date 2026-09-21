@@ -18,6 +18,7 @@ import { FollowupsPage } from './pages/Followups';
 import { LeadsPage } from './pages/Leads';
 import { LeadPage } from './pages/LeadPage';
 import { ClientPage } from './pages/ClientPage';
+import { ClientsPage } from './pages/Clients';
 import { PipelinePage } from './pages/Pipeline';
 import { PipelineFinancePage } from './pages/PipelineFinance';
 import { PipelineStaffingPage } from './pages/PipelineStaffing';
@@ -54,6 +55,7 @@ export default function App() {
               <Route index element={<DashboardPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="leads/:id" element={<LeadPage />} />
+              <Route path="clients" element={<ClientsPage />} />
               <Route path="clients/:id" element={<ClientPage />} />
               <Route path="pipeline" element={<PipelinePage />} />
               <Route path="pipeline/finance" element={<PipelineFinancePage />} />

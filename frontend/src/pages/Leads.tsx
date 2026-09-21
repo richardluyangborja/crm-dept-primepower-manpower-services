@@ -22,15 +22,6 @@ interface Lead {
   score: number;
 }
 
-interface Client {
-  id: number;
-  name: string;
-  industry: string | null;
-  address_city: string | null;
-  status: string;
-  contact_phone: string | null;
-}
-
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 
 function ScoreBar({ v }: { v: number }) {
@@ -45,7 +36,6 @@ function ScoreBar({ v }: { v: number }) {
 }
 
 export function LeadsPage() {
-  const [tab, setTab] = useState<'leads' | 'clients'>('leads');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -58,14 +48,9 @@ export function LeadsPage() {
     queryKey: ['leads', q, status],
     queryFn: async () => (await api.get('/leads', { params: { q: q || undefined, status: status || undefined, per_page: 50 } })).data,
   });
-  const clientsQ = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => (await api.get('/clients', { params: { per_page: 50 } })).data,
-  });
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['leads'] });
-    qc.invalidateQueries({ queryKey: ['clients'] });
     qc.invalidateQueries({ queryKey: ['dashboard'] });
   };
 
@@ -86,17 +71,27 @@ export function LeadsPage() {
       toast('success', `Converted — client #${d.data.client_id} created.`);
       setConvertId(null);
       invalidate();
-      setTab('clients');
     },
     onError: (e: unknown) => toast('error', apiErr(e, 'Conversion failed. Maybe already converted?')),
   });
 
+  const changeStatus = (r: Lead, st: string) => {
+    if (st === 'unqualified') {
+      const reason = window.prompt('Why is this lead unqualified? (required)');
+      if (!reason) return;
+      setStatusMut.mutate({ id: r.id, st, reason });
+    } else setStatusMut.mutate({ id: r.id, st });
+  };
+
+  const all: Lead[] = leadsQ.data?.data ?? [];
+  const queue = all.filter((l) => ['new', 'contacted'].includes(l.status)).sort((a, b) => b.score - a.score);
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">Leads & Clients</h1>
-          <p className="text-sm text-[var(--text-muted)]">Capture in under a minute, qualify with scoring, convert to client.</p>
+          <h1 className="text-xl font-bold">Leads</h1>
+          <p className="text-sm text-[var(--text-muted)]">Work the queue first, then browse everyone. Capture in under a minute.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowImport(true)} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold">
@@ -107,79 +102,56 @@ export function LeadsPage() {
           </button>
         </div>
       </div>
+      <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
+        <a href="#needs-response" className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+          Needs a response{queue.length > 0 ? ` (${queue.length})` : ''}
+        </a>
+        <a href="#all-inquiries" className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+          All inquiries
+        </a>
+      </nav>
 
-      <div className="flex gap-2">
-        {(['leads', 'clients'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-medium ${tab === t ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border border-[var(--border)]'}`}
-          >
-            {t === 'leads' ? 'Leads' : 'Clients'}
-          </button>
-        ))}
-      </div>
+      <section id="needs-response" aria-label="Needs a response" className="flex scroll-mt-24 flex-col gap-2">
+        <h2 className="text-base font-semibold">Needs a response</h2>
+        <p className="text-sm text-[var(--text-muted)]">New and contacted leads, hottest score first. Qualify, disqualify, or convert — don't let them sit.</p>
+        {leadsQ.isLoading ? (
+          <p className="text-sm text-[var(--text-muted)]">Loading queue…</p>
+        ) : leadsQ.isError ? (
+          <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
+        ) : (
+          <LeadTable
+            rows={queue}
+            onStatus={changeStatus}
+            onConvert={setConvertId}
+            empty={<EmptyState title="All caught up" hint="Nothing waiting for a first response. New inquiries will land here." />}
+          />
+        )}
+      </section>
 
-      {tab === 'leads' ? (
-        <>
-          <div className="flex gap-2">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
-              <option value="">All statuses</option>
-              {LEAD_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          {leadsQ.isLoading ? (
-            <p className="text-sm text-[var(--text-muted)]">Loading leads…</p>
-          ) : leadsQ.isError ? (
-            <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
-          ) : (
-            <DataTable<Lead>
-              rows={leadsQ.data.data}
-              columns={[
-                { key: 'co', header: 'Company', render: (r) => <Link to={`/leads/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.company_name}</Link> },
-                { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },
-                { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
-                { key: 'st', header: 'Status', render: (r) => (
-                  <select value={r.status} disabled={r.status === 'converted'} onChange={(e) => {
-                    const st = e.target.value;
-                    if (st === 'unqualified') {
-                      const reason = window.prompt('Why is this lead unqualified? (required)');
-                      if (!reason) { e.target.value = r.status; return; }
-                      setStatusMut.mutate({ id: r.id, st, reason });
-                    } else setStatusMut.mutate({ id: r.id, st });
-                  }} className="rounded border border-[var(--border)] bg-transparent px-1 py-0.5 text-xs" aria-label={`Status of ${r.company_name}`}>
-                    {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                ) },
-                { key: 'ac', header: 'Actions', render: (r) => r.status === 'converted'
-                  ? <StatusBadge value="converted" />
-                  : <button onClick={() => setConvertId(r.id)} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Convert →</button> },
-              ]}
-              empty={<EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          {clientsQ.isLoading ? (
-            <p className="text-sm text-[var(--text-muted)]">Loading clients…</p>
-          ) : (
-            <DataTable<Client>
-              rows={clientsQ.data?.data ?? []}
-              columns={[
-                { key: 'n', header: 'Client', render: (r) => <Link to={`/clients/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.name}</Link> },
-                { key: 'i', header: 'Industry', render: (r) => r.industry ?? '—' },
-                { key: 'c', header: 'City', render: (r) => r.address_city ?? '—' },
-                { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
-              ]}
-              empty={<EmptyState title="No clients yet" hint="Convert a qualified lead to create your first client profile." action={<button onClick={() => setTab('leads')} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Find a lead to convert →</button>} />}
-            />
-          )}
-        </>
-      )}
+      <section id="all-inquiries" aria-label="All inquiries" className="flex scroll-mt-24 flex-col gap-2">
+        <h2 className="text-base font-semibold">All inquiries</h2>
+        <div className="flex gap-2">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            {LEAD_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        {leadsQ.isLoading ? (
+          <p className="text-sm text-[var(--text-muted)]">Loading leads…</p>
+        ) : leadsQ.isError ? (
+          <div className="card p-6 text-sm">Couldn't load leads. <button className="text-sky-600 underline" onClick={() => leadsQ.refetch()}>Retry</button></div>
+        ) : (
+          <LeadTable
+            rows={all}
+            onStatus={changeStatus}
+            onConvert={setConvertId}
+            empty={<EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
+          />
+        )}
+      </section>
 
       {showNew && <NewLeadForm onClose={() => setShowNew(false)} onDone={invalidate} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={invalidate} />}
@@ -191,6 +163,34 @@ export function LeadsPage() {
         onConfirm={() => convertId !== null && convertMut.mutate({ id: convertId, withOpp: true })}
       />
     </div>
+  );
+}
+
+function LeadTable({ rows, onStatus, onConvert, empty }: {
+  rows: Lead[];
+  onStatus: (r: Lead, st: string) => void;
+  onConvert: (id: number) => void;
+  empty: React.ReactNode;
+}) {
+  return (
+    <DataTable<Lead>
+      rows={rows}
+      columns={[
+        { key: 'co', header: 'Company', render: (r) => <Link to={`/leads/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.company_name}</Link> },
+        { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },
+        { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
+        { key: 'st', header: 'Status', render: (r) => (
+          <select value={r.status} disabled={r.status === 'converted'} onChange={(e) => onStatus(r, e.target.value)}
+            className="rounded border border-[var(--border)] bg-transparent px-1 py-0.5 text-xs" aria-label={`Status of ${r.company_name}`}>
+            {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        ) },
+        { key: 'ac', header: 'Actions', render: (r) => r.status === 'converted'
+          ? <StatusBadge value="converted" />
+          : <button onClick={() => onConvert(r.id)} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Convert →</button> },
+      ]}
+      empty={empty}
+    />
   );
 }
 

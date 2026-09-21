@@ -178,11 +178,21 @@ Billing/Contracts reuse existing actions). New backend surface: `GET /staffing`
 (visible clients × fixture + linked job orders, totals in meta) and
 `GET /bi/client-breakdown` (per-client deals/won/NPS/AR/risk, manager+).
 
-## 9. Hub polish iteration (branch `feature/crm-hub-polish`)
-Friendly child titles (Visualization Board / Billing / Deployed Staff / Contracts —
+## 9. Hub polish iteration (branch `feature/crm-hub-polish`)Friendly child titles (Visualization Board / Billing / Deployed Staff / Contracts —
 no module/system jargon). BI Drilldown removed from the hub as non-priority
 (frontend page + route deleted; `GET /bi/client-breakdown` API retained for
 Reports later). Client 360 page drops the 8-tab layout for one scrolling page:
 Profile (stats + contacts) → Deals & Orders (deals + job-order journey) →
 Conversations (touchpoints + feedback + promised follow-ups) → Billing
 (ops cards + invoices), with anchor quick-jump links and `scroll-mt` offsets.
+
+## 10. Lead & Client hub iteration (branch `feature/crm-lead-client-hub`)
+Core-module prio: sidebar parent **Lead & Client Tracking** (collapsible, Pipeline-hub
+pattern) → **Leads** (`/leads`, sectionized: Needs-a-Response queue score-sorted +
+All Inquiries table; capture + CSV import as header actions) + **Clients** (`/clients`,
+new route, sectionized: directory with per-row Deployed-staff deep link + People via
+new `GET /contacts` + Recently Won Over from `status=converted`). Old leads/clients
+tab toggle deleted; conversion stays the single bridge (lead-row action → 360 page).
+No new Core-1 surface — Core-1 already lives in Deployed Staff / Operations / client
+journey; this cycle only audits the cross-links (Clients↔Deployed Staff, 360 ops cards
+→ staffing/operations, tour copy updated off "8 tabs").

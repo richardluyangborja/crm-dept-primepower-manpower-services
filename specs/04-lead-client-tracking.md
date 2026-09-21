@@ -4,7 +4,13 @@
 1. **Capture** — manual form, CSV import (mock template), duplicate guard. Sources are channel-flexible (`facebook` default/first, plus `gmail`, `phone`, referral, walk-in, website, cold_call, event) — Facebook is the common case, never the only one. Capture mirrors the Excel row: company + contact + phone + **headcount needed + positions**.
 2. **Qualification & Scoring** — status flow + 0–100 score (rule-based v1): +20 PH corporate email, +15 complete address, +25 valid +63 phone, +10 buyer signal (`headcount_needed` present), +40 manager override note.
 3. **360° Client Profile** — one scrolling page, no tabs: header + quick-jump links, then grouped sections (Profile incl. contacts → Deals & Orders → Conversations incl. comms/surveys/follow-ups → Billing).
-4. **Conversion** — lead→client→(optional) opportunity wizard.
+4. **Conversion** — lead→client→(optional) opportunity wizard, the single bridge between the two pages (action lives on lead rows, lands on the 360 page).
+
+## 1b. Hub model (no overlaps)
+Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipeline hub) with two sectionized pages — no per-operation sub-routes:
+- **Leads** (`/leads`): *Needs a Response* queue (`new` + `contacted`, score-sorted, inline qualify/disqualify/convert) → *All Inquiries* table (search + status filter). Capture form + CSV import stay header actions, not pages.
+- **Clients** (`/clients`): *All Clients* directory (search, per-row Deployed-staff deep link) → *People* (cross-client contacts via `GET /contacts`, primary first) → *Recently Won Over* (converted leads → client links, no new backend).
+- Overlap contract: record views live here; cross-record management stays in Comms/Surveys/Follow-ups/Finance/Operations; Core-1 execution stays read-only in Pipeline/Operations and is only *linked* (never copied) from hub pages.
 
 ## 2. User stories & acceptance
 - As rep I capture a lead in < 60s with guidance → required: company, contact name, phone/email, source; inline PH validation; duplicate warning (same phone/email) with "View existing" link; toast "Lead created — qualify it next".
@@ -18,11 +24,13 @@ GET    /leads?q&status&owner_id&sort  POST /leads  GET|PUT|DELETE /leads/{id}
 POST   /leads/{id}/convert {client_payload, create_opportunity?:bool}
 GET    /clients?q&status&industry&owner_id  POST /clients  GET|PUT|DELETE /clients/{id}
 GET|POST /clients/{id}/contacts  PUT|DELETE /contacts/{id}
+GET    /contacts?q&client_id (cross-client directory; client-scoped visibility, client_name included)
 ```
 Validation: `contact_phone` regex `^\+63\d{10}$`, email RFC, company unique-ish (warn not block). Scope: rep=own, manager=team, admin=all (Policy).
 
 ## 4. UI
-- **Leads list:** `DataTable` (company, contact, source badge, score bar, status, owner, updated) + filters + `New Lead` button; row click → drawer detail.
+- **Leads page:** quick-jump anchors + *Needs a Response* queue (score-sorted, count badge) + *All Inquiries* table; capture/import as header buttons; row click → lead detail.
+- **Clients page:** quick-jump anchors + directory + People + Recently Won Over; per-row staffing deep link (`/pipeline/staffing?client=`).
 - **Client 360:** header + `StatusBadge` + grouped sections (Profile / Deals & Orders / Conversations / Billing) with anchor quick-jump; convert wizard uses stepper + review screen.
 - Feedback: score tooltip explains points; duplicate modal; CSV import shows row errors with line numbers (mock parser, 500-row limit).
 

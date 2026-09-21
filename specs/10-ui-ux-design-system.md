@@ -5,7 +5,8 @@ Reference: `light-mode.png` (light) + `dark-mode.webp` (Settings → Appearance)
 ## 1. Layout shell (both modes)
 - **Left sidebar (grouped, collapsible):** logo `PRIMEPOWER MANPOWER / CRM`, sections:
   - `Dashboard` (KPIs + **AI insights preview + at-risk list**, see `15`)
-  - `SALES`: Leads & Clients, Opportunity Pipeline, Follow-ups
+  - `SALES`: Lead & Client Tracking (collapsible → Leads, Clients), Opportunity Pipeline (collapsible → Visualization Board, Billing, Deployed Staff, Contracts), Follow-ups
+  - Hub pattern: parent auto-expands on the active child, chevron toggle with `aria-expanded`, collapsed state in `localStorage`, plain-language child titles. Hub pages are sectionized single-scroll (quick-jump anchors + `scroll-mt`) rather than tabbed; cross-module moves are links, never copies.
   - `ENGAGEMENT`: Communications, Satisfaction & Surveys
   - `AI & ANALYTICS`: Reports (weekly/monthly packs, `15`; BI stub)
   - `SYSTEM`: Settings, (Superadmin) Users & Access

@@ -17,6 +17,7 @@ class ContactResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'is_primary' => (bool) $this->is_primary,
+            'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
         ];
     }
 }
