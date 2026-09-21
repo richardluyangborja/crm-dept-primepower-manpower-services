@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Lead & Client hub iteration (branch `feature/crm-lead-client-hub`)
+## Lead & Client hub iteration — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
