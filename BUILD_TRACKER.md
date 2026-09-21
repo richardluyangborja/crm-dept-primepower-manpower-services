@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Filter-first hub pages (branch `feature/crm-hub-filters-kpi`)
+## Filter-first hub pages — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
