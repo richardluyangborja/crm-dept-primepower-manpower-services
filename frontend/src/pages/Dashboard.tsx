@@ -125,7 +125,7 @@ function LifecycleStrip() {
   });
   const staffingQ = useQuery({
     queryKey: ['staffing', 'dashboard'],
-    queryFn: async () => (await api.get('/staffing')).data as { meta: { total_deployed: number; total_job_orders: number } },
+    queryFn: async () => (await api.get('/staffing')).data.data as { meta: { total_deployed: number; total_job_orders: number } },
   });
   const financeQ = useQuery({
     queryKey: ['finance-summary', 'dashboard'],
