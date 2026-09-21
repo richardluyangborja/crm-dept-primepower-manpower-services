@@ -8,6 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
 import { ClientJourney, ClientOpsCards, apiErr } from '../components/crm/ClientWidgets';
+import { Star } from 'lucide-react';
 
 interface ClientFull {
   id: number;
@@ -221,7 +222,7 @@ function SurveysTab({ clientId }: { clientId: number }) {
         columns={[
           { key: 't', header: 'Template', render: (r) => r.template_name ?? `#${r.id}` },
           { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
-          { key: 'sc', header: 'Score', render: (r) => (r.response ? `★ ${r.response.score}` : '—') },
+          { key: 'sc', header: 'Score', render: (r) => (r.response ? <span><Star size={11} className="mr-0.5 inline" />{r.response.score}</span> : '—') },
         ]}
         empty={<EmptyState title="No surveys yet" hint="Send the first NPS check to this client." action={<Link to="/surveys" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Go to Surveys</Link>} />}
       />

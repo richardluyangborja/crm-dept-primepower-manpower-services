@@ -5,6 +5,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
+import { Check } from 'lucide-react';
 
 interface Fup {
   id: number;
@@ -135,7 +136,7 @@ export function FollowupsPage() {
                 { key: 'd', header: 'Due', render: (r) => <span className={r.is_overdue ? 'font-semibold text-red-600' : ''}>{fmtDT(r.due_at)}</span> },
                 { key: 'p', header: 'Priority', render: (r) => <StatusBadge value={r.priority} /> },
                 { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
-                { key: 'a', header: 'Actions', render: (r) => r.status === 'done' ? <span className="text-xs text-[var(--text-muted)]">✓</span> : (
+                { key: 'a', header: 'Actions', render: (r) => r.status === 'done' ? <span className="text-[var(--text-muted)]"><Check size={12} /></span> : (
                   <span className="flex gap-1">
                     <button onClick={() => doneMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Done</button>
                     <button onClick={() => snooze(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Snooze</button>

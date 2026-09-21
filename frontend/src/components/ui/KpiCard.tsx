@@ -1,3 +1,5 @@
+import { TrendingDown, TrendingUp } from 'lucide-react';
+
 export function KpiCard({
   label,
   value,
@@ -16,8 +18,8 @@ export function KpiCard({
       <p className="mt-1 text-xs text-[var(--text-muted)]">
         {sub}{' '}
         {delta && (
-          <span className={delta.good ? 'text-green-600' : 'text-red-600'}>
-            {delta.good ? '▲' : '▼'} {delta.text}
+          <span className={`inline-flex items-center gap-0.5 ${delta.good ? 'text-green-600' : 'text-red-600'}`}>
+            {delta.good ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {delta.text}
           </span>
         )}
       </p>

@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
 import { OtpModal } from '../components/auth/OtpModal';
 import { hasRole, useSession, type Role } from '../store/session';
+import { Check, Download, Save, X } from 'lucide-react';
 
 type Section = 'general' | 'appearance' | 'organization' | 'notifications' | 'users' | 'security' | 'integrations' | 'data' | 'reports';
 
@@ -117,7 +118,7 @@ function GeneralSection() {
           </label>
         ))}
       </div>
-      {canEdit && <div className="mt-4 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">💾 Save Changes</button></div>}
+      {canEdit && <div className="mt-4 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white"><span className="inline-flex items-center gap-1.5"><Save size={14} /> Save Changes</span></button></div>}
     </div>
   );
 }
@@ -149,7 +150,7 @@ function AppearanceSection() {
         </span>
       </span>
       <span className="mt-1 block text-center text-sm">{label}</span>
-      {theme === mode && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-xs text-white">✓</span>}
+      {theme === mode && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-white"><Check size={12} /></span>}
     </button>
   );
 
@@ -288,7 +289,7 @@ function MasterDataSection() {
                 {canEdit ? (
                   <>
                     <input value={v} onChange={(e) => editItem(k, i, e.target.value)} className="w-28 bg-transparent outline-none" aria-label={`${label} item ${i + 1}`} />
-                    <button onClick={() => delItem(k, i)} className="text-red-500" aria-label={`Remove ${v}`}>✕</button>
+                    <button onClick={() => delItem(k, i)} className="text-red-500" aria-label={`Remove ${v}`}><X size={12} /></button>
                   </>
                 ) : v}
               </span>
@@ -310,7 +311,7 @@ function MasterDataSection() {
           ))}
         </div>
       </div>
-      {canEdit && <div className="mt-2 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">💾 Save Changes</button></div>}
+      {canEdit && <div className="mt-2 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white"><span className="inline-flex items-center gap-1.5"><Save size={14} /> Save Changes</span></button></div>}
     </div>
   );
 }
@@ -361,7 +362,7 @@ function NotificationsSection() {
           </label>
         ))}
       </div>
-      <div className="mt-4 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">💾 Save Changes</button></div>
+      <div className="mt-4 flex justify-end"><button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white"><span className="inline-flex items-center gap-1.5"><Save size={14} /> Save Changes</span></button></div>
     </div>
   );
 }
@@ -679,7 +680,7 @@ function SecuritySection() {
           <label>New (10+ chars)<input type="password" required minLength={10} value={pw} onChange={(e) => setPw(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <label>Confirm<input type="password" required value={pw2} onChange={(e) => setPw2(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
         </div>
-        <div className="mt-3 flex justify-end"><button className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">💾 Save Changes</button></div>
+        <div className="mt-3 flex justify-end"><button className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white"><span className="inline-flex items-center gap-1.5"><Save size={14} /> Save Changes</span></button></div>
       </form>
 
       <div className="card p-6">
@@ -790,7 +791,7 @@ function DataSection() {
         <p className="mb-3 text-xs text-[var(--text-muted)]">Full-table exports for audits and the BI team. Superadmin only.</p>
         <div className="flex flex-wrap gap-2">
           {ENTITIES.map((e) => (
-            <button key={e} onClick={() => download(e)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm capitalize">⬇ {e}</button>
+            <button key={e} onClick={() => download(e)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm capitalize"><span className="inline-flex items-center gap-1"><Download size={12} /> {e}</span></button>
           ))}
         </div>
       </div>

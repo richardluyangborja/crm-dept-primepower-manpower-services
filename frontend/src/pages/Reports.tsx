@@ -10,6 +10,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { useToast } from '../components/ui/Toaster';
 import { TrendsCard, type MonthPoint } from '../components/crm/TrendCharts';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
+import { Download, Printer, Star } from 'lucide-react';
 
 interface Pack {
   narrative: string;
@@ -98,7 +99,7 @@ export function ReportsPage() {
             className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
             {genMut.isPending ? 'Generating…' : 'Generate pack'}
           </button>
-          <button onClick={() => window.print()} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">🖨 Print / PDF</button>
+          <button onClick={() => window.print()} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm"><span className="inline-flex items-center gap-1.5"><Printer size={14} /> Print / PDF</span></button>
         </div>
       </div>
 
@@ -179,7 +180,7 @@ function PackView({ pack, type }: { pack: Pack; type: string }) {
       <div className="card p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-semibold">Pipeline by stage</h2>
-          <button onClick={csv.pipeline} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">⬇ CSV</button>
+          <button onClick={csv.pipeline} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs"><span className="inline-flex items-center gap-1"><Download size={11} /> CSV</span></button>
         </div>
         <DataTable
           rows={t.pipeline_by_stage.map((r) => ({ ...r, id: r.stage }))}
@@ -221,7 +222,7 @@ function PackView({ pack, type }: { pack: Pack; type: string }) {
         <div className="card p-4">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2"><h2 className="font-semibold">Risks & recommendations</h2><AiBadge /></div>
-            <button onClick={csv.risks} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">⬇ CSV</button>
+            <button onClick={csv.risks} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs"><span className="inline-flex items-center gap-1"><Download size={11} /> CSV</span></button>
           </div>
           {t.risks.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No at-risk clients in scope.</p> : (
             <ul className="flex flex-col gap-2 text-sm">
@@ -246,16 +247,16 @@ function PackView({ pack, type }: { pack: Pack; type: string }) {
       <div className="card p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-semibold">Satisfaction & comment sentiment</h2>
-          <button onClick={csv.satisfaction} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">⬇ CSV</button>
+          <button onClick={csv.satisfaction} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs"><span className="inline-flex items-center gap-1"><Download size={11} /> CSV</span></button>
         </div>
-        <p className="text-sm">NPS <strong>{t.satisfaction.nps.score ?? '—'}</strong> ({t.satisfaction.nps.promoters}👍 {t.satisfaction.nps.passives}😐 {t.satisfaction.nps.detractors}👎) · CSAT <strong>{t.satisfaction.csat_avg ?? '—'}</strong> · response rate <strong>{t.satisfaction.response_rate ?? '—'}%</strong></p>
+        <p className="text-sm">NPS <strong>{t.satisfaction.nps.score ?? '—'}</strong> ({t.satisfaction.nps.promoters} promoters · {t.satisfaction.nps.passives} passives · {t.satisfaction.nps.detractors} detractors) · CSAT <strong>{t.satisfaction.csat_avg ?? '—'}</strong> · response rate <strong>{t.satisfaction.response_rate ?? '—'}%</strong></p>
         {t.comment_sentiment.length === 0 ? <p className="mt-1 text-xs text-[var(--text-muted)]">No comments in period.</p> : (
           <ul className="mt-2 flex flex-col gap-1.5 text-sm">
             {t.comment_sentiment.map((c, i) => (
               <li key={i} className="flex gap-2">
                 <span title={`Sentiment: ${c.sentiment.label}`}
                   className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${c.sentiment.label === 'positive' ? 'bg-green-500' : c.sentiment.label === 'negative' ? 'bg-red-500' : 'bg-slate-300'}`} />
-                <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · ★{c.score}</span></span>
+                <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · <Star size={11} className="inline" />{c.score}</span></span>
               </li>
             ))}
           </ul>

@@ -1,8 +1,8 @@
 # 04 — Lead & Client Tracking
 
 ## 1. Submodules (locked)
-1. **Capture** — manual form, CSV import (mock template), duplicate guard.
-2. **Qualification & Scoring** — status flow + 0–100 score (rule-based v1).
+1. **Capture** — manual form, CSV import (mock template), duplicate guard. Sources are channel-flexible (`facebook` default/first, plus `gmail`, `phone`, referral, walk-in, website, cold_call, event) — Facebook is the common case, never the only one. Capture mirrors the Excel row: company + contact + phone + **headcount needed + positions**.
+2. **Qualification & Scoring** — status flow + 0–100 score (rule-based v1): +20 PH corporate email, +15 complete address, +25 valid +63 phone, +10 buyer signal (`headcount_needed` present), +40 manager override note.
 3. **360° Client Profile** — header, contacts, opps, comms, surveys, followups tabs.
 4. **Conversion** — lead→client→(optional) opportunity wizard.
 

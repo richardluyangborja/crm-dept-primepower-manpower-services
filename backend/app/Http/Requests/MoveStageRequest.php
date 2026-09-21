@@ -18,6 +18,11 @@ class MoveStageRequest extends FormRequest
             'reopen_note' => ['nullable', 'string', 'max:500'],
             // Effective close date for terminal moves (defaults to now).
             'effective_date' => ['sometimes', 'date', 'before_or_equal:today'],
+            // Contract signing terms (required when moving into `contract`).
+            'headcount' => ['sometimes', 'integer', 'min:1', 'max:100000'],
+            'rate_per_head_centavos' => ['sometimes', 'integer', 'min:0'],
+            'contract_months' => ['sometimes', 'integer', 'min:1', 'max:120'],
+            'start_date' => ['sometimes', 'date'],
         ];
     }
 
