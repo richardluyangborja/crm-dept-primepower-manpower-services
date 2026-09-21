@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../lib/apiClient';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useToast } from '../ui/Toaster';
 
 export function AiBadge() {
@@ -27,9 +28,9 @@ export function FeedbackThumbs({ insightKey }: { insightKey: string }) {
   return (
     <span className="inline-flex gap-1" title="Was this insight useful? Trains v2 models.">
       <button aria-label="Insight useful" onClick={() => vote('up')}
-        className={`rounded px-1 text-sm ${voted === 'up' ? 'bg-green-100' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>👍</button>
+        className={`rounded px-1 text-sm ${voted === 'up' ? 'bg-green-100' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}><ThumbsUp size={14} /></button>
       <button aria-label="Insight not useful" onClick={() => vote('down')}
-        className={`rounded px-1 text-sm ${voted === 'down' ? 'bg-red-100' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>👎</button>
+        className={`rounded px-1 text-sm ${voted === 'down' ? 'bg-red-100' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}><ThumbsDown size={14} /></button>
     </span>
   );
 }

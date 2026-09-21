@@ -53,6 +53,46 @@ class OpportunityService
             $opp->save();
 
             $meta = ['from' => $from, 'to' => $to];
+            if ($to === 'contract') {
+                // Signing requires agreed terms: heads, monthly rate, months, start date.
+                $headcount = $input['headcount'] ?? $opp->headcount;
+                $rate = $input['rate_per_head_centavos'] ?? $opp->rate_per_head_centavos;
+                $months = $input['contract_months'] ?? $opp->contract_months;
+                $start = $input['start_date'] ?? null;
+                if (! $headcount || $rate === null || ! $months || ! $start) {
+                    abort(422, 'Signing needs headcount, monthly rate, contract months, and start date.');
+                }
+                $opp->fill([
+                    'headcount' => $headcount,
+                    'rate_per_head_centavos' => $rate,
+                    'contract_months' => $months,
+                ]);
+                $opp->save();
+                $monthly = $headcount * $rate;
+                $ref = 'CTR-2026-'.str_pad((string) $opp->id, 4, '0', STR_PAD_LEFT);
+                $contract = \App\Models\Contract::withTrashed()->firstOrNew(
+                    ['opportunity_id' => $opp->id, 'status' => 'active']
+                );
+                if ($contract->trashed()) {
+                    $contract->restore();
+                }
+                $contract->fill([
+                    'client_id' => $opp->client_id,
+                    'owner_id' => $opp->owner_id,
+                    'headcount' => $headcount,
+                    'rate_per_head_centavos' => $rate,
+                    'contract_months' => $months,
+                    'monthly_billing_centavos' => $monthly,
+                    'contract_total_centavos' => $monthly * $months,
+                    'start_date' => $start,
+                    'ref' => $ref,
+                    'payload' => ['mock' => true, 'depts' => ['core3_docs', 'governance_legal', 'facilities_contracts']],
+                ]);
+                $contract->save();
+                $meta['contract_id'] = $contract->id;
+                $meta['contract_ref'] = $contract->ref;
+                $meta['monthly_billing_centavos'] = $monthly;
+            }
             if ($to === 'won') {
                 // Mock cross-dept docs (specs/11) persisted as a first-class
                 // JobOrder so the client timeline can show the journey (specs/18).
@@ -78,8 +118,9 @@ class OpportunityService
                     $jobOrder->restore();
                 }
                 $meta['job_order_id'] = $jobOrder->id;
-                // Phase 2B: the mock draft invoice also becomes a first-class
-                // row so AR aging/payments reconcile (idempotent per opp).
+                // Monthly per-head billing: the first invoice covers ONE month,
+                // not the contract total (refined model). Idempotent per opp.
+                $monthly = $opp->monthlyBilling() ?? $opp->value_centavos;
                 $invoice = \App\Models\Invoice::withTrashed()->firstOrCreate(
                     ['opportunity_id' => $opp->id],
                     [
@@ -87,12 +128,12 @@ class OpportunityService
                         'job_order_id' => $jobOrder->id,
                         'owner_id' => $opp->owner_id,
                         'ref' => $inv['invoice_ref'],
-                        'title' => $opp->title,
-                        'amount_centavos' => $opp->value_centavos,
-                        'balance_centavos' => $opp->value_centavos,
+                        'title' => $opp->title.' — month 1',
+                        'amount_centavos' => $monthly,
+                        'balance_centavos' => $monthly,
                         'status' => 'sent',
                         'due_at' => now()->addDays(30)->toDateString(),
-                        'payload' => ['mock' => true, 'invoice' => $inv],
+                        'payload' => ['mock' => true, 'invoice' => $inv, 'billing' => 'monthly'],
                     ]
                 );
                 if ($invoice->trashed()) {

@@ -9,6 +9,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
 import { hasRole, useSession } from '../store/session';
+import { Star } from 'lucide-react';
 
 interface Template {
   id: number;
@@ -128,7 +129,7 @@ function SurveysInbox() {
                 key: 'a', header: 'Actions', render: (r) => (
                   <span className="flex gap-1">
                     <button onClick={() => copyLink(r)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Copy link</button>
-                    {r.response && <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">★ {r.response.score}</span>}
+                    {r.response && <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800"><Star size={11} className="mr-0.5 inline" />{r.response.score}</span>}
                     {r.status === 'expired' && <button onClick={() => setConfirmClient({ name: r.client_name ?? 'this client', run: () => resendMut.mutate(r) })} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Resend</button>}
                   </span>
                 ),
@@ -404,7 +405,7 @@ function AnalyticsTab() {
           <span style={{ width: `${(a.nps.passives / total) * 100}%` }} className="bg-amber-400" title="Passives" />
           <span style={{ width: `${(a.nps.detractors / total) * 100}%` }} className="bg-red-500" title="Detractors" />
         </div>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">🟩 {a.nps.promoters} promoters (9–10) · 🟨 {a.nps.passives} passives (7–8) · 🟥 {a.nps.detractors} detractors (0–6)</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]"><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-green-500" /> {a.nps.promoters} promoters (9–10) · <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-amber-400" /> {a.nps.passives} passives (7–8) · <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-red-500" /> {a.nps.detractors} detractors (0–6)</p>
       </div>
 
       <div className="card p-4">
@@ -431,7 +432,7 @@ function AnalyticsTab() {
             { key: 'a', header: 'Avg', render: (r) => (r.avg_score !== null ? r.avg_score.toFixed(2) : '—') },
             {
               key: 'f', header: 'Flag', render: (r) => r.low
-                ? <button onClick={() => nav('/followups')} className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">⚠ low — create follow-up</button>
+                ? <button onClick={() => nav('/followups')} className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">low — create follow-up</button>
                 : <span className="text-xs text-[var(--text-muted)]">healthy</span>,
             },
           ]}
@@ -446,7 +447,7 @@ function AnalyticsTab() {
             {a.comments.map((c, i) => (
               <li key={i} className="flex gap-2 text-sm">
                 <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${c.score >= 9 ? 'bg-green-500' : c.score >= 7 ? 'bg-amber-400' : 'bg-red-500'}`} title={`Score ${c.score}`} />
-                <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · ★{c.score}</span></span>
+                <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · <Star size={11} className="mr-0.5 inline" />{c.score}</span></span>
               </li>
             ))}
           </ul>

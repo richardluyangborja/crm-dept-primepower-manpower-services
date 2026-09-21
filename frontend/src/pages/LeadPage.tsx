@@ -12,6 +12,8 @@ interface LeadFull {
   contact_name: string;
   contact_email: string | null;
   contact_phone: string | null;
+  headcount_needed: number | null;
+  positions: string | null;
   source: string | null;
   status: string;
   score: number;
@@ -81,7 +83,7 @@ export function LeadPage() {
               <div>
                 <h1 className="text-xl font-bold">{lead.company_name}</h1>
                 <p className="mt-1 text-sm text-[var(--text-muted)]">
-                  <StatusBadge value={lead.status} /> {lead.contact_name} · {lead.contact_phone ?? lead.contact_email ?? 'no contact detail'} · <span className="capitalize">{lead.source ?? 'unknown source'}</span>
+                  <StatusBadge value={lead.status} /> {lead.contact_name} · {lead.contact_phone ?? lead.contact_email ?? 'no contact detail'} · <span className="capitalize">{lead.source ?? 'unknown source'}</span>{lead.headcount_needed ? ` · ${lead.headcount_needed} heads${lead.positions ? ` (${lead.positions})` : ''}` : ''}
                 </p>
               </div>
 
@@ -148,6 +150,7 @@ function ScoreExplainer({ lead }: { lead: LeadFull }) {
     ['Valid +63 mobile (+25)', !!lead.contact_phone && /^\+63\d{10}$/.test(lead.contact_phone)],
     ['Worked status: contacted (+15) / qualified (+30)', ['contacted', 'qualified', 'converted'].includes(lead.status)],
     ['Notes on file (+10)', !!lead.notes],
+    ['Headcount need stated (+10)', (lead.headcount_needed ?? 0) > 0],
   ];
   return (
     <ul className="mt-2 flex flex-col gap-1 text-sm">

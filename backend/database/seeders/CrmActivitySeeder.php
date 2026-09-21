@@ -114,6 +114,26 @@ class CrmActivitySeeder extends Seeder
             );
         }
 
+        // Signed contract behind the Davao deployment (mock Core-3/Governance/Facilities).
+        if ($wonOpp) {
+            \App\Models\Contract::firstOrCreate(
+                ['ref' => 'CTR-2026-0001'],
+                [
+                    'opportunity_id' => $wonOpp->id,
+                    'client_id' => $hotel->id,
+                    'owner_id' => $hotel->owner_id,
+                    'headcount' => 60,
+                    'rate_per_head_centavos' => 4000000,
+                    'contract_months' => 12,
+                    'monthly_billing_centavos' => 240000000,
+                    'contract_total_centavos' => 2880000000,
+                    'start_date' => now()->subDays(50)->toDateString(),
+                    'status' => 'active',
+                    'payload' => ['mock' => true, 'seeded' => true, 'depts' => ['core3_docs', 'governance_legal', 'facilities_contracts']],
+                ]
+            );
+        }
+
         // Phase 2B: mock AR across aging buckets (deterministic refs, no Faker).
         $med = Client::where('name', 'Makati Medical Center')->firstOrFail();
         $seedInvoices = [

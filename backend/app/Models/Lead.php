@@ -12,16 +12,17 @@ class Lead extends Model
     use Filterable, HasAuditLog, SoftDeletes;
 
     public const STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
-    public const SOURCES = ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event'];
+    public const SOURCES = ['facebook', 'gmail', 'phone', 'referral', 'walk_in', 'website', 'cold_call', 'event'];
 
     protected $fillable = [
         'owner_id', 'company_name', 'contact_name', 'contact_email',
-        'contact_phone', 'source', 'status', 'score', 'notes', 'converted_client_id',
+        'contact_phone', 'headcount_needed', 'positions',
+        'source', 'status', 'score', 'notes', 'converted_client_id',
     ];
 
     protected function casts(): array
     {
-        return ['score' => 'integer'];
+        return ['score' => 'integer', 'headcount_needed' => 'integer'];
     }
 
     public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo

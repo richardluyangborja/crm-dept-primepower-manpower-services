@@ -24,6 +24,9 @@ class LeadScorer
         if ($lead->notes) {
             $score += 10;
         }
+        if ($lead->headcount_needed) {
+            $score += 10; // buyer signal: they know what they need
+        }
         if (in_array($lead->status, ['qualified', 'converted'], true)) {
             $score += 30;
         } elseif ($lead->status === 'contacted') {
