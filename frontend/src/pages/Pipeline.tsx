@@ -255,8 +255,8 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
       </div>
       <p className={`mt-0.5 text-[11px] ${stale}`}>{o.days_in_stage ?? 0}d in stage</p>
       <p className="mt-1 flex gap-2 text-[11px]" onClick={stop}>
-        <Link to={`/pipeline/finance?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Finance</Link>
-        <Link to={`/pipeline/staffing?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Staffing</Link>
+        <Link to={`/pipeline/finance?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Billing</Link>
+        <Link to={`/pipeline/staffing?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Deployed staff</Link>
         <Link to={`/pipeline/contracts?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Contracts</Link>
       </p>
     </div>

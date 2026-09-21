@@ -24,21 +24,15 @@ interface ClientFull {
   contacts?: { id: number; full_name: string; position?: string | null; email: string | null; phone: string | null; is_primary: boolean }[];
 }
 
-type Tab = 'overview' | 'contacts' | 'opportunities' | 'comms' | 'surveys' | 'followups' | 'orders' | 'finance';
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'contacts', label: 'Contacts' },
-  { key: 'opportunities', label: 'Opportunities' },
-  { key: 'comms', label: 'Communications' },
-  { key: 'surveys', label: 'Surveys' },
-  { key: 'followups', label: 'Follow-ups' },
-  { key: 'orders', label: 'Job Orders' },
-  { key: 'finance', label: 'Finance' },
+const SECTIONS = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'deals', label: 'Deals & Orders' },
+  { id: 'conversations', label: 'Conversations' },
+  { id: 'billing', label: 'Billing' },
 ];
 
 export function ClientPage() {
   const { id = '' } = useParams();
-  const [tab, setTab] = useState<Tab>('overview');
 
   const detailQ = useQuery({
     queryKey: ['client', Number(id)],
@@ -63,29 +57,47 @@ export function ClientPage() {
               <StatusBadge value={detailQ.data.status} /> {detailQ.data.industry ?? '—'} · {[detailQ.data.address_city, detailQ.data.address_province].filter(Boolean).join(', ') || '—'}
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === t.key ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border border-[var(--border)]'}`}>
-                {t.label}
-              </button>
+          <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
+            {SECTIONS.map((s) => (
+              <a key={s.id} href={`#${s.id}`}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                {s.label}
+              </a>
             ))}
-          </div>
-          {tab === 'overview' && <OverviewTab client={detailQ.data} />}
-          {tab === 'contacts' && <ContactsTab client={detailQ.data} />}
-          {tab === 'opportunities' && <OppsTab clientId={detailQ.data.id} />}
-          {tab === 'comms' && <CommsTab clientId={detailQ.data.id} />}
-          {tab === 'surveys' && <SurveysTab clientId={detailQ.data.id} />}
-          {tab === 'followups' && <FollowupsTab clientId={detailQ.data.id} />}
-          {tab === 'orders' && <ClientJourney clientId={detailQ.data.id} />}
-          {tab === 'finance' && <FinanceTab clientId={detailQ.data.id} />}
+          </nav>
+          <section id="profile" aria-label="Profile" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Profile</h2>
+            <ProfileStats client={detailQ.data} />
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">People to talk to</h3>
+            <ContactsTab client={detailQ.data} />
+          </section>
+          <section id="deals" aria-label="Deals and orders" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Deals & Orders</h2>
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">Open & past deals</h3>
+            <OppsTab clientId={detailQ.data.id} />
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">How the work is going</h3>
+            <ClientJourney clientId={detailQ.data.id} />
+          </section>
+          <section id="conversations" aria-label="Conversations" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Conversations</h2>
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">Touchpoints</h3>
+            <CommsTab clientId={detailQ.data.id} />
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">Feedback</h3>
+            <SurveysTab clientId={detailQ.data.id} />
+            <h3 className="text-sm font-medium text-[var(--text-muted)]">Promised follow-ups</h3>
+            <FollowupsTab clientId={detailQ.data.id} />
+          </section>
+          <section id="billing" aria-label="Billing" className="flex scroll-mt-24 flex-col gap-3">
+            <h2 className="text-base font-semibold">Billing</h2>
+            <FinanceTab clientId={detailQ.data.id} />
+          </section>
         </>
       )}
     </div>
   );
 }
 
-function OverviewTab({ client }: { client: ClientFull }) {
+function ProfileStats({ client }: { client: ClientFull }) {
   const oppsQ = useQuery({
     queryKey: ['opportunities', `client-${client.id}`],
     queryFn: async () => (await api.get('/opportunities', { params: { client_id: client.id, per_page: 100 } })).data.data as { id: number; stage: string }[],
@@ -108,7 +120,6 @@ function OverviewTab({ client }: { client: ClientFull }) {
       {client.created_from_lead_id && (
         <p className="text-xs text-[var(--text-muted)]">Converted from lead <Link to={`/leads/${client.created_from_lead_id}`} className="text-sky-600 underline">#{client.created_from_lead_id}</Link>.</p>
       )}
-      <ClientOpsCards clientId={client.id} />
     </div>
   );
 }
@@ -264,6 +275,7 @@ function FinanceTab({ clientId }: { clientId: number }) {
   });
   return (
     <div className="flex flex-col gap-3">
+      <ClientOpsCards clientId={clientId} />
       <div className="card p-4">
         <h3 className="font-medium">Account finance <span className="text-xs font-normal text-[var(--text-muted)]">(mock Dept 5)</span></h3>
         {opsQ.isLoading ? <p className="mt-1 text-sm">Loading…</p> : (

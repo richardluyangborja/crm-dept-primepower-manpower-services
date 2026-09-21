@@ -31,7 +31,7 @@ export function PipelineStaffingPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold">Pipeline · Core-1 Staffing</h1>
+        <h1 className="text-xl font-bold">Pipeline · Deployed Staff</h1>
         <p className="text-sm text-[var(--text-muted)]">Deployed headcount per client. Read-only mock Dept-1/Dept-2 data — advancing happens on client timelines.</p>
       </div>
       <div className="flex gap-2">

@@ -17,17 +17,25 @@
 | Item | Status | Notes |
 |---|---|---|
 | Collapsible hub, card links, 4 children, staffing/BI endpoints | ✅ | Merged via develop; Core-2 gap + BI drilldown closed |
-| Branches cleaned | ⬜ | `feature/crm-pipeline-hub` remote delete pending |
+| Branches cleaned | ✅ | `feature/crm-pipeline-hub` local + remote deleted |
+
+## Hub polish iteration (branch `feature/crm-hub-polish`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Friendly hub titles (Visualization Board / Billing / Deployed Staff / Contracts) | ✅ | No module/system jargon |
+| BI child removed (page + route deleted; API kept) | ✅ | Non-priority |
+| Client 360 tabs → 4 grouped sections + anchor jump | ✅ | Profile / Deals & Orders / Conversations / Billing |
 
 ## Pipeline hub iteration (branch `feature/crm-pipeline-hub`)
 
 | Item | Status | Notes |
 |---|---|---|
-| Collapsible Pipeline hub (auto-expand, persisted) | 🔄 | Chevron toggle, `aria-expanded`, localStorage, light/dark + mobile parity |
-| Kanban card deep links per client | 🔄 | Finance/Staffing/Contracts via `?client=`, click-safe (stopPropagation) |
-| Children: Finance, Staffing, Contracts, BI drilldown | 🔄 | Per-client lists, shared `ClientPicker`; BI manager+ with 403 message |
-| Backend: `/staffing`, `/bi/client-breakdown` | 🔄 | Scoped, mock-labeled, tested |
-| Specs 05/10/11/18 + this tracker | 🔄 | Hub model + contracts documented |
+| Collapsible Pipeline hub (auto-expand, persisted) | ✅ | Chevron toggle, `aria-expanded`, localStorage, light/dark + mobile parity |
+| Kanban card deep links per client | ✅ | Finance/Staffing/Contracts via `?client=`, click-safe (stopPropagation) |
+| Children: Finance, Staffing, Contracts, BI drilldown | ✅ | Per-client lists, shared `ClientPicker`; BI manager+ with 403 message |
+| Backend: `/staffing`, `/bi/client-breakdown` | ✅ | Scoped, mock-labeled, tested |
+| Specs 05/10/11/18 + this tracker | ✅ | Hub model + contracts documented |
 
 ## v2 journey A+B — MERGED to `main` (no tag yet; v1.1.0 vs v2.0.0 decision pending)
 

@@ -167,13 +167,22 @@ Quotation → Approval → **Contract** → Won/Lost; sources channel-flexible
 - **Capture**: `headcount_needed` + `positions`; +10 score for stated need.
 - Merge path for this cycle: feature → `develop` → fast release to `main`.
 
-## 8. Pipeline hub iteration (branch `feature/crm-pipeline-hub`)
-Pipeline sidebar item becomes collapsible: Kanban (default landing/summary) +
-Finance + Core-1 Staffing + Contracts + BI Drilldown (manager+) children.
+## 8. Pipeline hub iteration (branch `feature/crm-pipeline-hub`, merged)
+Pipeline sidebar item becomes collapsible: Visualization Board (default landing/summary) +
+Billing + Deployed Staff + Contracts children.
 Auto-expands on the active child; collapsed state persists in `localStorage`.
-Kanban cards link per-client into each child via `?client=` deep links
+Board cards link per-client into each child via `?client=` deep links
 (`ClientPicker` syncs the param). Children are per-client detailed lists over the
-same scoped queries — no duplicated logic, no new mutations (Staffing read-only;
-Finance/Contracts reuse existing actions). New backend surface: `GET /staffing`
+same scoped queries — no duplicated logic, no new mutations (Deployed Staff read-only;
+Billing/Contracts reuse existing actions). New backend surface: `GET /staffing`
 (visible clients × fixture + linked job orders, totals in meta) and
 `GET /bi/client-breakdown` (per-client deals/won/NPS/AR/risk, manager+).
+
+## 9. Hub polish iteration (branch `feature/crm-hub-polish`)
+Friendly child titles (Visualization Board / Billing / Deployed Staff / Contracts —
+no module/system jargon). BI Drilldown removed from the hub as non-priority
+(frontend page + route deleted; `GET /bi/client-breakdown` API retained for
+Reports later). Client 360 page drops the 8-tab layout for one scrolling page:
+Profile (stats + contacts) → Deals & Orders (deals + job-order journey) →
+Conversations (touchpoints + feedback + promised follow-ups) → Billing
+(ops cards + invoices), with anchor quick-jump links and `scroll-mt` offsets.
