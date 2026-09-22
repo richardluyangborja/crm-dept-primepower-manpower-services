@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Opaque IDs — Stream 1 of 3 (branch `feature/crm-opaque-ids`)
+## Opaque IDs — Stream 1 of 3 — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
