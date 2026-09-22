@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Toast + info hierarchy — Stream 2 of 3 (branch `feature/crm-toast-hierarchy`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Toaster icons/title/body/action (compatible) | ✅ | Em-dash auto-split, convert links client |
+| InfoCallout on scope headers | ✅ | Finance/Operations/Billing/Staffing |
+| SectionHead on all 360 sections | ✅ | Title + tag + hint |
+| Specs 10/18 + this tracker | ✅ | Stream 3 queued separately |
+
 ## Opaque IDs — Stream 1 of 3 — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

@@ -74,8 +74,12 @@ export function LeadsPage() {
   const convertMut = useMutation({
     mutationFn: async ({ id, withOpp }: { id: string; withOpp: boolean }) =>
       (await api.post(`/leads/${id}/convert`, withOpp ? { create_opportunity: true, opportunity_title: undefined } : {})).data,
-    onSuccess: () => {
-      toast('success', 'Converted — client profile created.');
+    onSuccess: (d) => {
+      toast('success', {
+        title: 'Converted — client profile created.',
+        body: 'The new account is ready with the lead contact as primary.',
+        action: { label: 'Open client', href: `/clients/${d.data.client_id}` },
+      });
       setConvertId(null);
       invalidate();
     },

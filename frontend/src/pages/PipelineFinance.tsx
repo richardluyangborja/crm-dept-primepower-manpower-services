@@ -4,6 +4,7 @@ import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { InfoCallout } from '../components/ui/InfoCallout';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ClientPicker, useClientParam } from '../components/crm/ClientPicker';
 
@@ -35,8 +36,10 @@ export function PipelineFinancePage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Pipeline · Billing</h1>
-        <p className="text-sm text-[var(--text-muted)]">Per-client invoice detail, via Finance — full ledger lives in <Link to="/finance" className="text-sky-700 hover:underline dark:text-sky-300">Finance</Link>.</p>
       </div>
+      <InfoCallout lead="One client at a time, via Finance." link={{ label: 'Full ledger', href: '/finance' }}>
+        Per-client invoice detail.
+      </InfoCallout>
       <div className="flex gap-2">
         <ClientPicker clientId={clientId} onChange={setClientId} />
         {outstanding > 0 && (

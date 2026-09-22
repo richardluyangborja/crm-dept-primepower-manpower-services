@@ -5,6 +5,7 @@ import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { SectionHead } from '../components/ui/SectionHead';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
 import { ClientJourney, apiErr } from '../components/crm/ClientWidgets';
@@ -117,39 +118,37 @@ export function ClientPage() {
             ))}
           </nav>
           <section id="profile" aria-label="Profile" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Profile</h2>
+            <SectionHead title="Profile" hint="The account at a glance, and the people to talk to." />
             <ProfileStats client={detailQ.data} />
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">People to talk to</h3>
             <ContactsTab client={detailQ.data} />
           </section>
           <section id="deals" aria-label="Deals" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Deals</h2>
-            <p className="text-sm text-[var(--text-muted)]">Every opportunity under this client — past and present. A new requirement never makes them a lead again.</p>
+            <SectionHead title="Deals" hint="Every opportunity under this client — past and present. A new requirement never makes them a lead again." />
             <OppsTab clientId={detailQ.data.id} />
           </section>
           <section id="contracts" aria-label="Contracts" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Contracts</h2>
+            <SectionHead title="Contracts" hint="Commercial agreements — what was signed, for how many heads, for how long." />
             <ContractsSection clientId={detailQ.data.id} />
           </section>
           <section id="operations" aria-label="Operations" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Operations <span className="text-xs font-normal text-[var(--text-muted)]">via Client Management</span></h2>
+            <SectionHead title="Operations" tag="via Client Management" hint="Fulfillment status from the back office — the CRM shows it, they run it." />
             <OperationsSection clientId={detailQ.data.id} />
           </section>
           <section id="conversations" aria-label="Conversations" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Conversations</h2>
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">Touchpoints</h3>
+            <SectionHead title="Conversations" hint="Touchpoints, feedback, and promised follow-ups." />
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Touchpoints</p>
             <CommsTab clientId={detailQ.data.id} />
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">Feedback</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Feedback</p>
             <SurveysTab clientId={detailQ.data.id} />
-            <h3 className="text-sm font-medium text-[var(--text-muted)]">Promised follow-ups</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Promised follow-ups</p>
             <FollowupsTab clientId={detailQ.data.id} />
           </section>
           <section id="billing" aria-label="Billing" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Billing <span className="text-xs font-normal text-[var(--text-muted)]">via Finance</span></h2>
+            <SectionHead title="Billing" tag="via Finance" hint="What they owe and what's been invoiced — Finance owns the ledger." />
             <FinanceTab clientId={detailQ.data.id} />
           </section>
           <section id="insights" aria-label="Insights" className="flex scroll-mt-24 flex-col gap-3">
-            <h2 className="text-base font-semibold">Insights</h2>
+            <SectionHead title="Insights" hint="What the system notices about this relationship — gaps, renewals, risks." />
             <InsightsSection clientId={detailQ.data.id} clientName={detailQ.data.name} />
           </section>
         </>
@@ -359,7 +358,6 @@ function OperationsSection({ clientId }: { clientId: string }) {
   const f = q.data?.fulfillment;
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-[var(--text-muted)]">Summarized from Client Management — the CRM shows status, they run the deployment.</p>
       {q.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading operations…</p> : !f || f.required === 0 ? (
         <EmptyState title="Nothing deployed yet" hint="Active contracts will show required vs deployed headcount here." />
       ) : (

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { EmptyState } from '../components/ui/EmptyState';
+import { InfoCallout } from '../components/ui/InfoCallout';
 
 interface JobOrder {
   id: string;
@@ -38,11 +39,10 @@ export function OperationsPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Operations</h1>
-        <p className="text-sm text-[var(--text-muted)]">
-          Read-only view into Client Management execution: job orders across every client and total deployed headcount.
-          Staffing advances on each client's timeline — nothing here mutates state. For one client at a time, use <Link to="/pipeline/staffing" className="text-sky-700 hover:underline dark:text-sky-300">Opportunity Pipeline → Deployed Staff</Link>.
-        </p>
       </div>
+      <InfoCallout lead="Every client, read-only." link={{ label: 'Per-client staffing', href: '/pipeline/staffing' }}>
+        Job orders and deployed headcount from Client Management execution — nothing here mutates state.
+      </InfoCallout>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="card p-4">

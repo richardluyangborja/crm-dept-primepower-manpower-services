@@ -220,6 +220,14 @@ from the UI and guarded to 403 server-side. Dashboard adds a lifecycle strip
 (contracts, monthly recurring, deployed, AR, renewals ≤60d). Backend adds
 `ClientFulfillment` + `clients/{id}/operations.fulfillment`; no new tables.
 
+## 14. Toast + info hierarchy (branch `feature/crm-toast-hierarchy`, Stream 2 of 3)
+Details stop looking plain: `Toaster` gains per-kind icons, bold title + muted
+body (existing "Title — body" strings auto-split, zero call-site churn),
+optional action links (convert toast deep-links the new client), 5s life.
+New shared `InfoCallout` (scope explainers on Finance/Operations/Billing/
+Staffing headers) and `SectionHead` (title + source tag + hint on all 360
+sections). No behavior changes; Stream 3 (confirm destructive actions) next.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

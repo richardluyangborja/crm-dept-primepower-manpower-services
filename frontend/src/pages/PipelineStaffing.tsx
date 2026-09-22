@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { InfoCallout } from '../components/ui/InfoCallout';
 import { ClientPicker, useClientParam } from '../components/crm/ClientPicker';
 
 interface StaffRow {
@@ -32,8 +33,10 @@ export function PipelineStaffingPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Pipeline · Deployed Staff</h1>
-        <p className="text-sm text-[var(--text-muted)]">Deployed headcount per client. Read-only, via Client Management — progression happens on their side.</p>
       </div>
+      <InfoCallout lead="One client at a time.">
+        Deployed headcount, read-only via Client Management — progression happens on their side.
+      </InfoCallout>
       <div className="flex gap-2">
         <ClientPicker clientId={clientId} onChange={setClientId} />
         {staffingQ.data && (
@@ -57,7 +60,7 @@ export function PipelineStaffingPage() {
             empty={<EmptyState title="No staffing rows" hint={clientId ? 'This client has no deployment data yet.' : 'No deployment data in scope.'} />}
           />
         )}
-      <p className="text-xs text-[var(--text-muted)]">Full board lives in <Link to="/operations" className="text-sky-700 hover:underline dark:text-sky-300">Operations</Link>. <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-700 dark:text-slate-200">mock data throughout</span>.</p>
+      <p className="text-xs text-[var(--text-muted)]">Full board lives in <Link to="/operations" className="text-sky-700 hover:underline dark:text-sky-300">Operations</Link>. Read-only via Client Management.</p>
     </div>
   );
 }
