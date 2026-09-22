@@ -5,10 +5,10 @@ import { formatPHP } from '../lib/format';
 import { EmptyState } from '../components/ui/EmptyState';
 
 interface JobOrder {
-  id: number;
+  id: string;
   ref: string;
   title: string;
-  client_id: number;
+  client_id: string;
   client_name?: string;
   headcount: number | null;
   value_centavos: number;

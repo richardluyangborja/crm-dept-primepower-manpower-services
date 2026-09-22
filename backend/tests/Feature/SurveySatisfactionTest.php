@@ -53,7 +53,7 @@ class SurveySatisfactionTest extends TestCase
 
         $surveyId = $this->postJson('/api/v1/surveys', ['template_id' => $tpl->id, 'client_id' => $cid], ['Authorization' => "Bearer $t"])
             ->assertCreated()->assertJsonPath('data.status', 'sent')->json('data.id');
-        $token = \App\Models\Survey::find($surveyId)->token;
+        $token = \App\Models\Survey::find(\App\Models\Survey::decodeId($surveyId))->token;
         $this->assertNotEmpty($token);
 
         // Public fetch — no auth
@@ -68,7 +68,7 @@ class SurveySatisfactionTest extends TestCase
         $this->putJson("/api/v1/s/$token/respond", ['score' => 8, 'comment' => 'Updated'])->assertOk()->assertJsonPath('data.score', 8);
 
         // Simulate past edit window
-        $resp = \App\Models\SurveyResponse::where('survey_id', $surveyId)->first();
+        $resp = \App\Models\SurveyResponse::where('survey_id', \App\Models\Survey::decodeId($surveyId))->first();
         $resp->update(['responded_at' => now()->subDays(2)]);
         $this->putJson("/api/v1/s/$token/respond", ['score' => 6])->assertStatus(410);
     }

@@ -10,8 +10,8 @@ class OpportunityResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'client_id' => $this->client_id,
+            'id' => $this->opaqueId(),
+            'client_id' => \App\Models\Client::encodeId($this->client_id),
             'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
             'owner_id' => $this->owner_id,
             'title' => $this->title,

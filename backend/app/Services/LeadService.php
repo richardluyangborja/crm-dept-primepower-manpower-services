@@ -20,7 +20,7 @@ class LeadService
             }
             $hit = $model::where($field, $attrs[$field])->first(['id']);
             if ($hit) {
-                return ['type' => 'lead', 'id' => $hit->id, 'field' => $field];
+                return ['type' => 'lead', 'id' => $model::encodeId($hit->id), 'field' => $field];
             }
         }
         foreach (['contact_email', 'contact_phone'] as $field) {
@@ -29,7 +29,7 @@ class LeadService
             }
             $hit = Client::where($field, $attrs[$field])->first(['id']);
             if ($hit) {
-                return ['type' => 'client', 'id' => $hit->id, 'field' => $field];
+                return ['type' => 'client', 'id' => Client::encodeId($hit->id), 'field' => $field];
             }
         }
 

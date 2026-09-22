@@ -7,8 +7,8 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toaster';
 
 interface Opp {
-  id: number;
-  client_id: number;
+  id: string;
+  client_id: string;
   client_name?: string;
   owner_id: number;
   title: string;
@@ -60,9 +60,9 @@ function pesoToCentavos(v: string): number {
 
 export function PipelinePage() {
   const [q, setQ] = useState('');
-  const [detailId, setDetailId] = useState<number | null>(null);
-  const [lostId, setLostId] = useState<number | null>(null);
-  const [dragId, setDragId] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [lostId, setLostId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
   const [params] = useSearchParams();
@@ -84,10 +84,10 @@ export function PipelinePage() {
   const byStage = (s: string) => rows.filter((r) => r.stage === s);
   const openVal = rows.filter((r) => !['won', 'lost'].includes(r.stage)).reduce((a, r) => a + r.value_centavos, 0);
 
-  const [contractId, setContractId] = useState<number | null>(null);
+  const [contractId, setContractId] = useState<string | null>(null);
   const moveMut = useMutation({
     mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date }: {
-      id: number; stage: string; lost_reason?: string; effective_date?: string;
+      id: string; stage: string; lost_reason?: string; effective_date?: string;
       headcount?: number; rate_per_head_centavos?: number; contract_months?: number; start_date?: string;
     }) =>
       (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date })).data,
@@ -108,10 +108,10 @@ export function PipelinePage() {
     },
   });
 
-  const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: number; monthly: number | null; total: number | null } | null>(null);
-  const [wonId, setWonId] = useState<number | null>(null);
+  const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: string; monthly: number | null; total: number | null } | null>(null);
+  const [wonId, setWonId] = useState<string | null>(null);
   const winMut = useMutation({
-    mutationFn: async ({ id, effective_date }: { id: number; effective_date?: string }) =>
+    mutationFn: async ({ id, effective_date }: { id: string; effective_date?: string }) =>
       (await api.post(`/opportunities/${id}/win`, effective_date ? { effective_date } : {})).data,
     onSuccess: async (d, vars) => {
       toast('success', d.message ?? 'Won!');
@@ -121,7 +121,7 @@ export function PipelinePage() {
       try {
         const opp = rows.find((o) => o.id === vars.id);
         if (opp) {
-          const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: number | null }[];
+          const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: string | null }[];
           const mine = jobs.find((j) => j.opportunity_id === vars.id) ?? jobs[0];
           const fresh = (await api.get(`/opportunities/${vars.id}`)).data.data as { monthly_billing_centavos: number | null; contract_total_centavos: number | null };
           if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id, monthly: fresh.monthly_billing_centavos, total: fresh.contract_total_centavos });
@@ -309,7 +309,7 @@ function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: 
 }
 
 function ContractModal({ dealId, onClose, onDone }: {
-  dealId: number;
+  dealId: string;
   onClose: () => void;
   onDone: (terms: { headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }) => void;
 }) {
@@ -391,7 +391,7 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
   const toast = useToast();
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
-    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
+    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
   const [f, setF] = useState({ client_id: initialClientId, title: '', value: '', headcount: '', rate: '', months: '12', expected_close_date: '' });
   const [busy, setBusy] = useState(false);
@@ -404,7 +404,7 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
     setErr('');
     try {
       await api.post('/opportunities', {
-        client_id: Number(f.client_id), title: f.title,
+        client_id: f.client_id, title: f.title,
         value_centavos: pesoToCentavos(f.value),
         headcount: f.headcount ? Number(f.headcount) : undefined,
         rate_per_head_centavos: f.rate ? pesoToCentavos(f.rate) : undefined,

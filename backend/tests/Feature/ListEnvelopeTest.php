@@ -105,15 +105,15 @@ class ListEnvelopeTest extends TestCase
             'stage' => 'proposal', 'value_centavos' => 100000, 'probability' => 60,
         ]);
 
-        $a = $this->getJson("/api/v1/activities/{$act->id}", $this->auth($rep))->assertOk()->json('data');
+        $a = $this->getJson("/api/v1/activities/{$act->opaqueId()}", $this->auth($rep))->assertOk()->json('data');
         $this->assertIsArray($a['attachments']);
         $this->assertSame('Env Client 5', $a['client_name']);
 
-        $f = $this->getJson("/api/v1/followups/{$fup->id}", $this->auth($rep))->assertOk()->json('data');
+        $f = $this->getJson("/api/v1/followups/{$fup->opaqueId()}", $this->auth($rep))->assertOk()->json('data');
         $this->assertSame('Env Client 5', $f['client_name']);
         $this->assertArrayHasKey('is_overdue', $f);
 
-        $o = $this->getJson("/api/v1/opportunities/{$opp->id}", $this->auth($rep))->assertOk()->json('data');
+        $o = $this->getJson("/api/v1/opportunities/{$opp->opaqueId()}", $this->auth($rep))->assertOk()->json('data');
         $this->assertSame(60000, $o['weighted_centavos']);
     }
 
@@ -122,7 +122,7 @@ class ListEnvelopeTest extends TestCase
         $rep = $this->rep('rep.env6@primepower.ph');
         $lead = \App\Models\Lead::create(['owner_id' => $rep->id, 'company_name' => 'Env Co 6', 'contact_name' => 'Env Person']);
 
-        $row = $this->putJson("/api/v1/leads/{$lead->id}", ['notes' => 'Updated'], $this->auth($rep))
+        $row = $this->putJson("/api/v1/leads/{$lead->opaqueId()}", ['notes' => 'Updated'], $this->auth($rep))
             ->assertOk()->json('data');
         $this->assertArrayHasKey('score', $row);
         $this->assertSame('Updated', $row['notes']);

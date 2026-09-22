@@ -13,10 +13,10 @@ class InsightController extends Controller
 {
     use ApiResponse;
 
-    public function client(int $id)
+    public function client(string $id)
     {
         $user = auth('api')->user();
-        $client = \App\Models\Client::visibleTo($user)->findOrFail($id);
+        $client = \App\Models\Client::visibleTo($user)->findOrFail(\App\Models\Client::decodeId($id) ?? 0);
 
         return $this->ok(ChurnRisk::assess($client) + [
             'nba' => NextBestAction::forClient($client),
@@ -24,12 +24,13 @@ class InsightController extends Controller
         ]);
     }
 
-    public function opportunity(int $id, AiServiceInterface $ai)
+    public function opportunity(string $id, AiServiceInterface $ai)
     {
         $user = auth('api')->user();
-        $opp = \App\Models\Opportunity::visibleTo($user)->findOrFail($id);
+        $decoded = \App\Models\Opportunity::decodeId($id) ?? 0;
+        $opp = \App\Models\Opportunity::visibleTo($user)->findOrFail($decoded);
         $rules = WinProbability::forOpp($opp);
 
-        return $this->ok($rules + ['ai_preview' => true, 'ai' => $ai->winProbability($id)]);
+        return $this->ok($rules + ['ai_preview' => true, 'ai' => $ai->winProbability($decoded)]);
     }
 }

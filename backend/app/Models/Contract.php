@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Contract extends Model
 {
-    use Filterable, HasAuditLog, SoftDeletes;
+    use Filterable, HasOpaqueId, HasAuditLog, SoftDeletes;
 
     public const STATUSES = ['active', 'superseded', 'cancelled'];
 

@@ -10,7 +10,7 @@ class ClientResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->opaqueId(),
             'owner_id' => $this->owner_id,
             'name' => $this->name,
             'industry' => $this->industry,
@@ -21,7 +21,7 @@ class ClientResource extends JsonResource
             'contact_phone' => $this->contact_phone,
             'status' => $this->status,
             'source' => $this->source,
-            'created_from_lead_id' => $this->created_from_lead_id,
+            'created_from_lead_id' => \App\Models\Lead::encodeId($this->created_from_lead_id),
             'last_contacted_at' => $this->last_contacted_at,
             'contacts' => ContactResource::collection($this->whenLoaded('contacts')),
             'created_at' => $this->created_at,

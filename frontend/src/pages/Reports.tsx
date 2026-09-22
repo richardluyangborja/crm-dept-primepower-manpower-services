@@ -21,7 +21,7 @@ interface Pack {
     activity_by_type: Record<string, number>;
     activity_by_owner: { owner_id: number; owner_name?: string; count: number }[];
     followup_compliance: { open: number; done: number; overdue: number };
-    risks: { client_id: number; client_name: string; owner_name?: string; level: string; drivers: string[]; nba: { kind: string; title: string; link: string }[] }[];
+    risks: { client_id: string; client_name: string; owner_name?: string; level: string; drivers: string[]; nba: { kind: string; title: string; link: string }[] }[];
     comment_sentiment: { client_name?: string; score: number; comment: string; sentiment: { label: string; score: number } }[];
   };
   meta: { ai_preview: boolean; generated_at: string; period: { from: string; to: string } };

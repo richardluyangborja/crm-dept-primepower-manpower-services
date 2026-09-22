@@ -10,11 +10,27 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait Filterable
 {
+    /** Query fields carrying opaque public IDs (specs/14) → owning model. */
+    protected const OPAQUE_FIELDS = [
+        'client_id' => \App\Models\Client::class,
+        'opportunity_id' => \App\Models\Opportunity::class,
+        'contact_id' => \App\Models\Contact::class,
+        'lead_id' => \App\Models\Lead::class,
+        'job_order_id' => \App\Models\JobOrder::class,
+    ];
+
     public function scopeFilter(Builder $query, mixed $request, array $allowed): Builder
     {
         foreach ($allowed as $field) {
             $value = $request instanceof \Illuminate\Http\Request ? $request->query($field) : ($request[$field] ?? null);
             if ($value !== null && $value !== '') {
+                if (isset(static::OPAQUE_FIELDS[$field])) {
+                    $decoded = static::OPAQUE_FIELDS[$field]::decodeId($value);
+                    if ($decoded === null) {
+                        return $query->whereRaw('1 = 0'); // tampered hash → empty, never 500
+                    }
+                    $value = $decoded;
+                }
                 $query->where($query->getModel()->getTable().'.'.$field, $value);
             }
         }

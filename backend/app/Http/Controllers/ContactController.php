@@ -19,9 +19,10 @@ class ContactController extends Controller
         $user = $request->user();
 
         $op = (new Contact)->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+        $clientFilter = \App\Models\Client::decodeId($request->query('client_id'));
         $contacts = Contact::with('client:id,name')
             ->whereHas('client', fn ($q) => $q->visibleTo($user))
-            ->when($request->query('client_id'), fn ($q, $id) => $q->where('client_id', $id))
+            ->when($request->query('client_id'), fn ($q) => $clientFilter === null ? $q->whereRaw('1 = 0') : $q->where('client_id', $clientFilter))
             ->when($request->query('q'), function ($q, $term) use ($op) {
                 $q->where(function ($w) use ($term, $op) {
                     $w->where('full_name', $op, "%{$term}%")

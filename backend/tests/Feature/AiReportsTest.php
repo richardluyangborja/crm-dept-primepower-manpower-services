@@ -48,7 +48,7 @@ class AiReportsTest extends TestCase
         $t = auth('api')->login($o['mgr']);
         // High-risk: inactive + stale contact.
         $c = $this->clientFor($o['rep'], ['status' => 'inactive', 'last_contacted_at' => now()->subDays(45)]);
-        $this->getJson("/api/v1/insights/clients/{$c->id}", ['Authorization' => "Bearer $t"])->assertOk()
+        $this->getJson("/api/v1/insights/clients/{$c->opaqueId()}", ['Authorization' => "Bearer $t"])->assertOk()
             ->assertJsonPath('data.level', 'high')
             ->assertJsonPath('data.nba.0.kind', 'client_stale')
             ->assertJsonPath('data.ai_preview', true);
@@ -69,7 +69,7 @@ class AiReportsTest extends TestCase
         $this->assertSame(51, WinProbability::forOpp($opp->refresh())['probability']);
 
         $t = auth('api')->login($o['mgr']);
-        $this->getJson("/api/v1/insights/opportunities/{$opp->id}", ['Authorization' => "Bearer $t"])->assertOk()
+        $this->getJson("/api/v1/insights/opportunities/{$opp->opaqueId()}", ['Authorization' => "Bearer $t"])->assertOk()
             ->assertJsonPath('data.probability', 51)
             ->assertJsonPath('data.ai_preview', true);
     }

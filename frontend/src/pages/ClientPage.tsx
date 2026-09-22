@@ -11,7 +11,7 @@ import { ClientJourney, apiErr } from '../components/crm/ClientWidgets';
 import { Star } from 'lucide-react';
 
 interface ClientFull {
-  id: number;
+  id: string;
   name: string;
   industry: string | null;
   address_city: string | null;
@@ -20,8 +20,8 @@ interface ClientFull {
   contact_email: string | null;
   contact_phone: string | null;
   source: string | null;
-  created_from_lead_id: number | null;
-  contacts?: { id: number; full_name: string; position?: string | null; email: string | null; phone: string | null; is_primary: boolean }[];
+  created_from_lead_id: string | null;
+  contacts?: { id: string; full_name: string; position?: string | null; email: string | null; phone: string | null; is_primary: boolean }[];
 }
 
 const SECTIONS = [
@@ -42,40 +42,40 @@ const FULFILLMENT_LABELS: Record<string, string> = {
   fully_fulfilled: 'Fully fulfilled',
 };
 
-interface HeaderContract { id: number; status: string; monthly_billing_centavos: number | null; }
+interface HeaderContract { id: string; status: string; monthly_billing_centavos: number | null; }
 interface HeaderFulfillment { required: number; deployed: number; remaining: number; pct: number | null; status: string; }
-interface HeaderSurvey { id: number; response?: { score: number } | null; }
+interface HeaderSurvey { id: string; response?: { score: number } | null; }
 
 export function ClientPage() {
   const { id = '' } = useParams();
 
   const detailQ = useQuery({
-    queryKey: ['client', Number(id)],
+    queryKey: ['client', id],
     queryFn: async () => (await api.get(`/clients/${id}`)).data.data as ClientFull,
     enabled: id !== '',
   });
-  const cid = detailQ.data?.id ?? 0;
+  const cid = detailQ.data?.id ?? '';
 
   // Header strip: one number per lifecycle area, each from its owning query.
   const contractsQ = useQuery({
     queryKey: ['contracts', `client-${cid}`],
     queryFn: async () => (await api.get('/contracts', { params: { client_id: cid, per_page: 100 } })).data.data as HeaderContract[],
-    enabled: cid > 0,
+    enabled: cid !== '',
   });
   const openDealsQ = useQuery({
     queryKey: ['opportunities', `client-${cid}`],
-    queryFn: async () => (await api.get('/opportunities', { params: { client_id: cid, per_page: 100 } })).data.data as { id: number; stage: string }[],
-    enabled: cid > 0,
+    queryFn: async () => (await api.get('/opportunities', { params: { client_id: cid, per_page: 100 } })).data.data as { id: string; stage: string }[],
+    enabled: cid !== '',
   });
   const opsQ = useQuery({
     queryKey: ['client-ops', cid],
     queryFn: async () => (await api.get(`/clients/${cid}/operations`)).data.data as { fulfillment: HeaderFulfillment; billing: { outstanding_centavos?: number } },
-    enabled: cid > 0,
+    enabled: cid !== '',
   });
   const satQ = useQuery({
     queryKey: ['surveys', `client-${cid}`],
     queryFn: async () => (await api.get('/surveys', { params: { client_id: cid, per_page: 10 } })).data.data as HeaderSurvey[],
-    enabled: cid > 0,
+    enabled: cid !== '',
   });
 
   const activeContracts = (contractsQ.data ?? []).filter((c) => c.status === 'active');
@@ -161,12 +161,12 @@ export function ClientPage() {
 function ProfileStats({ client }: { client: ClientFull }) {
   const oppsQ = useQuery({
     queryKey: ['opportunities', `client-${client.id}`],
-    queryFn: async () => (await api.get('/opportunities', { params: { client_id: client.id, per_page: 100 } })).data.data as { id: number; stage: string }[],
+    queryFn: async () => (await api.get('/opportunities', { params: { client_id: client.id, per_page: 100 } })).data.data as { id: string; stage: string }[],
   });
   const open = (oppsQ.data ?? []).filter((o) => !['won', 'lost'].includes(o.stage)).length;
   const fupsQ = useQuery({
     queryKey: ['followups', `client-${client.id}`],
-    queryFn: async () => (await api.get('/followups', { params: { client_id: client.id, per_page: 100 } })).data.data as { id: number; status: string }[],
+    queryFn: async () => (await api.get('/followups', { params: { client_id: client.id, per_page: 100 } })).data.data as { id: string; status: string }[],
   });
   const openFups = (fupsQ.data ?? []).filter((f) => !['done'].includes(f.status)).length;
 
@@ -236,10 +236,10 @@ function ContactsTab({ client }: { client: ClientFull }) {
   );
 }
 
-function OppsTab({ clientId }: { clientId: number }) {
+function OppsTab({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['opportunities', `client-${clientId}`],
-    queryFn: async () => (await api.get('/opportunities', { params: { client_id: clientId, per_page: 100 } })).data.data as { id: number; title: string; stage: string; value_centavos: number; probability: number }[],
+    queryFn: async () => (await api.get('/opportunities', { params: { client_id: clientId, per_page: 100 } })).data.data as { id: string; title: string; stage: string; value_centavos: number; probability: number }[],
   });
   if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading deals…</p>;
   return (
@@ -258,10 +258,10 @@ function OppsTab({ clientId }: { clientId: number }) {
   );
 }
 
-function CommsTab({ clientId }: { clientId: number }) {
+function CommsTab({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['activities', `client-${clientId}`],
-    queryFn: async () => (await api.get('/activities', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: number; type: string; subject: string | null; outcome: string | null; occurred_at: string }[],
+    queryFn: async () => (await api.get('/activities', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: string; type: string; subject: string | null; outcome: string | null; occurred_at: string }[],
   });
   if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading timeline…</p>;
   return (
@@ -281,10 +281,10 @@ function CommsTab({ clientId }: { clientId: number }) {
   );
 }
 
-function SurveysTab({ clientId }: { clientId: number }) {
+function SurveysTab({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['surveys', `client-${clientId}`],
-    queryFn: async () => (await api.get('/surveys', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: number; template_name?: string; status: string; response?: { score: number } | null }[],
+    queryFn: async () => (await api.get('/surveys', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: string; template_name?: string; status: string; response?: { score: number } | null }[],
   });
   if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading surveys…</p>;
   return (
@@ -303,10 +303,10 @@ function SurveysTab({ clientId }: { clientId: number }) {
   );
 }
 
-function FollowupsTab({ clientId }: { clientId: number }) {
+function FollowupsTab({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['followups', `client-${clientId}`],
-    queryFn: async () => (await api.get('/followups', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: number; title: string; status: string; due_at: string }[],
+    queryFn: async () => (await api.get('/followups', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: string; title: string; status: string; due_at: string }[],
   });
   if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading follow-ups…</p>;
   return (
@@ -325,11 +325,11 @@ function FollowupsTab({ clientId }: { clientId: number }) {
   );
 }
 
-function ContractsSection({ clientId }: { clientId: number }) {
+function ContractsSection({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['contracts', `client-${clientId}`],
     queryFn: async () => (await api.get('/contracts', { params: { client_id: clientId, per_page: 100 } })).data.data as {
-      id: number; ref: string; title: string; headcount: number | null; contract_months: number | null;
+      id: string; ref: string; title: string; headcount: number | null; contract_months: number | null;
       monthly_billing_centavos: number | null; start_date: string | null; status: string;
     }[],
   });
@@ -349,7 +349,7 @@ function ContractsSection({ clientId }: { clientId: number }) {
   );
 }
 
-function OperationsSection({ clientId }: { clientId: number }) {
+function OperationsSection({ clientId }: { clientId: string }) {
   const q = useQuery({
     queryKey: ['client-ops', clientId],
     queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as {
@@ -379,7 +379,7 @@ function OperationsSection({ clientId }: { clientId: number }) {
   );
 }
 
-function InsightsSection({ clientId, clientName }: { clientId: number; clientName: string }) {
+function InsightsSection({ clientId, clientName }: { clientId: string; clientName: string }) {
   const q = useQuery({
     queryKey: ['client-insights', clientId],
     queryFn: async () => (await api.get(`/insights/clients/${clientId}`)).data.data as {
@@ -410,14 +410,14 @@ function InsightsSection({ clientId, clientName }: { clientId: number; clientNam
   );
 }
 
-function FinanceTab({ clientId }: { clientId: number }) {
+function FinanceTab({ clientId }: { clientId: string }) {
   const opsQ = useQuery({
     queryKey: ['client-ops', clientId],
     queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as { billing: { outstanding_centavos?: number; status?: string }; mock: boolean },
   });
   const invQ = useQuery({
     queryKey: ['invoices', `client-${clientId}`],
-    queryFn: async () => (await api.get('/invoices', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: number; ref: string; title: string; amount_centavos: number; balance_centavos: number; status: string; is_overdue: boolean; due_at: string | null }[],
+    queryFn: async () => (await api.get('/invoices', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: string; ref: string; title: string; amount_centavos: number; balance_centavos: number; status: string; is_overdue: boolean; due_at: string | null }[],
   });
   return (
     <div className="flex flex-col gap-3">

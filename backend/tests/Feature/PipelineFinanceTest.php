@@ -41,10 +41,10 @@ class PipelineFinanceTest extends TestCase
         $opp = $this->oppFor($o['rep']);
 
         // Missing terms → 422.
-        $this->postJson("/api/v1/opportunities/{$opp->id}/move", ['stage' => 'contract'], ['Authorization' => "Bearer $t"])
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", ['stage' => 'contract'], ['Authorization' => "Bearer $t"])
             ->assertStatus(422);
 
-        $res = $this->postJson("/api/v1/opportunities/{$opp->id}/move", [
+        $res = $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
             'stage' => 'contract',
             'headcount' => 40, 'rate_per_head_centavos' => 3500000, 'contract_months' => 12,
             'start_date' => now()->toDateString(),
@@ -58,7 +58,7 @@ class PipelineFinanceTest extends TestCase
         $this->assertSame('active', $contract->status);
 
         // Re-signing updates terms, never duplicates.
-        $this->postJson("/api/v1/opportunities/{$opp->id}/move", [
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
             'stage' => 'contract', 'headcount' => 50,
             'rate_per_head_centavos' => 3500000, 'contract_months' => 12,
             'start_date' => now()->toDateString(),
@@ -75,7 +75,7 @@ class PipelineFinanceTest extends TestCase
             'headcount' => 20, 'rate_per_head_centavos' => 4000000, 'contract_months' => 6,
         ]);
 
-        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $inv = Invoice::where('opportunity_id', $opp->id)->firstOrFail();
         $this->assertSame(80000000, $inv->amount_centavos); // one month, not the contract total
         $this->assertSame('sent', $inv->status);
@@ -89,7 +89,7 @@ class PipelineFinanceTest extends TestCase
         $opp = $this->oppFor($o['rep']);
         $opp->update(['value_centavos' => 500000]);
 
-        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $this->assertSame(500000, Invoice::where('opportunity_id', $opp->id)->firstOrFail()->amount_centavos);
     }
 
@@ -99,7 +99,7 @@ class PipelineFinanceTest extends TestCase
         $other = User::factory()->create(['email' => 'other.pf@primepower.ph', 'role' => 'sales_rep']);
         $opp = $this->oppFor($o['rep']);
         $t = $this->token($o['rep']);
-        $this->postJson("/api/v1/opportunities/{$opp->id}/move", [
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
             'stage' => 'contract', 'headcount' => 10,
             'rate_per_head_centavos' => 3000000, 'contract_months' => 12,
             'start_date' => now()->toDateString(),

@@ -8,10 +8,10 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { ClientPicker, useClientParam } from '../components/crm/ClientPicker';
 
 interface Contract {
-  id: number;
+  id: string;
   ref: string;
-  opportunity_id: number | null;
-  client_id: number;
+  opportunity_id: string | null;
+  client_id: string;
   client_name?: string;
   headcount: number | null;
   rate_per_head_centavos: number | null;

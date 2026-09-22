@@ -140,7 +140,7 @@ class OpportunityService
                     $invoice->restore();
                 }
                 $meta['invoice_id'] = $invoice->id;
-                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", "/clients/{$opp->client_id}");
+                $this->notify->send($opp->owner_id, 'won', "Won: {$opp->title}", "Job order {$jobOrder->ref} created — staffing starts (mock).", '/clients/'.$opp->client->opaqueId());
             }
             if ($to === 'lost') {
                 $meta['lost_reason'] = $opp->lost_reason;

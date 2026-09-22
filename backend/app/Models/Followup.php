@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Followup extends Model
 {
-    use Filterable, HasAuditLog, SoftDeletes;
+    use Filterable, HasOpaqueId, HasAuditLog, SoftDeletes;
 
     public const STATUSES = ['open', 'done', 'snoozed', 'overdue', 'escalated'];
     public const PRIORITIES = ['low', 'medium', 'high'];

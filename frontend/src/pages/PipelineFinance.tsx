@@ -8,10 +8,10 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { ClientPicker, useClientParam } from '../components/crm/ClientPicker';
 
 interface Invoice {
-  id: number;
+  id: string;
   ref: string;
   title: string;
-  client_id: number;
+  client_id: string;
   client_name?: string;
   amount_centavos: number;
   balance_centavos: number;

@@ -20,7 +20,7 @@ class NextBestAction
             $q->whereNull('last_contacted_at')->orWhere('last_contacted_at', '<', now()->subDays(30));
         })->limit($limit - count($actions))->get();
         foreach ($stale as $c) {
-            $actions[] = ['kind' => 'client_stale', 'title' => "Reconnect with {$c->name}", 'link' => "/clients/{$c->id}"];
+            $actions[] = ['kind' => 'client_stale', 'title' => "Reconnect with {$c->name}", 'link' => "/clients/{$c->opaqueId()}"];
         }
 
         return $actions;
@@ -44,7 +44,7 @@ class NextBestAction
             $actions[] = [
                 'kind' => 'staffing_gap',
                 'title' => "Follow up on {$ful['remaining']} undeployed of {$ful['required']} required heads",
-                'link' => "/clients/{$client->id}",
+                'link' => "/clients/{$client->opaqueId()}",
             ];
         }
         // Renewal approaching: active contract ends within 60 days.
@@ -61,7 +61,7 @@ class NextBestAction
             $actions[] = [
                 'kind' => 'contract_renewal',
                 'title' => "Begin renewal discussion — {$ref} ends soon",
-                'link' => "/clients/{$client->id}",
+                'link' => "/clients/{$client->opaqueId()}",
             ];
         }
         $lowSurvey = \App\Models\Survey::where('client_id', $client->id)
@@ -87,7 +87,7 @@ class NextBestAction
             $actions[] = [
                 'kind' => 'expansion',
                 'title' => "{$client->name} has a new requirement — support the expansion",
-                'link' => "/clients/{$client->id}",
+                'link' => "/clients/{$client->opaqueId()}",
             ];
         }
         if ((! $client->last_contacted_at || $client->last_contacted_at->lt(now()->subDays(30))) && count($actions) < $limit) {

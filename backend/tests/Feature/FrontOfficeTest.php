@@ -73,7 +73,7 @@ class FrontOfficeTest extends TestCase
         });
 
         $t = auth('api')->login($rep);
-        $ful = $this->getJson("/api/v1/clients/{$client->id}/operations", ['Authorization' => "Bearer $t"])
+        $ful = $this->getJson("/api/v1/clients/{$client->opaqueId()}/operations", ['Authorization' => "Bearer $t"])
             ->assertOk()->json('data.fulfillment');
         $this->assertSame(50, $ful['required']);
         $this->assertSame(42, $ful['deployed']);
@@ -139,10 +139,10 @@ class FrontOfficeTest extends TestCase
             'client_id' => $client->id, 'owner_id' => $rep->id, 'title' => 'Front deal',
             'stage' => 'negotiation', 'value_centavos' => 100000, 'probability' => 80,
         ]);
-        $this->postJson("/api/v1/opportunities/{$opp->id}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
-        $joId = \App\Models\JobOrder::where('opportunity_id', $opp->id)->firstOrFail()->id;
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
+        $joId = \App\Models\JobOrder::where('opportunity_id', $opp->id)->firstOrFail()->opaqueId();
 
         $this->postJson("/api/v1/job-orders/$joId/advance", [], ['Authorization' => "Bearer $t"])->assertForbidden();
-        $this->assertSame('draft', \App\Models\JobOrder::find($joId)->status);
+        $this->assertSame('draft', \App\Models\JobOrder::find(\App\Models\JobOrder::decodeId($joId))->status);
     }
 }

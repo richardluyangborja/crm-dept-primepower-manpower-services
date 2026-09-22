@@ -8,6 +8,14 @@ use Illuminate\Validation\Rule;
 
 class StoreActivityRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'client_id' => \App\Models\Client::decodeId($this->input('client_id')) ?? $this->input('client_id'),
+            'opportunity_id' => \App\Models\Opportunity::decodeId($this->input('opportunity_id')) ?? $this->input('opportunity_id'),
+        ]);
+    }
+
     public function rules(): array
     {
         return [

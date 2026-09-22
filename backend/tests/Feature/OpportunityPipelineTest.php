@@ -70,8 +70,9 @@ class OpportunityPipelineTest extends TestCase
             ->assertOk()->assertJsonPath('data.stage', 'won');
 
         $log = \App\Models\AuditLog::where('entity', 'opportunities')->where('action', 'stage_moved')->latest('id')->first();
-        $this->assertSame('JO-2026-'.str_pad((string) $id, 4, '0', STR_PAD_LEFT), $log->meta['job_order']['job_order_ref']);
-        $this->assertSame('INV-2026-'.str_pad((string) $id, 4, '0', STR_PAD_LEFT), $log->meta['invoice']['invoice_ref']);
+        $intId = \App\Models\Opportunity::decodeId($id);
+        $this->assertSame('JO-2026-'.str_pad((string) $intId, 4, '0', STR_PAD_LEFT), $log->meta['job_order']['job_order_ref']);
+        $this->assertSame('INV-2026-'.str_pad((string) $intId, 4, '0', STR_PAD_LEFT), $log->meta['invoice']['invoice_ref']);
         $this->assertDatabaseHas('notifications', ['user_id' => $rep->id, 'type' => 'won']);
     }
 

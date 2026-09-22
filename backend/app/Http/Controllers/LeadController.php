@@ -106,7 +106,7 @@ class LeadController extends Controller
         ['client' => $client, 'opportunity' => $opp] = $service->convertToClient($lead, $request->validated(), $request->user()->id);
 
         return $this->created(
-            ['client_id' => $client->id, 'opportunity_id' => $opp?->id],
+            ['client_id' => $client->opaqueId(), 'opportunity_id' => $opp?->opaqueId()],
             'Lead converted — client created.'
         );
     }

@@ -83,7 +83,7 @@ class Phase2CGapsTest extends TestCase
             'stage' => 'negotiation', 'value_centavos' => 100000, 'probability' => 80,
         ]);
         $date = now()->subDays(5)->toDateString();
-        $this->postJson("/api/v1/opportunities/{$opp->id}/win", ['effective_date' => $date], $this->auth($rep))
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", ['effective_date' => $date], $this->auth($rep))
             ->assertOk();
         $this->assertSame($date, $opp->refresh()->won_at->toDateString());
     }

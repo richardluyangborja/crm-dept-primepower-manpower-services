@@ -13,7 +13,7 @@ import { useSettingsList } from '../hooks/useSettings';
 import { apiErr } from '../components/crm/ClientWidgets';
 
 interface Lead {
-  id: number;
+  id: string;
   company_name: string;
   contact_name: string;
   contact_email: string | null;
@@ -42,7 +42,7 @@ export function LeadsPage() {
   const [needsOnly, setNeedsOnly] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [convertId, setConvertId] = useState<number | null>(null);
+  const [convertId, setConvertId] = useState<string | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -62,7 +62,7 @@ export function LeadsPage() {
   };
 
   const setStatusMut = useMutation({
-    mutationFn: async ({ id, st, reason }: { id: number; st: string; reason?: string }) =>
+    mutationFn: async ({ id, st, reason }: { id: string; st: string; reason?: string }) =>
       (await api.put(`/leads/${id}`, { status: st, unqualified_reason: reason })).data,
     onSuccess: () => {
       toast('success', 'Lead status updated.');
@@ -72,10 +72,10 @@ export function LeadsPage() {
   });
 
   const convertMut = useMutation({
-    mutationFn: async ({ id, withOpp }: { id: number; withOpp: boolean }) =>
+    mutationFn: async ({ id, withOpp }: { id: string; withOpp: boolean }) =>
       (await api.post(`/leads/${id}/convert`, withOpp ? { create_opportunity: true, opportunity_title: undefined } : {})).data,
-    onSuccess: (d) => {
-      toast('success', `Converted — client #${d.data.client_id} created.`);
+    onSuccess: () => {
+      toast('success', 'Converted — client profile created.');
       setConvertId(null);
       invalidate();
     },
@@ -171,7 +171,7 @@ export function LeadsPage() {
 function LeadTable({ rows, onStatus, onConvert, empty }: {
   rows: Lead[];
   onStatus: (r: Lead, st: string) => void;
-  onConvert: (id: number) => void;
+  onConvert: (id: string) => void;
   empty: React.ReactNode;
 }) {
   return (

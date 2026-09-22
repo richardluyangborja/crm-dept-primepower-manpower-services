@@ -18,7 +18,7 @@ export function useClientParam() {
 export function ClientPicker({ clientId, onChange }: { clientId: string; onChange: (id: string) => void }) {
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
-    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
+    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
   return (
     <select

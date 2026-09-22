@@ -7,10 +7,10 @@ import { useToast } from '../components/ui/Toaster';
 import { useSession } from '../store/session';
 
 interface Act {
-  id: number;
-  client_id: number;
+  id: string;
+  client_id: string;
   client_name?: string;
-  opportunity_id: number | null;
+  opportunity_id: string | null;
   type: 'call' | 'email' | 'meeting' | 'site_visit' | 'note';
   subject: string | null;
   body: string | null;
@@ -71,7 +71,7 @@ export function CommsPage() {
   });
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
-    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
+    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
   const rows = actsQ.data ?? [];
 
@@ -157,7 +157,7 @@ function highlight(body: string, q: string): React.ReactNode {
   );
 }
 
-function Composer({ clients, onClose, onDone }: { clients: { id: number; name: string }[]; onClose: () => void; onDone: () => void }) {
+function Composer({ clients, onClose, onDone }: { clients: { id: string; name: string }[]; onClose: () => void; onDone: () => void }) {
   const [tab, setTab] = useState<(typeof TYPES)[number]>('call');
   const [f, setF] = useState({ client_id: '', subject: '', body: '', outcome: 'connected', duration: '', occurred: '', wantFollowup: false, followup_title: '', followup_due: '' });
   const [busy, setBusy] = useState(false);
@@ -178,7 +178,7 @@ function Composer({ clients, onClose, onDone }: { clients: { id: number; name: s
     setErr('');
     try {
       await api.post('/activities', {
-        client_id: Number(f.client_id),
+        client_id: f.client_id,
         type: tab,
         subject: f.subject || undefined,
         body: f.body || undefined,

@@ -58,7 +58,7 @@ export function DashboardPage() {
             <AiBadge />
           </div>
           <ul className="flex flex-col gap-2 text-sm">
-            {data.at_risk.map((c: { client_id: number; client_name: string; owner_name?: string; level: string; drivers: string[] }) => (
+            {data.at_risk.map((c: { client_id: string; client_name: string; owner_name?: string; level: string; drivers: string[] }) => (
               <li key={c.client_id} className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-2 last:border-0">
                 <StatusBadge value={c.level} />
                 <span className="font-medium">{c.client_name}</span>
@@ -112,7 +112,7 @@ export function DashboardPage() {
 }
 
 interface LifecycleContract {
-  id: number; ref: string; client_id: number; client_name?: string;
+  id: string; ref: string; client_id: string; client_name?: string;
   monthly_billing_centavos: number | null; start_date: string | null;
   contract_months: number | null; status: string;
 }

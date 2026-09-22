@@ -20,7 +20,7 @@ erDiagram
   users ||--o{ audit_logs : performs
 ```
 
-## 2. Tables (Postgres; `id` = uuid v7 or bigint — pick bigint for v1 simplicity; timestamps + `deleted_at` soft delete)
+## 2. Tables (Postgres; `id` = bigint PKs — internal only; timestamps + `deleted_at` soft delete)
 - `teams(id, name, region)` — e.g. Manila, Cebu, Davao.
 - `users(id, team_id→teams, name, email unique, password, role enum[superadmin,admin,manager,sales_rep], is_active, last_login_at)`.
 - `clients(id, owner_id→users, name, industry, size_band, address_city, address_province, contact_email, contact_phone, status enum[prospect,active,inactive,blacklisted], source, created_from_lead_id nullable)`.

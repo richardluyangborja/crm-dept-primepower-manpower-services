@@ -60,7 +60,7 @@ class InvoiceController extends Controller
         }
 
         $perClient = $open->groupBy('client_id')->map(fn ($g) => [
-            'client_id' => $g->first()->client_id,
+            'client_id' => \App\Models\Client::encodeId($g->first()->client_id),
             'client_name' => $g->first()->client?->name,
             'outstanding_centavos' => $g->sum('balance_centavos'),
             'invoices' => $g->count(),

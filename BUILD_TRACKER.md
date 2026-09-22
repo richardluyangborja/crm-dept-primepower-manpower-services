@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Opaque IDs — Stream 1 of 3 (branch `feature/crm-opaque-ids`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Hashids boundary (trait + 11 models + 11 resources) | ✅ | Per-model salt, tamper → 404 |
+| Filters/requests/links decode + encode | ✅ | Invalid filter hash → empty, never 500 |
+| Frontend opaque strings end-to-end | ✅ | No Number(), string compares |
+| Tests updated + OpaqueIdTest | ✅ | No bare ints, 403 preserved |
+| Specs 03/14/18 + this tracker | ✅ | Streams 2–3 queued separately |
+
 ## Front-office reframe — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

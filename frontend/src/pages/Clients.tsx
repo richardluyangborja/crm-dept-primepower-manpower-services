@@ -9,7 +9,7 @@ import { KpiCard } from '../components/ui/KpiCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 
 interface Client {
-  id: number;
+  id: string;
   name: string;
   industry: string | null;
   address_city: string | null;
@@ -18,8 +18,8 @@ interface Client {
 }
 
 interface Contact {
-  id: number;
-  client_id: number;
+  id: string;
+  client_id: string;
   client_name?: string | null;
   full_name: string;
   position: string | null;
@@ -29,14 +29,14 @@ interface Contact {
 }
 
 interface ConvertedLead {
-  id: number;
+  id: string;
   company_name: string;
   contact_name: string;
-  converted_client_id: number | null;
+  converted_client_id: string | null;
 }
 
 interface Invoice {
-  id: number;
+  id: string;
   balance_centavos: number;
   status: string;
 }

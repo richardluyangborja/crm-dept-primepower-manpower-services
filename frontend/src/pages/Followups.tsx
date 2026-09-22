@@ -8,11 +8,11 @@ import { useToast } from '../components/ui/Toaster';
 import { Check } from 'lucide-react';
 
 interface Fup {
-  id: number;
+  id: string;
   owner_id: number;
-  client_id: number;
+  client_id: string;
   client_name?: string;
-  opportunity_id: number | null;
+  opportunity_id: string | null;
   title: string;
   due_at: string;
   priority: 'low' | 'medium' | 'high';
@@ -52,7 +52,7 @@ export function FollowupsPage() {
 
   // Called unconditionally in stable order — safe hook usage.
   const mutateAction = (
-    fn: (id: number) => Promise<unknown>,
+    fn: (id: string) => Promise<unknown>,
     ok: string,
   ) =>
     useMutation({
@@ -66,14 +66,14 @@ export function FollowupsPage() {
   const doneMut = mutateAction((id) => api.post(`/followups/${id}/done`), 'Done — nice.');
   const escMut = mutateAction((id) => api.post(`/followups/${id}/escalate`), 'Escalated to your manager.');
   const snoozeMut = useMutation({
-    mutationFn: async ({ id, until }: { id: number; until: string }) => api.post(`/followups/${id}/snooze`, { snoozed_until: until }),
+    mutationFn: async ({ id, until }: { id: string; until: string }) => api.post(`/followups/${id}/snooze`, { snoozed_until: until }),
     onSuccess: () => {
       toast('success', 'Snoozed.');
       invalidate();
     },
     onError: (e) => toast('error', apiErr(e, 'Could not snooze.')),
   });
-  const snooze = (id: number) => {
+  const snooze = (id: string) => {
     const pick = window.prompt('Snooze until? Type 1d, 3d, 1w or a date YYYY-MM-DD HH:mm', '1d');
     if (!pick) return;
     const until = parseSnooze(pick);
@@ -172,7 +172,7 @@ function CalendarSection({ rows, day, onDay }: { rows: Fup[]; day: string; onDay
   const [mode, setMode] = useState<'month' | 'week' | 'day'>('month');
 
   const reschedMut = useMutation({
-    mutationFn: async ({ id, due_at }: { id: number; due_at: string }) => api.put(`/followups/${id}`, { due_at }),
+    mutationFn: async ({ id, due_at }: { id: string; due_at: string }) => api.put(`/followups/${id}`, { due_at }),
     onSuccess: () => {
       toast('success', 'Rescheduled.');
       qc.invalidateQueries({ queryKey: ['followups'] });
@@ -183,7 +183,7 @@ function CalendarSection({ rows, day, onDay }: { rows: Fup[]; day: string; onDay
 
   const dropTo = (dateKey: string) => (e: React.DragEvent) => {
     e.preventDefault();
-    const id = Number(e.dataTransfer.getData('text/followup-id'));
+    const id = e.dataTransfer.getData('text/followup-id');
     if (!id) return;
     const [y, m, d] = dateKey.split('-').map(Number);
     reschedMut.mutate({ id, due_at: new Date(y, m - 1, d, 12).toISOString() });
@@ -336,7 +336,7 @@ function NewReminderForm({ onClose, onDone }: { onClose: () => void; onDone: () 
   const toast = useToast();
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
-    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: number; name: string }[],
+    queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
   const [f, setF] = useState({ client_id: '', title: '', due: '', priority: 'medium' });
   const [busy, setBusy] = useState(false);
@@ -348,7 +348,7 @@ function NewReminderForm({ onClose, onDone }: { onClose: () => void; onDone: () 
     setBusy(true);
     setErr('');
     try {
-      await api.post('/followups', { client_id: Number(f.client_id), title: f.title, due_at: new Date(f.due).toISOString(), priority: f.priority });
+      await api.post('/followups', { client_id: f.client_id, title: f.title, due_at: new Date(f.due).toISOString(), priority: f.priority });
       toast('success', "Reminder set — we'll notify you.");
       onDone();
       onClose();

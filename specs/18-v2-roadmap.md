@@ -219,3 +219,13 @@ renewal ≤60d, satisfaction drop ≥2pts, expansion). Job-order advance is remo
 from the UI and guarded to 403 server-side. Dashboard adds a lifecycle strip
 (contracts, monthly recurring, deployed, AR, renewals ≤60d). Backend adds
 `ClientFulfillment` + `clients/{id}/operations.fulfillment`; no new tables.
+
+## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
+Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
+at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs
+internal. All resource `id`/`*_id` fields encoded; `resolveRouteBinding`
+decodes (tamper → 404); filters + form requests decode inbound hashes;
+server-built links encoded; `owner_id`/`template_id` stay numeric (internal
+entities). Frontend treats IDs as opaque strings. `OpaqueIdTest` guards the
+contract (no bare ints, 404 on garbage, 403 preserved). Streams 2 (detail/
+toast hierarchy) and 3 (confirm destructive actions) follow separately.

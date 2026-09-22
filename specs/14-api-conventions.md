@@ -17,6 +17,7 @@
 ```
 - Pagination: `?page&per_page(≤100)&sort&dir&q&filters…`. Sorting allowlisted per controller.
 - Resources: `LeadResource, ClientResource…` — snake→camel? Keep **snake_case** JSON to match Laravel; frontend maps once in `apiClient` if needed (prefer snake throughout to avoid bugs).
+- **Opaque IDs (specs/03):** customer-facing entities (leads, clients, opportunities, contracts, invoices, job orders, contacts, surveys, follow-ups, activities, notifications) expose Hashids strings for `id` and every nested `*_id`; integer PKs stay internal. Route-model binding decodes transparently; tampered values 404 (no oracle); `owner_id`/`sent_by`/`template_id` (internal entities) stay numeric. Frontend treats IDs as opaque strings — no `Number()`, no arithmetic. CSV exports keep raw keys for the BI team.
 
 ## 3. Reusable backend pieces (mandatory)
 - `App\Traits\ApiResponse (ok/created/paginated/error)`, `HasAuditLog`, `Filterable`.

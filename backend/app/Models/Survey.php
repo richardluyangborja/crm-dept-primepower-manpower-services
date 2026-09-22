@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use Illuminate\Database\Eloquent\Model;
 
 class Survey extends Model
 {
-    use Filterable;
+    use Filterable, HasOpaqueId;
 
     public const STATUSES = ['draft', 'sent', 'responded', 'expired'];
 

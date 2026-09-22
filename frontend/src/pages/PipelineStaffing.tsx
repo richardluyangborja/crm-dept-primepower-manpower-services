@@ -6,7 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ClientPicker, useClientParam } from '../components/crm/ClientPicker';
 
 interface StaffRow {
-  client_id: number;
+  client_id: string;
   client_name: string;
   owner_name?: string;
   deployed: number;
@@ -45,7 +45,7 @@ export function PipelineStaffingPage() {
       {staffingQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading staffing…</p>
         : staffingQ.isError ? <div className="card p-6 text-sm">Couldn't load staffing. <button className="text-sky-600 underline" onClick={() => staffingQ.refetch()}>Retry</button></div>
         : (
-          <DataTable<StaffRow & { id: number }>
+          <DataTable<StaffRow & { id: string }>
             rows={rows.map((r) => ({ ...r, id: r.client_id }))}
             columns={[
               { key: 'c', header: 'Client', render: (r) => <Link to={`/clients/${r.client_id}`} className="font-medium text-sky-700 hover:underline dark:text-sky-300">{r.client_name}</Link> },

@@ -33,7 +33,7 @@ class DashboardController extends Controller
             $risk = ChurnRisk::assess($client);
             if ($risk['level'] !== 'low') {
                 $atRisk[] = [
-                    'client_id' => $client->id,
+                    'client_id' => \App\Models\Client::encodeId($client->id),
                     'client_name' => $client->name,
                     'owner_name' => $client->owner?->name,
                     'level' => $risk['level'],

@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Opportunity extends Model
 {
-    use Filterable, HasAuditLog, SoftDeletes;
+    use Filterable, HasOpaqueId, HasAuditLog, SoftDeletes;
 
     public const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract', 'won', 'lost'];
     public const STAGE_PROBABILITY = [

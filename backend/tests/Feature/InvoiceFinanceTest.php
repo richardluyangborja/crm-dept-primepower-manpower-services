@@ -49,7 +49,8 @@ class InvoiceFinanceTest extends TestCase
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $t"])->assertOk();
-        $inv = Invoice::where('opportunity_id', $oppId)->firstOrFail();
+        $oppInt = \App\Models\Opportunity::decodeId($oppId);
+        $inv = Invoice::where('opportunity_id', $oppInt)->firstOrFail();
         $this->assertSame('sent', $inv->status);
         $this->assertSame(500000, $inv->balance_centavos);
         $this->assertStringStartsWith('INV-', $inv->ref);
@@ -58,7 +59,7 @@ class InvoiceFinanceTest extends TestCase
         $mt = $this->token($o['mgr']);
         $this->postJson("/api/v1/opportunities/$oppId/move", ['stage' => 'proposal', 'reopen_note' => 'Revived'], ['Authorization' => "Bearer $mt"])->assertOk();
         $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $mt"])->assertOk();
-        $this->assertSame(1, Invoice::where('opportunity_id', $oppId)->count());
+        $this->assertSame(1, Invoice::where('opportunity_id', $oppInt)->count());
     }
 
     public function test_list_scoped_and_shaped(): void
@@ -86,12 +87,12 @@ class InvoiceFinanceTest extends TestCase
         $t = $this->token($o['rep']);
         $inv = $this->invoiceFor($o['rep'], $this->clientFor($o['rep']));
 
-        $this->postJson("/api/v1/invoices/{$inv->id}/pay", ['amount_centavos' => 150000], ['Authorization' => "Bearer $t"])->assertStatus(422);
-        $this->postJson("/api/v1/invoices/{$inv->id}/pay", ['amount_centavos' => 40000], ['Authorization' => "Bearer $t"])
+        $this->postJson("/api/v1/invoices/{$inv->opaqueId()}/pay", ['amount_centavos' => 150000], ['Authorization' => "Bearer $t"])->assertStatus(422);
+        $this->postJson("/api/v1/invoices/{$inv->opaqueId()}/pay", ['amount_centavos' => 40000], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.balance_centavos', 60000)->assertJsonPath('data.status', 'sent');
-        $this->postJson("/api/v1/invoices/{$inv->id}/pay", [], ['Authorization' => "Bearer $t"])
+        $this->postJson("/api/v1/invoices/{$inv->opaqueId()}/pay", [], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.balance_centavos', 0)->assertJsonPath('data.status', 'paid');
-        $this->postJson("/api/v1/invoices/{$inv->id}/pay", ['amount_centavos' => 100], ['Authorization' => "Bearer $t"])->assertStatus(422);
+        $this->postJson("/api/v1/invoices/{$inv->opaqueId()}/pay", ['amount_centavos' => 100], ['Authorization' => "Bearer $t"])->assertStatus(422);
         $this->assertDatabaseHas('audit_logs', ['entity' => 'invoices', 'entity_id' => $inv->id, 'action' => 'payment_recorded']);
     }
 
@@ -102,7 +103,7 @@ class InvoiceFinanceTest extends TestCase
         $client = $this->clientFor($o['rep']);
         $inv = $this->invoiceFor($o['rep'], $client);
 
-        $fid = $this->postJson("/api/v1/invoices/{$inv->id}/collect", [], ['Authorization' => "Bearer $t"])
+        $fid = $this->postJson("/api/v1/invoices/{$inv->opaqueId()}/collect", [], ['Authorization' => "Bearer $t"])
             ->assertCreated()->json('data.followup_id');
         $this->assertDatabaseHas('followups', ['id' => $fid, 'client_id' => $client->id, 'priority' => 'high', 'owner_id' => $o['rep']->id]);
     }

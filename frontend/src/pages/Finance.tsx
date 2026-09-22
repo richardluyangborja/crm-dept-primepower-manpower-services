@@ -11,12 +11,12 @@ import { useToast } from '../components/ui/Toaster';
 import { Check } from 'lucide-react';
 
 interface Invoice {
-  id: number;
+  id: string;
   ref: string;
   title: string;
-  client_id: number;
+  client_id: string;
   client_name?: string;
-  job_order_id: number | null;
+  job_order_id: string | null;
   amount_centavos: number;
   balance_centavos: number;
   status: string;
@@ -29,7 +29,7 @@ interface Summary {
   outstanding_total_centavos: number;
   overdue_total_centavos: number;
   aging_buckets_centavos: { current: number; d1_30: number; d31_60: number; d61_90: number; d90plus: number };
-  per_client: { client_id: number; client_name?: string; outstanding_centavos: number; invoices: number }[];
+  per_client: { client_id: string; client_name?: string; outstanding_centavos: number; invoices: number }[];
   mock: boolean;
 }
 
@@ -46,7 +46,7 @@ const pesoToCentavos = (v: string): number => Math.round((parseFloat(v) || 0) * 
 
 export function FinancePage() {
   const [status, setStatus] = useState('');
-  const [payId, setPayId] = useState<number | null>(null);
+  const [payId, setPayId] = useState<string | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -60,7 +60,7 @@ export function FinancePage() {
   });
 
   const collectMut = useMutation({
-    mutationFn: async (id: number) => (await api.post(`/invoices/${id}/collect`)).data,
+    mutationFn: async (id: string) => (await api.post(`/invoices/${id}/collect`)).data,
     onSuccess: () => {
       toast('success', 'Collection reminder created.');
       qc.invalidateQueries({ queryKey: ['followups'] });

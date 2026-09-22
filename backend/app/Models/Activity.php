@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 
 class Activity extends Model
 {
-    use Filterable, HasAuditLog;
+    use Filterable, HasOpaqueId, HasAuditLog;
 
     public const TYPES = ['call', 'email', 'meeting', 'site_visit', 'note'];
 

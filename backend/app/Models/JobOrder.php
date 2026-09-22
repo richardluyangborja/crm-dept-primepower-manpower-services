@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasOpaqueId;
 use App\Traits\HasAuditLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JobOrder extends Model
 {
-    use Filterable, HasAuditLog, SoftDeletes;
+    use Filterable, HasOpaqueId, HasAuditLog, SoftDeletes;
 
     public const STATUSES = ['draft', 'staffed', 'deployed', 'billed'];
     public const FLOW = ['draft' => 'staffed', 'staffed' => 'deployed', 'deployed' => 'billed'];

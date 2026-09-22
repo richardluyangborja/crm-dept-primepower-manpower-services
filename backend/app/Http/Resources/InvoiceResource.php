@@ -10,13 +10,13 @@ class InvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->opaqueId(),
             'ref' => $this->ref,
             'title' => $this->title,
-            'client_id' => $this->client_id,
+            'client_id' => \App\Models\Client::encodeId($this->client_id),
             'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
-            'job_order_id' => $this->job_order_id,
-            'opportunity_id' => $this->opportunity_id,
+            'job_order_id' => \App\Models\JobOrder::encodeId($this->job_order_id),
+            'opportunity_id' => \App\Models\Opportunity::encodeId($this->opportunity_id),
             'owner_id' => $this->owner_id,
             'amount_centavos' => $this->amount_centavos,
             'balance_centavos' => $this->balance_centavos,

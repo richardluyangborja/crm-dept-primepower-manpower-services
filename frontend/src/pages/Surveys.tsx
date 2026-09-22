@@ -19,10 +19,10 @@ interface Template {
   is_active: boolean;
 }
 interface Survey {
-  id: number;
+  id: string;
   template_name?: string;
   template_type?: string;
-  client_id: number;
+  client_id: string;
   client_name?: string;
   channel: string;
   token: string;
@@ -32,7 +32,7 @@ interface Survey {
   response?: { score: number; comment: string | null; responded_at: string } | null;
 }
 interface ClientMini {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -177,7 +177,7 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
     setBusy(true);
     setErr('');
     try {
-      const r = await api.post('/surveys', { template_id: Number(f.template_id), client_id: Number(f.client_id), channel: f.channel });
+      const r = await api.post('/surveys', { template_id: Number(f.template_id), client_id: f.client_id, channel: f.channel });
       const url = `${window.location.origin}${r.data.data.share_url}`;
       try {
         await navigator.clipboard.writeText(url);
@@ -370,8 +370,8 @@ interface Analytics {
   response_rate: number | null;
   totals: { surveys: number; responded: number; pending: number; expired: number };
   trend: { month: string; avg: number | null; count: number }[];
-  per_client: { client_id: number; client_name: string; surveys: number; avg_score: number | null; low: boolean }[];
-  low_scores: { survey_id: number; client_name: string; score: number; comment: string | null; responded_at: string }[];
+  per_client: { client_id: string; client_name: string; surveys: number; avg_score: number | null; low: boolean }[];
+  low_scores: { survey_id: string; client_name: string; score: number; comment: string | null; responded_at: string }[];
   comments: { score: number; comment: string; client_name: string; at: string }[];
 }
 

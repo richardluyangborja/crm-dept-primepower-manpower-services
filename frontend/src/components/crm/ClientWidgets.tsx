@@ -34,11 +34,11 @@ export function apiErr(e: unknown, fallback: string): string {
   return fallback;
 }
 
-export function ClientOpsCards({ clientId }: { clientId: number }) {
+export function ClientOpsCards({ clientId }: { clientId: string }) {
   const opsQ = useQuery({
     queryKey: ['client-ops', clientId],
     queryFn: async () => (await api.get(`/clients/${clientId}/operations`)).data.data as ClientOps,
-    enabled: clientId > 0,
+    enabled: clientId !== '',
   });
   if (opsQ.isLoading || !opsQ.data) return null;
   const ops = opsQ.data;
@@ -60,11 +60,11 @@ export function ClientOpsCards({ clientId }: { clientId: number }) {
   );
 }
 
-export function ClientJourney({ clientId }: { clientId: number }) {
+export function ClientJourney({ clientId }: { clientId: string }) {
   const jobsQ = useQuery({
     queryKey: ['job-orders', clientId],
     queryFn: async () => (await api.get('/job-orders', { params: { client_id: clientId, per_page: 50 } })).data.data as JobOrder[],
-    enabled: clientId > 0,
+    enabled: clientId !== '',
   });
 
   const jobs = jobsQ.data ?? [];

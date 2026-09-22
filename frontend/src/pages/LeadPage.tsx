@@ -7,7 +7,7 @@ import { useToast } from '../components/ui/Toaster';
 import { apiErr } from '../components/crm/ClientWidgets';
 
 interface LeadFull {
-  id: number;
+  id: string;
   company_name: string;
   contact_name: string;
   contact_email: string | null;
@@ -18,7 +18,7 @@ interface LeadFull {
   status: string;
   score: number;
   notes: string | null;
-  converted_client_id: number | null;
+  converted_client_id: string | null;
 }
 
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
@@ -41,7 +41,7 @@ export function LeadPage() {
   const qc = useQueryClient();
 
   const leadQ = useQuery({
-    queryKey: ['lead', Number(id)],
+    queryKey: ['lead', id],
     queryFn: async () => (await api.get(`/leads/${id}`)).data.data as LeadFull,
     enabled: id !== '',
   });
@@ -51,7 +51,7 @@ export function LeadPage() {
       (await api.put(`/leads/${id}`, { status: st, unqualified_reason: reason })).data,
     onSuccess: () => {
       toast('success', 'Lead status updated.');
-      qc.invalidateQueries({ queryKey: ['lead', Number(id)] });
+      qc.invalidateQueries({ queryKey: ['lead', id] });
       qc.invalidateQueries({ queryKey: ['leads'] });
     },
     onError: (e) => toast('error', apiErr(e, 'Could not update status.')),
@@ -130,7 +130,7 @@ export function LeadPage() {
                   onClose={() => setWizard(false)}
                   onDone={(clientId) => {
                     setWizard(false);
-                    qc.invalidateQueries({ queryKey: ['lead', Number(id)] });
+                    qc.invalidateQueries({ queryKey: ['lead', id] });
                     qc.invalidateQueries({ queryKey: ['leads'] });
                     window.location.assign(`/clients/${clientId}`);
                   }}
@@ -167,12 +167,12 @@ function ScoreExplainer({ lead }: { lead: LeadFull }) {
 function DuplicatePanel({ lead }: { lead: LeadFull }) {
   const emailQ = useQuery({
     queryKey: ['leads', 'dup-email', lead.id],
-    queryFn: async () => (await api.get('/leads', { params: { q: lead.contact_email ?? undefined, per_page: 10 } })).data.data as { id: number; company_name: string; contact_email: string | null }[],
+    queryFn: async () => (await api.get('/leads', { params: { q: lead.contact_email ?? undefined, per_page: 10 } })).data.data as { id: string; company_name: string; contact_email: string | null }[],
     enabled: !!lead.contact_email,
   });
   const phoneQ = useQuery({
     queryKey: ['leads', 'dup-phone', lead.id],
-    queryFn: async () => (await api.get('/leads', { params: { q: lead.contact_phone ?? undefined, per_page: 10 } })).data.data as { id: number; company_name: string; contact_phone: string | null }[],
+    queryFn: async () => (await api.get('/leads', { params: { q: lead.contact_phone ?? undefined, per_page: 10 } })).data.data as { id: string; company_name: string; contact_phone: string | null }[],
     enabled: !!lead.contact_phone,
   });
   const dups = [...(emailQ.data ?? []), ...(phoneQ.data ?? [])]
@@ -198,7 +198,7 @@ function DuplicatePanel({ lead }: { lead: LeadFull }) {
   );
 }
 
-function ConvertWizard({ lead, onClose, onDone }: { lead: LeadFull; onClose: () => void; onDone: (clientId: number) => void }) {
+function ConvertWizard({ lead, onClose, onDone }: { lead: LeadFull; onClose: () => void; onDone: (clientId: string) => void }) {
   const toast = useToast();
   const [step, setStep] = useState(0);
   const [withOpp, setWithOpp] = useState(true);
@@ -211,7 +211,7 @@ function ConvertWizard({ lead, onClose, onDone }: { lead: LeadFull; onClose: () 
     setErr('');
     try {
       const r = await api.post(`/leads/${lead.id}/convert`, withOpp ? { create_opportunity: true, opportunity_title: oppTitle || undefined } : {});
-      toast('success', `Converted — client #${r.data.data.client_id} created.`);
+      toast('success', 'Converted — client profile created.');
       onDone(r.data.data.client_id);
     } catch (e) {
       setErr(apiErr(e, 'Conversion failed. Maybe already converted?'));

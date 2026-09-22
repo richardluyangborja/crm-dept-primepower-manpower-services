@@ -10,7 +10,7 @@ class LeadResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->opaqueId(),
             'owner_id' => $this->owner_id,
             'company_name' => $this->company_name,
             'contact_name' => $this->contact_name,
@@ -22,7 +22,7 @@ class LeadResource extends JsonResource
             'status' => $this->status,
             'score' => $this->score,
             'notes' => $this->notes,
-            'converted_client_id' => $this->converted_client_id,
+            'converted_client_id' => \App\Models\Client::encodeId($this->converted_client_id),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

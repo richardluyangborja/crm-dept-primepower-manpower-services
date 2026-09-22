@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\HasOpaqueId;
 use Illuminate\Database\Eloquent\Model;
 
 class Contact extends Model
 {
+    use HasOpaqueId;
     protected $fillable = ['client_id', 'full_name', 'position', 'email', 'phone', 'is_primary'];
 
     protected function casts(): array

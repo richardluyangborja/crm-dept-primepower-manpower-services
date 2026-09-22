@@ -10,11 +10,11 @@ class SurveyResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->opaqueId(),
             'template_id' => $this->template_id,
             'template_name' => $this->whenLoaded('template', fn () => $this->template?->name),
             'template_type' => $this->whenLoaded('template', fn () => $this->template?->type),
-            'client_id' => $this->client_id,
+            'client_id' => \App\Models\Client::encodeId($this->client_id),
             'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
             'sent_by' => $this->sent_by,
             'channel' => $this->channel,

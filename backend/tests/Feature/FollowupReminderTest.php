@@ -97,9 +97,9 @@ class FollowupReminderTest extends TestCase
         $this->assertCount(0, $list->json('data'));
 
         $note = \App\Models\Notification::create(['user_id' => $rep->id, 'type' => 'info', 'title' => 'Hi']);
-        $this->postJson("/api/v1/notifications/{$note->id}/read", [], ['Authorization' => 'Bearer '.auth('api')->login($other)])
+        $this->postJson("/api/v1/notifications/{$note->opaqueId()}/read", [], ['Authorization' => 'Bearer '.auth('api')->login($other)])
             ->assertForbidden();
-        $this->postJson("/api/v1/notifications/{$note->id}/read", [], ['Authorization' => 'Bearer '.auth('api')->login($rep)])
+        $this->postJson("/api/v1/notifications/{$note->opaqueId()}/read", [], ['Authorization' => 'Bearer '.auth('api')->login($rep)])
             ->assertOk()->assertJsonPath('data.read_at', fn ($v) => $v !== null);
     }
 }
