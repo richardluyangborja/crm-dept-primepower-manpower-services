@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Stage rituals + realistic money (branch `feature/crm-stage-rituals`)
+## Stage rituals + realistic money — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
@@ -12,7 +12,7 @@
 | Backend gates (value/terms/contract/JO/AR) | ✅ | 89 tests green |
 | P1–P4 stage rituals | ✅ | Touch/followup/terms/probability |
 | P5–P7 contract/won/lost/backward | ✅ | Reroute, survey link, value-loss |
-| Specs 05/10/18 + rehearsal + release | 🔄 | Full lifecycle check, then merge |
+| Specs 05/10/18 + rehearsal + release | ✅ | Lifecycle all non-zero, merged |
 
 ## Confirm destructive actions — Stream 3 of 3 — MERGED to `main` (fast release, no tag)
 
