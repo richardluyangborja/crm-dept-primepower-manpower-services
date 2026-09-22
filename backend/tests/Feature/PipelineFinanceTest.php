@@ -34,6 +34,17 @@ class PipelineFinanceTest extends TestCase
 
     protected function token(User $u): string { return auth('api')->login($u); }
 
+    protected function signFor(Opportunity $opp, string $token): void
+    {
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
+            'stage' => 'contract',
+            'headcount' => $opp->headcount ?? 40,
+            'rate_per_head_centavos' => $opp->rate_per_head_centavos ?? 1500000,
+            'contract_months' => $opp->contract_months ?? 12,
+            'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $token"])->assertOk();
+    }
+
     public function test_signing_requires_terms_and_creates_contract(): void
     {
         $o = $this->org();
@@ -75,6 +86,7 @@ class PipelineFinanceTest extends TestCase
             'headcount' => 20, 'rate_per_head_centavos' => 4000000, 'contract_months' => 6,
         ]);
 
+        $this->signFor($opp, $t);
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $inv = Invoice::where('opportunity_id', $opp->id)->firstOrFail();
         $this->assertSame(80000000, $inv->amount_centavos); // one month, not the contract total
@@ -82,15 +94,22 @@ class PipelineFinanceTest extends TestCase
         $this->assertStringContainsString('month 1', $inv->title);
     }
 
-    public function test_win_without_terms_falls_back_to_value(): void
+    public function test_win_requires_signed_contract(): void
     {
         $o = $this->org();
         $t = $this->token($o['rep']);
         $opp = $this->oppFor($o['rep']);
         $opp->update(['value_centavos' => 500000]);
 
+        // No contract → 422, no invoice, no fallback.
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])
+            ->assertStatus(422);
+        $this->assertSame(0, Invoice::where('opportunity_id', $opp->id)->count());
+
+        // Sign, then win works.
+        $this->signFor($opp, $t);
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
-        $this->assertSame(500000, Invoice::where('opportunity_id', $opp->id)->firstOrFail()->amount_centavos);
+        $this->assertSame(1, Invoice::where('opportunity_id', $opp->id)->count());
     }
 
     public function test_contract_list_scoped_and_shaped(): void

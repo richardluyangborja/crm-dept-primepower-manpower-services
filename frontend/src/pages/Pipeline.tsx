@@ -5,6 +5,7 @@ import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toaster';
+import { StageUpModal, defaultDue, type RitualOpp, type RitualPayload } from '../components/crm/StageUpModal';
 
 interface Opp {
   id: string;
@@ -85,12 +86,14 @@ export function PipelinePage() {
   const openVal = rows.filter((r) => !['won', 'lost'].includes(r.stage)).reduce((a, r) => a + r.value_centavos, 0);
 
   const [contractId, setContractId] = useState<string | null>(null);
+  const [ritual, setRitual] = useState<{ id: string; stage: string } | null>(null);
   const moveMut = useMutation({
-    mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date }: {
+    mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability }: {
       id: string; stage: string; lost_reason?: string; effective_date?: string;
       headcount?: number; rate_per_head_centavos?: number; contract_months?: number; start_date?: string;
+      reopen_note?: string; probability?: number;
     }) =>
-      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date })).data,
+      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability })).data,
     onMutate: async ({ id, stage }) => {
       await qc.cancelQueries({ queryKey: ['opportunities'] });
       const prev = qc.getQueryData<Opp[]>(['opportunities', q]);
@@ -101,12 +104,41 @@ export function PipelinePage() {
       if (ctx?.prev) qc.setQueryData(['opportunities', q], ctx.prev);
       toast('error', apiErr(e, 'Move failed — reverted.'));
     },
-    onSuccess: (d) => toast('success', d.message ?? 'Moved.'),
+    onSuccess: (d, vars) => {
+      const moved = (qc.getQueryData<Opp[]>(['opportunities', q]) ?? rows).find((o) => o.id === vars.id);
+      toast('success', {
+        title: d.message ?? 'Moved.',
+        ...(moved ? { action: { label: 'Open client', href: `/clients/${moved.client_id}` } } : {}),
+      });
+    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
+
+  /** Fire the ritual side-effects: touchpoint → history, reminder → follow-ups. */
+  const fireRitual = async (opp: Opp, payload: RitualPayload) => {
+    if (payload.touch) {
+      const label = labels[ritual?.stage ?? ''] ?? ritual?.stage ?? '';
+      await api.post('/activities', {
+        client_id: opp.client_id,
+        opportunity_id: opp.id,
+        type: payload.touch.type,
+        subject: `${label} touch — ${opp.title}`,
+        body: payload.touch.notes,
+        outcome: payload.touch.outcome,
+      });
+    }
+    if (payload.followup) {
+      await api.post('/followups', {
+        client_id: opp.client_id,
+        opportunity_id: opp.id,
+        title: payload.followup.title,
+        due_at: new Date(payload.followup.due).toISOString(),
+      });
+    }
+  };
 
   const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: string; monthly: number | null; total: number | null } | null>(null);
   const [wonId, setWonId] = useState<string | null>(null);
@@ -135,6 +167,29 @@ export function PipelinePage() {
 
   const detail = rows.find((r) => r.id === detailId) ?? null;
 
+  /** P6 · contract-first: winning without a signed contract reroutes to signing. */
+  const beginWin = async (oppId: string) => {
+    const opp = rows.find((r) => r.id === oppId);
+    if (!opp) return;
+    try {
+      const contracts = (await api.get('/contracts', { params: { client_id: opp.client_id, per_page: 100 } })).data.data as
+        { opportunity_id: string | null; status: string }[];
+      const signed = contracts.some((c) => c.opportunity_id === oppId && c.status === 'active');
+      if (!signed) {
+        toast('info', {
+          title: 'Sign the contract first.',
+          body: 'Winning needs agreed terms on record — signing takes seconds, then mark won.',
+        });
+        setDetailId(null);
+        setContractId(oppId);
+        return;
+      }
+    } catch {
+      // Contract check failed — let the server guard decide on win.
+    }
+    setWonId(oppId);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -155,9 +210,12 @@ export function PipelinePage() {
               </span>
             )}
           </p>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             <Link to={`/clients/${wonInfo.clientId}`} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">
               View client timeline →
+            </Link>
+            <Link to="/surveys" className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs">
+              Send satisfaction survey →
             </Link>
             <button onClick={() => setWonInfo(null)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs">Dismiss</button>
           </div>
@@ -184,10 +242,12 @@ export function PipelinePage() {
               const monthly = col.reduce((a, r) => a + (r.monthly_billing_centavos ?? 0), 0);
               return (
                 <div key={s} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (dragId !== null) {
+                  const from = rows.find((r) => r.id === dragId)?.stage;
                   if (s === 'lost') { setLostId(dragId); setDragId(null); }
                   else if (s === 'contract') { setContractId(dragId); setDragId(null); }
-                  else moveMut.mutate({ id: dragId, stage: s });
-                  setDragId(null);
+                  else if (s === 'won') { beginWin(dragId); setDragId(null); }
+                  else if (from && s !== from) { setRitual({ id: dragId, stage: s }); setDragId(null); }
+                  else setDragId(null);
                 } }} className="w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-2">
                   <div className="flex items-center justify-between px-1 py-1">
                     <p className="text-xs font-bold uppercase">{labels[s]} <span className="text-[var(--text-muted)]">{col.length}</span></p>
@@ -228,14 +288,74 @@ export function PipelinePage() {
             {detail.stage !== 'contract' && detail.stage !== 'won' && detail.stage !== 'lost' && (
               <button onClick={() => { setDetailId(null); setContractId(detail.id); }} className="rounded-lg border border-sky-600 px-4 py-1.5 text-sm text-sky-700 dark:text-sky-300">Sign contract…</button>
             )}
-            {detail.stage !== 'won' && <button onClick={() => { setWonId(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
+            {detail.stage !== 'won' && <button onClick={() => { beginWin(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
             {detail.stage !== 'lost' && <button onClick={() => { setDetailId(null); setLostId(detail.id); }} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">Mark lost…</button>}
           </div>
         </div>
       )}
 
-      {lostId !== null && <LostModal onClose={() => setLostId(null)} onDone={(reason, effectiveDate) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate }); setLostId(null); }} />}
+      {lostId !== null && (() => {
+        const lost = rows.find((r) => r.id === lostId) ?? null;
+        return (
+          <LostModal
+            lostValue={lost ? formatPHP(lost.value_centavos) : null}
+            onClose={() => setLostId(null)}
+            onDone={(reason, effectiveDate) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate }); setLostId(null); }}
+          />
+        );
+      })()}
       {wonId !== null && <WinModal onClose={() => setWonId(null)} onDone={(effectiveDate) => { winMut.mutate({ id: wonId, effective_date: effectiveDate }); setWonId(null); }} />}
+      {ritual !== null && (() => {
+        const opp = rows.find((r) => r.id === ritual.id) ?? null;
+        if (!opp) return null;
+        return (
+          <RitualDialog
+            opp={opp}
+            to={ritual.stage}
+            labels={labels}
+            onClose={() => setRitual(null)}
+            onDone={async (extra, payload) => {
+              const runMove = () => {
+                moveMut.mutate({ id: opp.id, stage: ritual.stage, probability: extra.probability, reopen_note: extra.reopen_note });
+                setRitual(null);
+              };
+              // P3 · quotation always logs the proposal as history.
+              if (extra.proposal) {
+                try {
+                  await api.post('/activities', {
+                    client_id: opp.client_id,
+                    opportunity_id: opp.id,
+                    type: 'email',
+                    subject: `Proposal sent — ${opp.title}`,
+                    body: `Quoted ${formatPHP(extra.proposal.value_centavos)} on ${extra.proposal.sent_date}.`,
+                    outcome: 'sent',
+                  });
+                } catch {
+                  toast('error', 'Proposal log failed — add it to history manually.');
+                }
+              }
+              // P4 · discussion note becomes history when no touch was logged.
+              if (extra.negNote && !payload.touch) {
+                payload = { ...payload, touch: { type: 'meeting', outcome: 'follow_up_needed', notes: extra.negNote } };
+              }
+              try {
+                await fireRitual(opp, payload);
+              } catch {
+                toast('error', 'Move saved, but the log/follow-up failed — add it manually.');
+              }
+              if (extra.put) {
+                try {
+                  await api.put(`/opportunities/${opp.id}`, extra.put);
+                } catch (e) {
+                  toast('error', apiErr(e, 'Could not save terms — move cancelled.'));
+                  return;
+                }
+              }
+              runMove();
+            }}
+          />
+        );
+      })()}
       {contractId !== null && <ContractModal dealId={contractId} onClose={() => setContractId(null)} onDone={(terms) => { moveMut.mutate({ id: contractId, stage: 'contract', ...terms }); setContractId(null); }} />}
       {showNew && <NewOppForm initialClientId={preselectClient} onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
     </div>
@@ -277,7 +397,155 @@ function StageStepper({ stage }: { stage: string }) {
   );
 }
 
-function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: string, effectiveDate?: string) => void }) {
+const OPEN_FLOW = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract'];
+
+/** Per-stage level-up dialog (specs/05 rituals). Stage extras plug in per phase. */
+interface RitualExtra {
+  put?: { headcount?: number; rate_per_head_centavos?: number; contract_months?: number; value_centavos?: number; expected_close_date?: string; probability?: number };
+  probability?: number;
+  reopen_note?: string;
+  proposal?: { value_centavos: number; sent_date: string };
+  negNote?: string;
+}
+
+function RitualDialog({ opp, to, labels, onClose, onDone }: {
+  opp: Opp;
+  to: string;
+  labels: Record<string, string>;
+  onClose: () => void;
+  onDone: (extra: RitualExtra, payload: RitualPayload) => void;
+}) {
+  const fromIdx = OPEN_FLOW.indexOf(opp.stage);
+  const toIdx = OPEN_FLOW.indexOf(to);
+  const backward = (opp.stage === 'won' || opp.stage === 'lost') || (fromIdx >= 0 && toIdx >= 0 && toIdx < fromIdx);
+  const fromTerminal = opp.stage === 'won' || opp.stage === 'lost';
+  const [reopenNote, setReopenNote] = useState('');
+  const [reopenErr, setReopenErr] = useState('');
+
+  // P2 · qualified: terms editor (heads/rate/months + value + expected close).
+  const [heads, setHeads] = useState(opp.headcount ? String(opp.headcount) : '');
+  const [rate, setRate] = useState(opp.rate_per_head_centavos ? String(opp.rate_per_head_centavos / 100) : '');
+  const [months, setMonths] = useState(opp.contract_months ? String(opp.contract_months) : '12');
+  const [value, setValue] = useState(opp.value_centavos ? String(opp.value_centavos / 100) : '');
+  const [closeDate, setCloseDate] = useState(opp.expected_close_date ?? '');
+  // P3 · proposal: quoted value + sent date. P4 · negotiation: probability + terms tweak + note.
+  const [sentDate, setSentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [probability, setProbability] = useState(opp.probability);
+  const [negNote, setNegNote] = useState('');
+  const monthlyPreview = (Number(heads) || 0) * pesoToCentavos(rate || '0');
+  const termsValid = to !== 'qualified' || (
+    pesoToCentavos(value || '0') > 0 && Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0
+  );
+  const proposalValid = to !== 'proposal' || (pesoToCentavos(value || '0') > 0 && !!sentDate);
+
+  const confirm = (payload: RitualPayload) => {
+    if (fromTerminal && !reopenNote.trim()) {
+      setReopenErr('Reopening a closed deal needs a note — it stays on the record.');
+      return;
+    }
+    if (!termsValid) return;
+    const extra: RitualExtra = fromTerminal ? { reopen_note: reopenNote.trim() } : {};
+    if (to === 'qualified') {
+      extra.put = {
+        headcount: Number(heads),
+        rate_per_head_centavos: pesoToCentavos(rate),
+        contract_months: Number(months),
+        value_centavos: pesoToCentavos(value),
+        expected_close_date: closeDate || undefined,
+      };
+    }
+    if (to === 'proposal') {
+      extra.put = { value_centavos: pesoToCentavos(value) };
+      extra.proposal = { value_centavos: pesoToCentavos(value), sent_date: sentDate };
+    }
+    if (to === 'negotiation') {
+      extra.probability = probability;
+      if (Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0) {
+        extra.put = {
+          headcount: Number(heads),
+          rate_per_head_centavos: pesoToCentavos(rate),
+          contract_months: Number(months),
+          probability,
+        };
+      }
+      if (negNote.trim()) extra.negNote = negNote.trim();
+    }
+    onDone(extra, payload);
+  };
+
+  return (
+    <StageUpModal
+      opp={opp as RitualOpp}
+      fromLabel={labels[opp.stage] ?? opp.stage}
+      toLabel={labels[to] ?? to}
+      backward={backward}
+      confirmLabel={backward ? 'Move back' : `Move to ${labels[to] ?? to}`}
+      touchDefault={to === 'contacted'}
+      followupDefault={
+        to === 'contacted' ? { title: `Follow up with ${opp.client_name ?? 'client'}`, due: defaultDue(3) }
+        : to === 'proposal' ? { title: `Follow up on proposal — ${opp.title}`, due: defaultDue(3) }
+        : undefined
+      }
+      extraValid={termsValid && proposalValid}
+      onClose={onClose}
+      onConfirm={confirm}
+    >
+      {to === 'qualified' && (
+        <div className="mb-2 flex flex-col gap-2 text-sm">
+          <p className="text-xs text-[var(--text-muted)]">Confirm the requirement — qualifying locks the money story. Value and terms are required from here on.</p>
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads *<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label>Deal value (₱) *<input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Expected close<input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
+            {monthlyPreview > 0 ? `${formatPHP(monthlyPreview)}/mo` : 'Set heads + rate to preview monthly billing'}
+          </p>
+        </div>
+      )}
+      {to === 'proposal' && (
+        <div className="mb-2 flex flex-col gap-2 text-sm">
+          <p className="text-xs text-[var(--text-muted)]">Record the quotation — value syncs to the deal and a follow-up is booked automatically.</p>
+          <div className="grid grid-cols-2 gap-2">
+            <label>Quoted value (₱) *<input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Sent date *<input type="date" value={sentDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setSentDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
+          {opp.monthly_billing_centavos || monthlyPreview > 0 ? (
+            <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
+              ≈ {formatPHP(opp.monthly_billing_centavos ?? monthlyPreview)}/mo in per-head terms
+            </p>
+          ) : null}
+        </div>
+      )}
+      {to === 'negotiation' && (
+        <div className="mb-2 flex flex-col gap-2 text-sm">
+          <p className="text-xs text-[var(--text-muted)]">Take the temperature — set the win chance and note what the client is pushing on.</p>
+          <label>Win probability: <strong className="tabular-nums">{probability}%</strong>
+            <input type="range" min={0} max={100} value={probability} onChange={(e) => setProbability(Number(e.target.value))} className="mt-1 w-full" />
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder={opp.headcount ? String(opp.headcount) : '40'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱)<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder={opp.rate_per_head_centavos ? String(opp.rate_per_head_centavos / 100) : '15000'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder={opp.contract_months ? String(opp.contract_months) : '12'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
+          <label>Discussion note<textarea value={negNote} onChange={(e) => setNegNote(e.target.value)} rows={2} placeholder="e.g. Pushing on rate — wants ₱14k/head, decision Friday" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+        </div>
+      )}
+      {fromTerminal && (
+        <label className="mb-2 block text-sm">Reopen note *
+          <textarea value={reopenNote} onChange={(e) => setReopenNote(e.target.value)} rows={2} placeholder="Why is this deal back in play?" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+        </label>
+      )}
+      {reopenErr && <p className="mb-2 text-sm text-red-600">{reopenErr}</p>}
+    </StageUpModal>
+  );
+}
+
+function LostModal({ lostValue, onClose, onDone }: { lostValue: string | null; onClose: () => void; onDone: (reason: string, effectiveDate?: string) => void }) {
   const [reason, setReason] = useState('');
   const [date, setDate] = useState('');
   const suggestions = useLostReasons();
@@ -285,7 +553,9 @@ function LostModal({ onClose, onDone }: { onClose: () => void; onDone: (reason: 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Why was this lost?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Required — it powers win/loss analytics. Pick a suggestion or write your own.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">
+          {lostValue ? <>Walking away from <strong className="tabular-nums">{lostValue}</strong>. </> : ''}Required — the reason powers win/loss analytics. Pick a suggestion or write your own.
+        </p>
         {suggestions.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
             {suggestions.map((s) => (
@@ -400,6 +670,7 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
+    if (pesoToCentavos(f.value) <= 0) { setErr('A peso value is required — every deal must be worth something.'); return; }
     setBusy(true);
     setErr('');
     try {
@@ -431,7 +702,7 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
             {clientsQ.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select></label>
           <label>Title *<input required value={f.title} onChange={set('title')} placeholder="e.g. 80 guards — Davao Prime" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <label>Value (₱)<input value={f.value} onChange={set('value')} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <label>Value (₱) *<input required value={f.value} onChange={set('value')} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <div className="grid grid-cols-3 gap-2">
             <label>Heads<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Rate/head/mo (₱)<input value={f.rate} onChange={set('rate')} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>

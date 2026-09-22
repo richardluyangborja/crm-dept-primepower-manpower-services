@@ -21,7 +21,7 @@ class StoreOpportunityRequest extends FormRequest
             'client_id' => ['required', 'exists:clients,id'],
             'title' => ['required', 'string', 'max:255'],
             'stage' => ['sometimes', Rule::in(Opportunity::STAGES)],
-            'value_centavos' => ['sometimes', 'integer', 'min:0'],
+            'value_centavos' => ['required', 'integer', 'min:1'],
             'headcount' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'rate_per_head_centavos' => ['nullable', 'integer', 'min:0'],
             'contract_months' => ['nullable', 'integer', 'min:1', 'max:120'],

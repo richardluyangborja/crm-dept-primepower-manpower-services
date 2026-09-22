@@ -29,6 +29,17 @@ class OpportunityService
         if ($reopening && $actorRole === 'sales_rep') {
             abort(403, 'Only managers can reopen a closed opportunity.');
         }
+        // Money gates (specs/05): a deal can never be worth ₱0 past qualified,
+        // and winning requires a signed contract — no contract-less wins.
+        if ($to === 'qualified' && (int) $opp->value_centavos <= 0) {
+            abort(422, 'Qualifying needs a peso value — set it before moving.');
+        }
+        if ($to === 'qualified' && ($opp->headcount === null || $opp->rate_per_head_centavos === null || $opp->contract_months === null)) {
+            abort(422, 'Qualifying needs manpower terms (heads, rate, months) — set them before moving.');
+        }
+        if ($to === 'won' && ! \App\Models\Contract::where('opportunity_id', $opp->id)->where('status', 'active')->exists()) {
+            abort(422, 'Winning needs a signed contract first — sign the terms before marking won.');
+        }
         if ($reopening && empty($input['reopen_note'])) {
             abort(422, 'Reopening a closed opportunity needs a note.');
         }
@@ -108,7 +119,8 @@ class OpportunityService
                         'owner_id' => $opp->owner_id,
                         'ref' => $jo['job_order_ref'],
                         'title' => $opp->title,
-                        'value_centavos' => $opp->value_centavos,
+                        'headcount' => $opp->headcount,
+                        'value_centavos' => $opp->contractTotal() ?? $opp->value_centavos,
                         'status' => 'draft',
                         'invoice_ref' => $inv['invoice_ref'],
                         'payload' => ['mock' => true, 'job_order' => $jo, 'invoice' => $inv],

@@ -237,6 +237,17 @@ revoke now confirm with context; pay keeps its amount-entry modal;
 convert/deactivate already confirmed. `window.confirm/prompt/alert` count
 in `src/` is zero.
 
+## 16. Stage rituals + realistic money (branch `feature/crm-stage-rituals`)
+Every non-terminal drag opens a `StageUpModal`: money strip (value, ₱/mo,
+total, probability) + touchpoint log + follow-up + stage block. Contacted
+logs first touch; Qualified locks value + terms (backend 422 gates);
+Quotation records value/date + auto 3-day follow-up + proposal activity;
+Approval adjusts probability + terms; backward moves confirm with note
+(reopen note off Won/Lost). Contract-first enforced: won without an active
+contract 422s (UI reroutes to signing); value required at create; won job
+orders carry headcount + value; Finance AR sums real open invoices. Lost
+shows value walked away from; won narration links the survey page.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

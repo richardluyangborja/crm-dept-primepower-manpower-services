@@ -48,6 +48,10 @@ class InvoiceFinanceTest extends TestCase
             'client_id' => $client->id, 'title' => 'Invoice deal', 'value_centavos' => 500000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
+        $this->postJson("/api/v1/opportunities/$oppId/move", [
+            'stage' => 'contract', 'headcount' => 5, 'rate_per_head_centavos' => 100000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $oppInt = \App\Models\Opportunity::decodeId($oppId);
         $inv = Invoice::where('opportunity_id', $oppInt)->firstOrFail();
@@ -109,8 +113,7 @@ class InvoiceFinanceTest extends TestCase
     }
 
     public function test_summary_buckets_reconcile(): void
-    {
-        $o = $this->org();
+    {        $o = $this->org();
         $t = $this->token($o['rep']);
         $client = $this->clientFor($o['rep']);
         $this->invoiceFor($o['rep'], $client, ['ref' => 'INV-S1', 'amount_centavos' => 100000, 'balance_centavos' => 100000, 'due_at' => now()->addDays(10)->toDateString()]);
@@ -126,5 +129,20 @@ class InvoiceFinanceTest extends TestCase
         $this->assertSame(400000, $s['aging_buckets_centavos']['d31_60']);
         $this->assertSame(700000, $s['per_client'][0]['outstanding_centavos']);
         $this->assertTrue($s['mock']);
+    }
+
+    public function test_operations_ar_reads_real_open_invoices(): void
+    {
+        $o = $this->org();
+        $t = $this->token($o['rep']);
+        $client = $this->clientFor($o['rep']);
+        $this->invoiceFor($o['rep'], $client, ['balance_centavos' => 250000, 'amount_centavos' => 250000]);
+        $this->invoiceFor($o['rep'], $client, ['balance_centavos' => 0, 'amount_centavos' => 100000, 'status' => 'paid']);
+
+        $billing = $this->getJson("/api/v1/clients/{$client->opaqueId()}/operations", ['Authorization' => "Bearer $t"])
+            ->assertOk()->json('data.billing');
+        $this->assertSame(250000, $billing['outstanding_centavos']);
+        $this->assertSame('has_balance', $billing['status']);
+        $this->assertTrue($billing['mock']);
     }
 }

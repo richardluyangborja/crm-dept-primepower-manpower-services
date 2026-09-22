@@ -19,6 +19,15 @@ class MockBillingService implements BillingServiceInterface
 
     public function paymentStatus(int $clientId): array
     {
-        return ['outstanding_centavos' => 0, 'status' => 'current', 'mock' => true];
+        // Front-office honesty (specs/04): sum the client's real open invoices.
+        // Still labeled mock — live Finance would own this number.
+        $outstanding = \App\Models\Invoice::where('client_id', $clientId)
+            ->where('status', '!=', 'paid')->sum('balance_centavos');
+
+        return [
+            'outstanding_centavos' => (int) $outstanding,
+            'status' => $outstanding > 0 ? 'has_balance' : 'current',
+            'mock' => true,
+        ];
     }
 }

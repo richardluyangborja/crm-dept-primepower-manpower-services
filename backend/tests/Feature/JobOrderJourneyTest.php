@@ -31,11 +31,20 @@ class JobOrderJourneyTest extends TestCase
         ]);
     }
 
+    protected function signFor(Opportunity $opp, string $token): void
+    {
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
+            'stage' => 'contract', 'headcount' => 40, 'rate_per_head_centavos' => 1500000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $token"])->assertOk();
+    }
+
     public function test_win_persists_job_order_row(): void
     {
         $o = $this->org();
         $t = auth('api')->login($o['rep']);
         $opp = $this->oppFor($o['rep']);
+        $this->signFor($opp, $t);
 
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
 
@@ -43,6 +52,7 @@ class JobOrderJourneyTest extends TestCase
         $this->assertSame('draft', $jo->status);
         $this->assertStringStartsWith('JO-2026-', $jo->ref);
         $this->assertNotNull($jo->invoice_ref);
+        $this->assertSame(40, $jo->headcount); // terms flow into the job order
         // Re-win is idempotent — no duplicate row (rep can't reopen: 403).
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", ['stage' => 'proposal', 'reopen_note' => 'x'], ['Authorization' => "Bearer $t"])->assertForbidden();
         $mgr = auth('api')->login($o['mgr']);
@@ -56,6 +66,7 @@ class JobOrderJourneyTest extends TestCase
         $o = $this->org();
         $t = auth('api')->login($o['rep']);
         $opp = $this->oppFor($o['rep']);
+        $this->signFor($opp, $t);
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
 
         $list = $this->getJson("/api/v1/job-orders?client_id={$opp->client->opaqueId()}", ['Authorization' => "Bearer $t"])->assertOk();

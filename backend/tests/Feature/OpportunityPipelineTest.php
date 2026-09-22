@@ -46,7 +46,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.move@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Move me',
+            'client_id' => $this->clientFor($rep)->id, 'title' => 'Move me', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'proposal'], ['Authorization' => "Bearer $t"])
@@ -58,6 +58,27 @@ class OpportunityPipelineTest extends TestCase
             ->assertOk()->assertJsonPath('data.lost_reason', 'Budget frozen');
     }
 
+    public function test_qualifying_requires_value_and_terms(): void
+    {
+        $rep = $this->rep('rep.qual@primepower.ph');
+        $t = auth('api')->login($rep);
+        $id = $this->postJson('/api/v1/opportunities', [
+            'client_id' => $this->clientFor($rep)->id, 'title' => 'Qualify me', 'value_centavos' => 100000,
+        ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
+
+        // Value present but no manpower terms → 422.
+        $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'qualified'], ['Authorization' => "Bearer $t"])
+            ->assertStatus(422);
+
+        // Set terms via update, then qualify works.
+        $oppInt = \App\Models\Opportunity::decodeId($id);
+        \App\Models\Opportunity::where('id', $oppInt)->update([
+            'headcount' => 20, 'rate_per_head_centavos' => 500000, 'contract_months' => 12,
+        ]);
+        $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'qualified'], ['Authorization' => "Bearer $t"])
+            ->assertOk()->assertJsonPath('data.stage', 'qualified');
+    }
+
     public function test_win_creates_mock_job_order_and_invoice_audit(): void
     {
         $rep = $this->rep('rep.win@primepower.ph');
@@ -66,6 +87,10 @@ class OpportunityPipelineTest extends TestCase
             'client_id' => $this->clientFor($rep)->id, 'title' => 'Win me', 'value_centavos' => 50000000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
+        $this->postJson("/api/v1/opportunities/$id/move", [
+            'stage' => 'contract', 'headcount' => 40, 'rate_per_head_centavos' => 1500000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/$id/win", [], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.stage', 'won');
 
@@ -81,7 +106,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.closed@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Closed deal',
+            'client_id' => $this->clientFor($rep)->id, 'title' => 'Closed deal', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
         $this->postJson("/api/v1/opportunities/$id/lose", ['lost_reason' => 'Timing'], ['Authorization' => "Bearer $t"])->assertOk();
 
@@ -103,7 +128,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.nostage@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'No shortcut',
+            'client_id' => $this->clientFor($rep)->id, 'title' => 'No shortcut', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
         $this->putJson("/api/v1/opportunities/$id", ['stage' => 'won'], ['Authorization' => "Bearer $t"])->assertStatus(422);
     }

@@ -139,6 +139,10 @@ class FrontOfficeTest extends TestCase
             'client_id' => $client->id, 'owner_id' => $rep->id, 'title' => 'Front deal',
             'stage' => 'negotiation', 'value_centavos' => 100000, 'probability' => 80,
         ]);
+        $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/move", [
+            'stage' => 'contract', 'headcount' => 10, 'rate_per_head_centavos' => 100000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/{$opp->opaqueId()}/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $joId = \App\Models\JobOrder::where('opportunity_id', $opp->id)->firstOrFail()->opaqueId();
 
