@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Confirm destructive actions — Stream 3 of 3 (branch `feature/crm-confirm-actions`)
+## Confirm destructive actions — Stream 3 of 3 — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |
 |---|---|---|
