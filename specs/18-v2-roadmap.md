@@ -228,6 +228,15 @@ New shared `InfoCallout` (scope explainers on Finance/Operations/Billing/
 Staffing headers) and `SectionHead` (title + source tag + hint on all 360
 sections). No behavior changes; Stream 3 (confirm destructive actions) next.
 
+## 15. Confirm destructive actions (branch `feature/crm-confirm-actions`, Stream 3 of 3)
+`ConfirmDialog` gains tones, detail lines, and a required-input slot.
+All 4 native dialogs replaced: survey send (info + detail lines), both
+unqualify prompts (required reason input), snooze (required 1d/3d/1w/date
+input). Collection start (creates follow-up + flags invoice) and session
+revoke now confirm with context; pay keeps its amount-entry modal;
+convert/deactivate already confirmed. `window.confirm/prompt/alert` count
+in `src/` is zero.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

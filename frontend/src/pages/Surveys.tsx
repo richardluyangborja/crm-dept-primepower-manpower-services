@@ -158,6 +158,7 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
   const [f, setF] = useState({ template_id: '', client_id: '', channel: 'link' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [confirmSend, setConfirmSend] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
 
   const templatesQ = useQuery({
@@ -173,7 +174,11 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!window.confirm(`Send ${chosenTemplate?.name ?? 'survey'} to ${chosenClient?.name ?? 'client'} contact?`)) return;
+    setConfirmSend(true);
+  };
+
+  const doSend = async () => {
+    setConfirmSend(false);
     setBusy(true);
     setErr('');
     try {
@@ -220,6 +225,20 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
           <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Sending…' : 'Send survey'}</button>
         </div>
       </form>
+      <ConfirmDialog
+        open={confirmSend}
+        tone="info"
+        title="Send survey?"
+        body="The client contact gets a fresh share link. Mock send — logged to the timeline, no real email or SMS leaves the system."
+        details={[
+          `Template: ${chosenTemplate?.name ?? '—'} (${chosenTemplate?.type ?? '?'})`,
+          `Client: ${chosenClient?.name ?? '—'}`,
+          `Channel: ${f.channel}`,
+        ]}
+        confirmLabel="Send survey"
+        onCancel={() => setConfirmSend(false)}
+        onConfirm={() => void doSend()}
+      />
     </div>
   );
 }

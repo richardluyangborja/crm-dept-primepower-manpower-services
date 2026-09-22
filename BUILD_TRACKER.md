@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Confirm destructive actions — Stream 3 of 3 (branch `feature/crm-confirm-actions`)
+
+| Item | Status | Notes |
+|---|---|---|
+| ConfirmDialog tones + input + details | ✅ | Backward compatible |
+| 4 natives replaced (send/unqualify×2/snooze) | ✅ | Zero window dialogs |
+| Collect + revoke confirmed | ✅ | Pay modal kept, convert/deactivate kept |
+| Specs 10/18 + this tracker | ✅ | All 3 streams done |
+
 ## Toast + info hierarchy — Stream 2 of 3 — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

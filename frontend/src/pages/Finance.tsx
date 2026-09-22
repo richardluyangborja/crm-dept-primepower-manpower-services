@@ -6,6 +6,7 @@ import { formatPHP } from '../lib/format';
 import { KpiCard } from '../components/ui/KpiCard';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { InfoCallout } from '../components/ui/InfoCallout';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
@@ -48,6 +49,7 @@ const pesoToCentavos = (v: string): number => Math.round((parseFloat(v) || 0) * 
 export function FinancePage() {
   const [status, setStatus] = useState('');
   const [payId, setPayId] = useState<string | null>(null);
+  const [collectTarget, setCollectTarget] = useState<Invoice | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -145,7 +147,7 @@ export function FinancePage() {
               key: 'x', header: 'Actions', render: (r) => r.status === 'paid' ? <span className="text-[var(--text-muted)]"><Check size={12} className="mr-1 inline" />Paid</span> : (
                 <span className="flex gap-1">
                   <button onClick={() => setPayId(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Record payment</button>
-                  {(r.is_overdue || r.status === 'overdue') && <button onClick={() => collectMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Collect →</button>}
+                  {(r.is_overdue || r.status === 'overdue') && <button onClick={() => setCollectTarget(r)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Collect →</button>}
                 </span>
               ),
             },
@@ -165,6 +167,22 @@ export function FinancePage() {
           }}
         />
       )}
+      <ConfirmDialog
+        open={collectTarget !== null}
+        tone="info"
+        title={`Start collection on ${collectTarget?.ref ?? 'invoice'}?`}
+        body="This creates a high-priority follow-up for the owner and flags the invoice for collection."
+        details={collectTarget ? [
+          `Balance: ${formatPHP(collectTarget.balance_centavos)} of ${formatPHP(collectTarget.amount_centavos)}`,
+          `Client: ${collectTarget.client_name ?? '—'}`,
+        ] : []}
+        confirmLabel="Start collection"
+        onCancel={() => setCollectTarget(null)}
+        onConfirm={() => {
+          if (collectTarget) collectMut.mutate(collectTarget.id);
+          setCollectTarget(null);
+        }}
+      />
     </div>
   );
 }

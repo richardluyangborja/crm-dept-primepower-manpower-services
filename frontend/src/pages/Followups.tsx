@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
 import { Check } from 'lucide-react';
@@ -28,6 +29,7 @@ export function FollowupsPage() {
   const [view, setView] = useState<'queue' | 'calendar'>('queue');
   const [status, setStatus] = useState('');
   const [showNew, setShowNew] = useState(false);
+  const [snoozeTarget, setSnoozeTarget] = useState<string | null>(null);
   const [day, setDay] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const toast = useToast();
   const qc = useQueryClient();
@@ -74,14 +76,20 @@ export function FollowupsPage() {
     onError: (e) => toast('error', apiErr(e, 'Could not snooze.')),
   });
   const snooze = (id: string) => {
-    const pick = window.prompt('Snooze until? Type 1d, 3d, 1w or a date YYYY-MM-DD HH:mm', '1d');
-    if (!pick) return;
+    setSnoozeTarget(id);
+  };
+  const confirmSnooze = (pick: string | undefined) => {
+    if (snoozeTarget === null || !pick) {
+      setSnoozeTarget(null);
+      return;
+    }
     const until = parseSnooze(pick);
     if (!until) {
       toast('error', 'Use 1d / 3d / 1w or YYYY-MM-DD HH:mm.');
       return;
     }
-    snoozeMut.mutate({ id, until });
+    snoozeMut.mutate({ id: snoozeTarget, until });
+    setSnoozeTarget(null);
   };
 
   return (
@@ -151,6 +159,16 @@ export function FollowupsPage() {
         )}
 
       {showNew && <NewReminderForm onClose={() => setShowNew(false)} onDone={invalidate} />}
+      <ConfirmDialog
+        open={snoozeTarget !== null}
+        tone="info"
+        title="Snooze reminder?"
+        body="It leaves the queue until the new due time — overdue escalation pauses while snoozed."
+        confirmLabel="Snooze"
+        input={{ label: 'Snooze until', placeholder: '1d, 3d, 1w or YYYY-MM-DD HH:mm', required: true, initial: '1d' }}
+        onCancel={() => setSnoozeTarget(null)}
+        onConfirm={(pick) => confirmSnooze(pick)}
+      />
     </div>
   );
 

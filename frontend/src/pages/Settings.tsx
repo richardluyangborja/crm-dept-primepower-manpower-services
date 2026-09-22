@@ -638,6 +638,7 @@ function SecuritySection() {
   const [cur, setCur] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
+  const [revokeTarget, setRevokeTarget] = useState<number | null>(null);
 
   const sessionsQ = useQuery({
     queryKey: ['my-sessions'],
@@ -662,6 +663,13 @@ function SecuritySection() {
   };
 
   const revoke = async (id: number) => {
+    setRevokeTarget(id);
+  };
+
+  const doRevoke = async () => {
+    if (revokeTarget === null) return;
+    const id = revokeTarget;
+    setRevokeTarget(null);
     try {
       await api.delete(`/users-sessions/${id}`);
       toast('success', 'Session revoked.');
@@ -695,6 +703,14 @@ function SecuritySection() {
             { key: 'x', header: '', render: (r) => <button onClick={() => revoke(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Revoke</button> },
           ]}
           empty={<EmptyState title="No active sessions" hint="Sign-ins appear here." />}
+        />
+        <ConfirmDialog
+          open={revokeTarget !== null}
+          title="Revoke this session?"
+          body="That device signs out on its next request. Use this if you don't recognize the IP or device."
+          confirmLabel="Revoke session"
+          onCancel={() => setRevokeTarget(null)}
+          onConfirm={() => void doRevoke()}
         />
       </div>
 

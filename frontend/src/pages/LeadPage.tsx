@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
 import { apiErr } from '../components/crm/ClientWidgets';
 
@@ -37,6 +38,7 @@ function journeyState(lead: LeadFull): number {
 export function LeadPage() {
   const { id = '' } = useParams();
   const [wizard, setWizard] = useState(false);
+  const [unqualify, setUnqualify] = useState(false);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -59,9 +61,7 @@ export function LeadPage() {
 
   const changeStatus = (st: string) => {
     if (st === 'unqualified') {
-      const reason = window.prompt('Why is this lead unqualified? (required)');
-      if (!reason) return;
-      setStatusMut.mutate({ st, reason });
+      setUnqualify(true);
     } else {
       setStatusMut.mutate({ st });
     }
@@ -124,6 +124,18 @@ export function LeadPage() {
               )}
 
               <DuplicatePanel lead={lead} />
+              <ConfirmDialog
+                open={unqualify}
+                title={`Disqualify ${lead.company_name}?`}
+                body="They leave the active queue. A reason is required — it stays on the record."
+                confirmLabel="Disqualify"
+                input={{ label: 'Why is this lead unqualified?', placeholder: 'e.g. No budget this year', required: true }}
+                onCancel={() => setUnqualify(false)}
+                onConfirm={(reason) => {
+                  if (reason) setStatusMut.mutate({ st: 'unqualified', reason });
+                  setUnqualify(false);
+                }}
+              />
               {wizard && (
                 <ConvertWizard
                   lead={lead}

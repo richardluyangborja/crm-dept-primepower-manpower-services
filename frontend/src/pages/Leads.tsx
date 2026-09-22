@@ -43,6 +43,7 @@ export function LeadsPage() {
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [convertId, setConvertId] = useState<string | null>(null);
+  const [unqualify, setUnqualify] = useState<Lead | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -88,9 +89,7 @@ export function LeadsPage() {
 
   const changeStatus = (r: Lead, st: string) => {
     if (st === 'unqualified') {
-      const reason = window.prompt('Why is this lead unqualified? (required)');
-      if (!reason) return;
-      setStatusMut.mutate({ id: r.id, st, reason });
+      setUnqualify(r);
     } else setStatusMut.mutate({ id: r.id, st });
   };
 
@@ -163,10 +162,24 @@ export function LeadsPage() {
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={invalidate} />}
       <ConfirmDialog
         open={convertId !== null}
+        tone="info"
         title="Convert lead to client?"
         body="Quick-convert creates the client profile with the lead's contact as primary. For the full 3-step wizard, open the lead instead."
+        confirmLabel="Convert"
         onCancel={() => setConvertId(null)}
         onConfirm={() => convertId !== null && convertMut.mutate({ id: convertId, withOpp: true })}
+      />
+      <ConfirmDialog
+        open={unqualify !== null}
+        title={`Disqualify ${unqualify?.company_name ?? 'lead'}?`}
+        body="They leave the active queue. A reason is required — it stays on the record."
+        confirmLabel="Disqualify"
+        input={{ label: 'Why is this lead unqualified?', placeholder: 'e.g. No budget this year', required: true }}
+        onCancel={() => setUnqualify(null)}
+        onConfirm={(reason) => {
+          if (unqualify && reason) setStatusMut.mutate({ id: unqualify.id, st: 'unqualified', reason });
+          setUnqualify(null);
+        }}
       />
     </div>
   );
