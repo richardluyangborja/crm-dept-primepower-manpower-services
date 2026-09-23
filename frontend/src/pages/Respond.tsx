@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 // Bare instance: no staff JWT attached, no login redirect on errors.
 const pub = axios.create({
@@ -75,7 +76,7 @@ export function RespondPage() {
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md px-4">
-      <p className="text-sm font-bold text-red-600">Primepower Manpower</p>
+      <img src={logo} alt="Primepower" className="mb-2 h-10 w-auto rounded-md bg-white p-0.5" />
       <h1 className="text-xl font-bold">Client survey</h1>
 
       {surveyQ.isLoading && <p className="mt-4 text-sm text-[var(--text-muted)]">Loading your survey…</p>}

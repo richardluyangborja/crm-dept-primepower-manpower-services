@@ -6,6 +6,7 @@ import api from '../../lib/apiClient';
 import { hasRole, useSession } from '../../store/session';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import logo from '../../assets/logo.png';
 import { useToast } from '../ui/Toaster';
 import { useIdleTimer } from '../../hooks/useIdleTimer';
 import { TourCard, useTour } from '../ui/Tour';
@@ -138,8 +139,13 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 self-start border-r border-[var(--border)] p-4 md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto`}>
-        <p className="px-2 text-sm font-bold text-red-600">Primepower Manpower</p>
-        <p className="mb-4 px-2 text-xs text-[var(--text-muted)]">CRM — Client Management</p>
+        <div className="mb-4 flex items-center gap-2 px-2">
+          <img src={logo} alt="Primepower" className="h-10 w-auto rounded-md bg-white p-0.5" />
+          <div>
+            <p className="text-sm font-bold leading-tight">Primepower</p>
+            <p className="text-[11px] text-[var(--text-muted)]">CRM — Client Management</p>
+          </div>
+        </div>
         {groups.map((g, i) => (
           <div key={i} className="mb-3">
             {g.label && <p className="px-3 pb-1 text-[11px] font-semibold uppercase text-[var(--text-muted)]">{g.label}</p>}

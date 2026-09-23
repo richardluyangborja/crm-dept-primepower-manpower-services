@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Timer, TimerOff } from 'lucide-react';
 import api from '../../lib/apiClient';
 
 interface VerifiedLogin {
@@ -136,8 +137,18 @@ export function OtpModal({
             ? 'A 6-digit code was sent for this sensitive action. It expires in 5 minutes and works once.'
             : `We sent a 6-digit code for ${email}. It expires in 5 minutes.`}
         </p>
-        <p className="mb-3 font-mono text-sm tabular-nums" aria-live="polite">
-          {left > 0 ? `⏳ ${mm} left` : '⌛ Code expired — resend or sign in again.'}
+        <p className="mb-3 flex items-center gap-1.5 font-mono text-sm tabular-nums" aria-live="polite">
+          {left > 0 ? (
+            <>
+              <Timer size={15} className={left <= 60 ? 'text-red-600' : 'text-sky-600'} />
+              <span className={left <= 60 ? 'font-semibold text-red-600' : ''}>{mm} left</span>
+            </>
+          ) : (
+            <>
+              <TimerOff size={15} className="text-[var(--text-muted)]" />
+              <span className="text-[var(--text-muted)]">Code expired — resend or sign in again.</span>
+            </>
+          )}
         </p>
         <div className="flex justify-between gap-1.5" onPaste={onPaste}>
           {digits.map((d, i) => (

@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase D2 — auth UI + RELEASE to main
+
+| Item | Status | Notes |
+|---|---|---|
+| Modern login + logo (login/sidebar/survey) | ✅ | Split layout, bundled asset |
+| OTP polish, zero emoji | ✅ | Timer states, src scan clean |
+| Full regression + release | ✅ | Suite 95 green, CI both |
+
 ## Phase C2 — pagination (branch `feature/phase-c2-pager`, on develop)
 
 | Item | Status | Notes |

@@ -269,6 +269,13 @@ lost is neutral; convert endpoint retired. Seeds: 35 companies, dates
 2025-11 → 2026-09. Primepower rebrand; superadmin lockdown; team member
 modal; duplicate Settings removed; `docs/DEMO.md` rewritten for the flow.
 
+## 20. Second polish batch (branches `feature/phase-a2-shell` … `phase-d2-auth`, released to main)
+A2: sticky independent sidebar; touchpoint label → communications; inline deal-title
+edit. B2: value derives from heads × rate × months everywhere (no value inputs);
+lead contacted comm-log prompt; win/move refresh leads + clients. C2: reusable
+table pager (15/page) on leads, clients, follow-ups, communications. D2: modern
+split login + logo asset (login/sidebar/survey); OTP Timer states, zero emoji.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs
