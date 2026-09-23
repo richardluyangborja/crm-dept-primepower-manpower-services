@@ -16,7 +16,9 @@ class MockAttendanceService implements AttendanceServiceInterface
             return ['days' => [], 'summary' => $this->emptySummary(), 'leave' => $this->leave($userId), 'mock' => true];
         }
         [$y, $m] = array_map('intval', explode('-', $month));
-        $daysIn = cal_days_in_month(CAL_GREGORIAN, $m, $y);
+        // NOTE: date('t') instead of cal_days_in_month() — deployment PHP
+        // builds may strip ext-calendar, which 500'd every HR endpoint in prod.
+        $daysIn = (int) date('t', strtotime(sprintf('%04d-%02d-01', $y, $m)));
         $today = date('Y-m-d');
 
         $days = [];
