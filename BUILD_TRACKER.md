@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase H3 — Workforce hub (branch `feature/phase-h3-workforce`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Workforce hub + 4 pages + CSV/print | ✅ | Directory/Attendance/Leave/Performance |
+| Dashboard team-pulse charts | ✅ | Bars for managers, cards for reps |
+| Specs 00/11/15/18 + DEMO Act 6 | ✅ | Release to main |
+
 ## Phase H2 — HR endpoints (branch `feature/phase-h2-endpoints`, on develop)
 
 | Item | Status | Notes |

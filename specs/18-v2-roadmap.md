@@ -276,6 +276,15 @@ lead contacted comm-log prompt; win/move refresh leads + clients. C2: reusable
 table pager (15/page) on leads, clients, follow-ups, communications. D2: modern
 split login + logo asset (login/sidebar/survey); OTP Timer states, zero emoji.
 
+## 21. People analytics — Core-2 mock (branches `feature/phase-h1-contracts` … `phase-h3-workforce`)
+H1: `AttendanceService` + `PerformanceService` contracts, `hr.json` config,
+deterministic mocks (BcMath-pinned decoder lesson reused: no crash-prone math),
+transparent logo. H2: GET-only `/hr/*` endpoints with rep→self / manager→team /
+admin→all scoping; measured roles are manager + sales only. H3: Workforce hub
+(Directory, Attendance, Leave, Performance) + dashboard team-pulse charts +
+per-page CSV/Print-PDF; specs (`00` row 2, `11`, `15`, `18`) + `docs/DEMO.md`
+Act 6; full regression → develop → main.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

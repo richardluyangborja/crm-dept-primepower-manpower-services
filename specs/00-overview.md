@@ -49,7 +49,7 @@ Source: `list-of-departments.md`. CRM is dept #10.
 | # | Dept / system | CRM relationship (v1 = mock) |
 |---|---|---|
 | 1 | Client acquisition, recruitment, deployment (**Client Management**) | **HIGH** — CRM hands over the won requirement (mock job order); fulfillment/deployed status reads back read-only (mock) |
-| 2 | HR info & operations | MED — deployed headcount per client (mock read) |
+| 2 | HR info & operations (**Workforce**) | **MED-HIGH** — attendance, leave balances, and blended performance read back read-only (mock); directory visible to managers+ |
 | 3 | Training/compliance/benefits | LOW — none in v1 |
 | 4 | Governance/safety/admin | LOW — audit export |
 | 5 | Financial management (**Finance**) | **HIGH** — Opportunity Won → first-month invoice draft (mock); AR/payment status reads back read-only (mock) |

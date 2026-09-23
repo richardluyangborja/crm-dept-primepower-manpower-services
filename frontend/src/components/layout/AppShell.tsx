@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, ChevronDown } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Briefcase, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -53,6 +53,18 @@ const groups: { label: string; links: NavLinkItem[] }[] = [
         ],
       },
       { to: '/followups', label: 'Follow-ups', icon: <BellRing size={18} /> },
+      {
+        to: '/workforce',
+        label: 'Workforce',
+        icon: <Briefcase size={18} />,
+        storageKey: 'crm.nav.workforce',
+        children: [
+          { to: '/workforce', label: 'Directory' },
+          { to: '/workforce/attendance', label: 'Attendance' },
+          { to: '/workforce/leave', label: 'Leave' },
+          { to: '/workforce/performance', label: 'Performance' },
+        ],
+      },
     ],
   },
   {

@@ -28,6 +28,7 @@
 GET /dashboard/summary (extended: {forecast, at_risk[], nba[]})
 GET /insights/clients/{id} → {risk, drivers[], nba[]}
 GET /insights/opportunities/{id} → {win_probability, drivers[]}
+GET /hr/performance?user_id&period → {crm{…}, hr{…}, parts{…}, composite} (blended people score)
 GET /reports/weekly|monthly?from&to&team_id → {narrative, tables{…}}
 POST /reports/generate {type, period} (manager+) → queues job (mock mail in v1)
 POST /insights/feedback {insight_key, rating, note}

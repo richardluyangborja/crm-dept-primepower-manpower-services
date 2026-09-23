@@ -12,6 +12,10 @@ import { SettingsPage } from './pages/Settings';
 import { SurveysPage } from './pages/Surveys';
 import { RespondPage } from './pages/Respond';
 import { CommsPage } from './pages/Comms';
+import { WorkforceDirectoryPage } from './pages/WorkforceDirectory';
+import { WorkforceAttendancePage } from './pages/WorkforceAttendance';
+import { WorkforceLeavePage } from './pages/WorkforceLeave';
+import { WorkforcePerformancePage } from './pages/WorkforcePerformance';
 import { FollowupsPage } from './pages/Followups';
 import { LeadsPage } from './pages/Leads';
 import { LeadPage } from './pages/LeadPage';
@@ -60,6 +64,10 @@ export default function App() {
               <Route path="pipeline/staffing" element={<PipelineStaffingPage />} />
               <Route path="pipeline/contracts" element={<PipelineContractsPage />} />
               <Route path="comms" element={<CommsPage />} />
+              <Route path="workforce" element={<WorkforceDirectoryPage />} />
+              <Route path="workforce/attendance" element={<WorkforceAttendancePage />} />
+              <Route path="workforce/leave" element={<WorkforceLeavePage />} />
+              <Route path="workforce/performance" element={<WorkforcePerformancePage />} />
               <Route path="surveys" element={<SurveysPage />} />
               <Route path="followups" element={<FollowupsPage />} />
               <Route path="reports" element={<ReportsPage />} />

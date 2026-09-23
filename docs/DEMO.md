@@ -74,8 +74,21 @@ Open `http://127.0.0.1:5173/`. Log in as sales rep:
 ## Act 5 — Decision support (Dashboard + Reports, ~2 min)
 
 1. **Dashboard**: clickable KPI cards, stage donut (click a slice → board),
-   lifecycle strip, renewals, at-risk list with drivers.
+   lifecycle strip, team-pulse charts (bars per rep for managers, own card for
+   reps), renewals, at-risk list with drivers.
 2. **Reports**: generate the monthly pack — narrative, tables, CSV export.
+
+## Act 6 — People analytics (Workforce, ~2 min)
+
+1. Sidebar → **Workforce → Performance**: pick a rep — composite with the
+   visible parts bars (deals, touches, completion, attendance, punctuality),
+   plus the team ranking. CSV + Print/PDF on every page.
+2. **Attendance**: month dots strip + day table for the same person.
+3. **Leave**: vacation/sick balances with usage bars.
+4. **Directory**: who works here, roles and teams.
+
+> Say: “HR owns the records — we read them. Scores blend live sales output
+> with HR context, and managers see exactly their team.”
 
 ## If asked…
 

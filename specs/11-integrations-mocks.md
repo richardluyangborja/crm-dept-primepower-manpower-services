@@ -14,6 +14,7 @@ pushWonOpportunity(Opportunity $opp): array; // -> ['job_order_ref'=>…]
 | `JobOrderService` (Client Management, Core-1) | Won opp → `JO-2026-XXXX` ref (handoff into Client Management); deployment status list (read-only) | `fixtures/job_orders.json` |
 | `BillingService` (Finance) | Won opp → **first monthly invoice** `INV-…` (one month's billing, not contract total); payment status (read-only) | `fixtures/invoices.json` |
 | `WorkforceService` (Client Management headcount) | headcount deployed per client (read-only) | `fixtures/headcount.json` |
+| `WorkforceBoard` (Core-2 HR rollup) | `GET /hr/attendance|leave|performance|directory` — deterministic per-user patterns × fixtures; role-scoped; GET-only | `fixtures/hr.json` |
 | `AnalyticsExport` (dept 9 BI) | aggregate endpoint consumed by BI (mock consumer script) | `fixtures/bi_pull.json` |
 | `ContractSigning` (Core-3 docs + Governance legal + Facilities contracts — all paper-backed) | Signing persists a mock `contracts` row (`CTR-2026-XXXX`: terms snapshot + start date); surfaced read-only, no live system | — (row payload doubles as the record) |
 | `StaffingBoard` (Client Management rollup) | `GET /staffing` aggregates visible clients × fixture + linked job orders; totals in meta | `fixtures/headcount.json` |

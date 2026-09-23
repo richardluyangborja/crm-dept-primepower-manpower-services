@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { KpiCard } from '../components/ui/KpiCard';
+import { useSession } from '../store/session';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
@@ -34,6 +35,7 @@ export function DashboardPage() {
       </div>
       <NarrativeStrip data={data} />
       <LifecycleStrip />
+      <TeamPulse />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} href="/pipeline" />
         <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" href="/pipeline" />
@@ -121,8 +123,71 @@ interface LifecycleContract {
 }
 
 /** Lifecycle strip (specs/04): contract + Client Management + Finance summaries, read-only. */
-function LifecycleStrip() {
-  const contractsQ = useQuery({
+/** Team pulse (specs/11): role-aware people charts linking into Workforce. */
+function TeamPulse() {
+  const { user } = useSession();
+  const month = new Date().toISOString().slice(0, 7);
+  const dirQ = useQuery({
+    queryKey: ['hr-directory', 'pulse'],
+    queryFn: async () => (await api.get('/hr/directory', { params: { per_page: 100 } })).data.data as {
+      id: number; name: string; role: string;
+    }[],
+  });
+  const members = (dirQ.data ?? []).filter((m) => ['manager', 'sales_rep'].includes(m.role)).slice(0, 12);
+  const perfQ = useQueries({
+    queries: members.map((m) => ({
+      queryKey: ['hr-performance', m.id, month, 'pulse'],
+      queryFn: async () => ({
+        member: m,
+        perf: (await api.get('/hr/performance', { params: { user_id: m.id, month } })).data.data as {
+          composite: number | null; crm: { won_value_centavos: number }; hr: { attendance_pct: number | null };
+        },
+      }),
+      staleTime: 60000,
+    })),
+  });
+  const ranked = perfQ
+    .filter((r) => r.data)
+    .map((r) => r.data!)
+    .sort((a, b) => (b.perf.crm.won_value_centavos ?? 0) - (a.perf.crm.won_value_centavos ?? 0));
+  const maxWon = Math.max(1, ...ranked.map((r) => r.perf.crm.won_value_centavos ?? 0));
+  const isRep = user?.role === 'sales_rep';
+  const mine = ranked.find((r) => r.member.id === user?.id);
+
+  return (
+    <div className="card p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">via HR</span></h2>
+        <Link to="/workforce/performance" className="text-xs text-sky-700 hover:underline dark:text-sky-300">Open Workforce →</Link>
+      </div>
+      {dirQ.isLoading || perfQ.some((r) => r.isLoading) ? (
+        <p className="text-sm text-[var(--text-muted)]">Reading the team…</p>
+      ) : ranked.length === 0 ? (
+        <p className="text-sm text-[var(--text-muted)]">No measured teammates in scope.</p>
+      ) : isRep && mine ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <KpiCard label="My composite" value={mine.perf.composite !== null ? String(mine.perf.composite) : '—'} sub="blended 0–100" href="/workforce/performance" />
+          <KpiCard label="My won value" value={formatPHP(mine.perf.crm.won_value_centavos)} sub="this month" href="/pipeline" />
+          <KpiCard label="My attendance" value={mine.perf.hr.attendance_pct !== null ? `${mine.perf.hr.attendance_pct}%` : '—'} sub="this month" href="/workforce/attendance" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {ranked.slice(0, 5).map(({ member, perf }) => (
+            <Link key={member.id} to="/workforce/performance" className="flex items-center gap-2 text-sm">
+              <span className="w-36 shrink-0 truncate">{member.name}</span>
+              <span className="h-3 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                <span className="block h-full rounded bg-sky-500" style={{ width: `${((perf.crm.won_value_centavos ?? 0) / maxWon) * 100}%` }} />
+              </span>
+              <span className="w-24 shrink-0 text-right font-semibold tabular-nums">{formatPHP(perf.crm.won_value_centavos)}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LifecycleStrip() {  const contractsQ = useQuery({
     queryKey: ['contracts', 'dashboard'],
     queryFn: async () => (await api.get('/contracts', { params: { status: 'active', per_page: 100 } })).data.data as LifecycleContract[],
   });
