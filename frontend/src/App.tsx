@@ -36,7 +36,14 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { theme } = useSession();
-  useEffect(() => applyTheme(theme), [theme]);
+  useEffect(() => {
+    applyTheme(theme);
+    if (theme !== 'system' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyTheme('system');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme]);
   void hasRole;
 
   return (

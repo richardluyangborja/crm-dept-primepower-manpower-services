@@ -52,7 +52,10 @@ export const useSession = create<SessionState>((set) => ({
     set({ theme: t });
   },
   logout: () => {
+    // Preserve appearance across sessions — only auth state is cleared.
+    const theme = sessionStorage.getItem('crm.theme');
     sessionStorage.clear();
+    if (theme) sessionStorage.setItem('crm.theme', theme);
     set({ user: null });
   },
 }));

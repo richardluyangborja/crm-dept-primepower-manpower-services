@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Briefcase, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Briefcase, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
 import { hasRole, useSession } from '../../store/session';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { NotificationPanel } from '../crm/NotificationPanel';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import logo from '../../assets/logo.png';
 import { useToast } from '../ui/Toaster';
@@ -255,13 +256,11 @@ export function AppShell() {
             <Search size={16} />
             <input placeholder="Quick search clients, leads, opps…  ( / )" className="w-full bg-transparent outline-none" />
           </div>
-          <button aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`} title={unread ? `${unread} unread — see Follow-ups` : 'No unread notifications'} className="relative rounded-lg border border-[var(--border)] p-2">
-            <Bell size={18} />
-            {unread > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
-          </button>
+          <NotificationPanel unread={unread} />
           <button aria-label="Replay product tour" title="Take the 5-step tour again" onClick={() => tour.replay()} className="rounded-lg border border-[var(--border)] p-2">
             <CircleHelp size={18} />
           </button>
+          <ThemeToggle />
           <ThemeToggle />
         </header>
         <main className="mx-auto max-w-[1400px] p-4 md:p-6">

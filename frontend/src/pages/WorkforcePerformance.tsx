@@ -32,6 +32,7 @@ export function WorkforcePerformancePage() {
     enabled: target !== null,
   });
   const p = perfQ.data;
+  const pValid = !!p?.crm;
   const who = members.find((m) => m.id === target);
 
   const rankQ = useQueries({
@@ -87,23 +88,23 @@ export function WorkforcePerformancePage() {
       </div>
       {who && <p className="text-sm text-[var(--text-muted)]">Showing <strong className="text-inherit">{who.name}</strong> · {who.role.replace('_', ' ')}</p>}
       {perfQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading performance…</p>
-        : perfQ.isError || !p ? <div className="card p-6 text-sm">Couldn't load performance. <button className="text-sky-600 underline" onClick={() => perfQ.refetch()}>Retry</button></div>
+        : perfQ.isError || !pValid ? <div className="card p-6 text-sm">Couldn't load performance. <button className="text-sky-600 underline" onClick={() => perfQ.refetch()}>Retry</button></div>
         : (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <KpiCard label="Composite" value={p.composite !== null ? String(p.composite) : '—'} sub="blended 0–100" />
-              <KpiCard label="Won value" value={formatPHP(p.crm.won_value_centavos)} sub={`${p.crm.touches} touches logged`} />
-              <KpiCard label="HR rating" value={p.hr.rating !== null ? String(p.hr.rating) : '—'} sub={p.hr.attendance_pct !== null ? `${p.hr.attendance_pct}% attendance` : 'no attendance yet'} />
+              <KpiCard label="Composite" value={p!.composite !== null ? String(p!.composite) : '—'} sub="blended 0–100" />
+              <KpiCard label="Won value" value={formatPHP(p!.crm.won_value_centavos)} sub={`${p!.crm.touches} touches logged`} />
+              <KpiCard label="HR rating" value={p!.hr.rating !== null ? String(p!.hr.rating) : '—'} sub={p!.hr.attendance_pct !== null ? `${p!.hr.attendance_pct}% attendance` : 'no attendance yet'} />
             </div>
             <div className="card flex flex-col gap-1.5 p-4">
               <h2 className="mb-1 font-semibold">How the score builds</h2>
-              {partBar('Deals won (35%)', p.parts.won)}
-              {partBar('Touches (20%)', p.parts.touches)}
-              {partBar('Follow-up completion (20%)', p.parts.completion)}
-              {partBar('Attendance (15%)', p.parts.attendance)}
-              {partBar('Punctuality (10%)', p.parts.punctuality)}
+              {partBar('Deals won (35%)', p!.parts.won)}
+              {partBar('Touches (20%)', p!.parts.touches)}
+              {partBar('Follow-up completion (20%)', p!.parts.completion)}
+              {partBar('Attendance (15%)', p!.parts.attendance)}
+              {partBar('Punctuality (10%)', p!.parts.punctuality)}
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                {p.crm.followups_done} follow-ups done · {p.crm.overdue} overdue · {p.crm.completion_pct !== null ? `${p.crm.completion_pct}% completion` : 'no follow-ups yet'}
+                {p!.crm.followups_done} follow-ups done · {p!.crm.overdue} overdue · {p!.crm.completion_pct !== null ? `${p!.crm.completion_pct}% completion` : 'no follow-ups yet'}
               </p>
             </div>
           </>

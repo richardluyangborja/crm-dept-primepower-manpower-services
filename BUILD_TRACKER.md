@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Misc batch — MERGED to `main`
+
+| Item | Status | Notes |
+|---|---|---|
+| Workforce ranking guards (perf + dashboard) | ✅ | Shapeless rows skipped, typed |
+| Notification panel + persist + clear all | ✅ | Read-all + per-item, live verified |
+| Theme 3-state + persist across logout | ✅ | System mode follows OS |
+| Specs 10/18 + tracker | ✅ | Suite 101 green |
+
 ## Workforce hotfix — MERGED to `main`
 
 | Item | Status | Notes |
