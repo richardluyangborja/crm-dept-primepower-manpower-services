@@ -19,6 +19,8 @@ export function WorkforceAttendancePage() {
   const { user, members, canPick } = useMembers();
   const [memberId, setMemberId] = useState<number | null>(null);
   const [month, setMonth] = useState(currentMonth());
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
   const target = canPick ? (memberId ?? members[0]?.id ?? user?.id ?? null) : (user?.id ?? null);
 
   const attQ = useQuery({
@@ -48,8 +50,8 @@ export function WorkforceAttendancePage() {
         Daily presence via HR — schedules and corrections live in the HR system, not here.
       </InfoCallout>
       <div className="flex flex-wrap gap-2">
-        <MemberPicker value={target} onChange={setMemberId} members={members} />
-        <MonthNav month={month} onChange={setMonth} />
+        <MemberPicker value={target} onChange={(id) => { setMemberId(id); setPage(1); }} members={members} />
+        <MonthNav month={month} onChange={(m) => { setMonth(m); setPage(1); }} />
         <button onClick={csv} className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium">CSV</button>
       </div>
       {who && <p className="text-sm text-[var(--text-muted)]">Showing <strong className="text-inherit">{who.name}</strong> · {who.role.replace('_', ' ')}</p>}
@@ -80,7 +82,8 @@ export function WorkforceAttendancePage() {
               </p>
             </div>
             <DataTable<AttDay & { id: string }>
-              rows={days.map((d) => ({ ...d, id: d.date }))}
+              rows={days.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((d) => ({ ...d, id: d.date }))}
+              pagination={{ page, perPage: PER_PAGE, total: days.length, onPage: setPage }}
               columns={[
                 { key: 'd', header: 'Date', render: (r) => new Date(r.date + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' }) },
                 { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },

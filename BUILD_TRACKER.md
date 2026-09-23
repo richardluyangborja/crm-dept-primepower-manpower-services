@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Workforce hotfix — MERGED to `main`
+
+| Item | Status | Notes |
+|---|---|---|
+| Ranking crash guard (page + dashboard) | ✅ | Missing perf rows skipped |
+| OTP demo out of directory | ✅ | Seeded demo email excluded |
+| Admin leave 404 pinned by test | ✅ | Measured-roles rule holds |
+| Attendance pager (15) | ✅ | Client-side over month rows |
+
 ## Phase H3 — Workforce hub — MERGED to `main` (HR integration released)
 
 | Item | Status | Notes |

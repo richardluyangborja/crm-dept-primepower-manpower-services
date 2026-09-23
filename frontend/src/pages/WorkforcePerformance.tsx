@@ -44,10 +44,11 @@ export function WorkforcePerformancePage() {
       staleTime: 60000,
     })),
   });
-  const ranking = rankQ
-    .filter((r) => r.data)
-    .map((r) => r.data!)
-    .sort((a, b) => (b.perf.composite ?? -1) - (a.perf.composite ?? -1));
+  const ranking: { member: { id: number; name: string; role: string }; perf: Perf }[] = [];
+  for (const r of rankQ) {
+    if (r.data?.perf) ranking.push({ member: r.data.member, perf: r.data.perf });
+  }
+  ranking.sort((a, b) => (b.perf.composite ?? -1) - (a.perf.composite ?? -1));
 
   const csv = () =>
     downloadCsv(`performance-${month}.csv`,

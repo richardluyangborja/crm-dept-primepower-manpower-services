@@ -146,10 +146,11 @@ function TeamPulse() {
       staleTime: 60000,
     })),
   });
-  const ranked = perfQ
-    .filter((r) => r.data)
-    .map((r) => r.data!)
-    .sort((a, b) => (b.perf.crm.won_value_centavos ?? 0) - (a.perf.crm.won_value_centavos ?? 0));
+  const ranked: { member: { id: number; name: string }; perf: { crm: { won_value_centavos: number }; hr: { attendance_pct: number | null }; composite: number | null } }[] = [];
+  for (const r of perfQ) {
+    if (r.data?.perf) ranked.push(r.data as (typeof ranked)[number]);
+  }
+  ranked.sort((a, b) => (b.perf.crm.won_value_centavos ?? 0) - (a.perf.crm.won_value_centavos ?? 0));
   const maxWon = Math.max(1, ...ranked.map((r) => r.perf.crm.won_value_centavos ?? 0));
   const isRep = user?.role === 'sales_rep';
   const mine = ranked.find((r) => r.member.id === user?.id);

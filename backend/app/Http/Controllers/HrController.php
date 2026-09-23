@@ -89,7 +89,9 @@ class HrController extends Controller
     public function directory(Request $request)
     {
         $me = $request->user();
-        $q = User::with('team:id,name')->whereIn('role', ['manager', 'sales_rep']);
+        // Demo/second-factor placeholder account stays out of workforce views.
+        $q = User::with('team:id,name')->whereIn('role', ['manager', 'sales_rep'])
+            ->where('email', '!=', 'otp.demo@primepower.ph');
         if ($me->role === 'sales_rep') {
             $q->whereKey($me->id);
         } elseif ($me->role === 'manager') {
