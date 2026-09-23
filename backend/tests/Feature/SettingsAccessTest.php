@@ -116,6 +116,24 @@ class SettingsAccessTest extends TestCase
         $this->postJson('/api/v1/auth/login', ['email' => $o['rep']->email, 'password' => 'password'])->assertUnauthorized();
     }
 
+    public function test_superadmin_row_is_immutable(): void
+    {
+        $o = $this->setupOrg();
+        $st = $this->token($o['super']);
+        $sid = $o['super']->id;
+
+        // Even the superadmin cannot mutate a superadmin row (except its own password).
+        $this->putJson("/api/v1/users/$sid", ['name' => 'Hacked'], ['Authorization' => "Bearer $st"])->assertStatus(422);
+        $this->postJson("/api/v1/users/$sid/deactivate", [], ['Authorization' => "Bearer $st"])->assertStatus(422);
+        $this->postJson("/api/v1/users/$sid/reset-password", ['password' => 'NewPassword123!'], ['Authorization' => "Bearer $st"])->assertStatus(422);
+        $this->assertTrue($o['super']->refresh()->is_active);
+
+        // …but its own password change still works (lockout prevention).
+        $this->postJson('/api/v1/me/password', [
+            'current_password' => 'password', 'password' => 'BrandNewPass123!', 'password_confirmation' => 'BrandNewPass123!',
+        ], ['Authorization' => "Bearer $st"])->assertOk();
+    }
+
     public function test_reset_password_and_change_password(): void
     {
         $o = $this->setupOrg();
@@ -167,9 +185,9 @@ class SettingsAccessTest extends TestCase
         $o = $this->setupOrg();
         $this->getJson('/api/v1/settings', ['Authorization' => 'Bearer '.$this->token($o['rep'])])->assertOk();
         $this->putJson('/api/v1/settings', ['settings' => ['org_name' => 'X']], ['Authorization' => 'Bearer '.$this->token($o['rep'])])->assertForbidden();
-        $this->putJson('/api/v1/settings', ['settings' => ['org_name' => 'PrimePower Manpower Services', 'nope' => 1]], ['Authorization' => 'Bearer '.$this->token($o['super'])])
+        $this->putJson('/api/v1/settings', ['settings' => ['org_name' => 'Primepower Manpower Services', 'nope' => 1]], ['Authorization' => 'Bearer '.$this->token($o['super'])])
             ->assertOk()->assertJsonPath('data.saved', ['org_name']);
-        $this->assertSame('PrimePower Manpower Services', $this->getJson('/api/v1/settings', ['Authorization' => 'Bearer '.$this->token($o['super'])])->json('data.org_name'));
+        $this->assertSame('Primepower Manpower Services', $this->getJson('/api/v1/settings', ['Authorization' => 'Bearer '.$this->token($o['super'])])->json('data.org_name'));
     }
 
     public function test_integrations_status_mock_only_and_csv_export(): void

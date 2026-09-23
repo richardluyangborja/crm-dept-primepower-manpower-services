@@ -75,7 +75,7 @@ export function RespondPage() {
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md px-4">
-      <p className="text-sm font-bold text-red-600">PRIMEPOWER MANPOWER</p>
+      <p className="text-sm font-bold text-red-600">Primepower Manpower</p>
       <h1 className="text-xl font-bold">Client survey</h1>
 
       {surveyQ.isLoading && <p className="mt-4 text-sm text-[var(--text-muted)]">Loading your survey…</p>}
@@ -108,7 +108,7 @@ export function RespondPage() {
         <div className="card mt-4 p-8 text-center">
           
           <h2 className="mt-2 text-lg font-semibold">Salamat! Response recorded.</h2>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">Your feedback helps PrimePower serve you better.</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">Your feedback helps Primepower serve you better.</p>
         </div>
       )}
     </div>

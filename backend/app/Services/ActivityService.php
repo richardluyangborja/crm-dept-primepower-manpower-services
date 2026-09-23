@@ -37,7 +37,8 @@ class ActivityService
 
         $activity = Activity::create([
             'owner_id' => $input['owner_id'],
-            'client_id' => $input['client_id'],
+            'client_id' => $input['client_id'] ?? null,
+            'company_id' => $input['company_id'] ?? null,
             'opportunity_id' => $input['opportunity_id'] ?? null,
             'type' => $input['type'],
             'subject' => $input['subject'] ?? null,
@@ -47,14 +48,15 @@ class ActivityService
             'occurred_at' => $input['occurred_at'] ?? now(),
             'attachments' => $files ?: null,
         ]);
-        $activity->client()->update(['last_contacted_at' => $activity->occurred_at]);
+        $activity->client?->update(['last_contacted_at' => $activity->occurred_at]);
         $activity->audit('logged', $actorId, ['type' => $activity->type, 'files' => count($files)]);
 
         $followup = null;
         if (! empty($input['create_followup'])) {
             $followup = Followup::create([
                 'owner_id' => $input['owner_id'],
-                'client_id' => $input['client_id'],
+                'client_id' => $input['client_id'] ?? null,
+                'company_id' => $input['company_id'] ?? null,
                 'opportunity_id' => $input['opportunity_id'] ?? null,
                 'title' => $input['followup_title'],
                 'due_at' => $input['followup_due_at'],

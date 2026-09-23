@@ -43,4 +43,4 @@ Default scope: `sales_rep` sees `owner_id = me`; `manager` sees `team_id = my te
 - Passwords: bcrypt 12, min 10 chars, lockout 5 attempts/15 min. Audit every login/refresh/logout.
 
 ## 4. Seed users (static, no Faker)
-- `superadmin@primepower.ph / PrimePower123!`, `admin@primepower.ph`, `manager@primepower.ph` (team Manila), `rep.juandelacruz@primepower.ph`, `rep.mariasantos@primepower.ph`. Passwords overridden via env in prod.
+- `superadmin@primepower.ph / Primepower123!`, `admin@primepower.ph`, `manager@primepower.ph` (team Manila), `rep.juandelacruz@primepower.ph`, `rep.mariasantos@primepower.ph`. Passwords overridden via env in prod.

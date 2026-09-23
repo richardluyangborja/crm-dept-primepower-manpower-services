@@ -25,7 +25,7 @@ class TeamUserSeeder extends Seeder
         foreach ($users as $u) {
             User::firstOrCreate(
                 ['email' => $u['email']],
-                $u + ['password' => env('SEED_PASSWORD', 'PrimePower123!'), 'is_active' => true]
+                $u + ['password' => env('SEED_PASSWORD', 'Primepower123!'), 'is_active' => true]
             );
         }
     }

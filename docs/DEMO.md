@@ -1,4 +1,4 @@
-# PrimePower CRM — Demo Script (10–12 minutes)
+# Primepower CRM — Demo Script (10–12 minutes)
 
 How to show the whole system, start to finish. Assumes a fresh seed.
 
@@ -12,7 +12,7 @@ cd frontend && npm run dev
 
 Open `http://127.0.0.1:5173/`. Log in as sales rep:
 
-- `rep.juandelacruz@primepower.ph` / `PrimePower123!` (no OTP)
+- `rep.juandelacruz@primepower.ph` / `Primepower123!` (no OTP)
 
 (Managers: `manager@primepower.ph`. Admins: `admin@primepower.ph` + OTP `123456`.)
 

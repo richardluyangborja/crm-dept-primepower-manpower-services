@@ -63,7 +63,6 @@ const groups: { label: string; links: NavLinkItem[] }[] = [
   },
   { label: 'AI & Analytics', links: [{ to: '/reports', label: 'Reports', icon: <BarChart3 size={18} /> }] },
   { label: 'System', links: [{ to: '/settings', label: 'Settings', icon: <Settings size={18} /> }] },
-  { label: 'System', links: [{ to: '/settings', label: 'Settings', icon: <Settings size={18} /> }] },
 ];
 
 export function AppShell() {
@@ -139,7 +138,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 border-r border-[var(--border)] p-4 md:block`}>
-        <p className="px-2 text-sm font-bold text-red-600">PRIMEPOWER MANPOWER</p>
+        <p className="px-2 text-sm font-bold text-red-600">Primepower Manpower</p>
         <p className="mb-4 px-2 text-xs text-[var(--text-muted)]">CRM — Client Management</p>
         {groups.map((g, i) => (
           <div key={i} className="mb-3">

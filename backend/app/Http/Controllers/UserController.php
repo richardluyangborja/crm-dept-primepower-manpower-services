@@ -60,6 +60,9 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user, \App\Services\StepUpService $stepUp)
     {
         $this->authorize('update', $user);
+        if ($user->role === 'superadmin') {
+            return $this->fail('The superadmin account is seed-managed and cannot be changed.', 422);
+        }
         $data = $request->validated();
         if (array_key_exists('role', $data) && $data['role'] !== $user->role) {
             // Privilege change = step-up (specs/16): fresh OTP grant required.
@@ -85,10 +88,10 @@ class UserController extends Controller
     public function deactivate(User $user)
     {
         $this->authorize('deactivate', User::class);
-        if ($user->id === auth('api')->id()) return $this->fail('You cannot deactivate your own account.', 422);
-        if ($user->role === 'superadmin' && User::where('role', 'superadmin')->where('is_active', true)->count() <= 1) {
-            return $this->fail('Cannot deactivate the last active superadmin.', 422);
+        if ($user->role === 'superadmin') {
+            return $this->fail('The superadmin account is seed-managed and cannot be deactivated.', 422);
         }
+        if ($user->id === auth('api')->id()) return $this->fail('You cannot deactivate your own account.', 422);
         $user->update(['is_active' => false]);
         $user->audit('deactivated', auth('api')->id(), []);
 
@@ -98,6 +101,9 @@ class UserController extends Controller
     public function resetPassword(Request $request, User $user)
     {
         $this->authorize('resetPassword', User::class);
+        if ($user->role === 'superadmin') {
+            return $this->fail('The superadmin account is seed-managed and cannot be changed.', 422);
+        }
         $request->validate(['password' => ['required', 'string', 'min:10']]);
         $user->update(['password' => $request->input('password')]);
         $user->audit('password_reset', $request->user()->id, []);

@@ -1,4 +1,4 @@
-# DEPLOYMENT — PrimePower CRM v1.0.0
+# DEPLOYMENT — Primepower CRM v1.0.0
 
 > Local dev runs on `docker compose` Postgres. Production uses the **deployment-managed
 > Postgres** (same version family). Everything — integrations, AI, OTP transport —
@@ -61,7 +61,7 @@ First deploy only — create the superadmin via tinker (never via seeders):
 
 ```
 VITE_API_URL=https://api.your-domain.ph/api/v1
-VITE_APP_NAME=PrimePower CRM
+VITE_APP_NAME=Primepower CRM
 VITE_SESSION_TIMEOUT_ENABLED=true
 ```
 

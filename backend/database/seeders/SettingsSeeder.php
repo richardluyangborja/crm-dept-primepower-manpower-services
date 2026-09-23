@@ -12,7 +12,7 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $defaults = [
-            'org_name' => 'PrimePower Manpower Services',
+            'org_name' => 'Primepower Manpower Services',
             'timezone' => 'Asia/Manila',
             'currency' => '₱',
             'date_format' => 'M d, Y',

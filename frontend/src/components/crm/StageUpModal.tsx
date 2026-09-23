@@ -4,7 +4,8 @@ import { formatPHP } from '../../lib/format';
 export interface RitualOpp {
   id: string;
   title: string;
-  client_id: string;
+  client_id: string | null;
+  company_id: string | null;
   client_name?: string;
   value_centavos: number;
   headcount: number | null;

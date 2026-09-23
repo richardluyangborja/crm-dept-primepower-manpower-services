@@ -53,7 +53,7 @@ export function LoginPage() {
       if (status === 429) {
         setError('Too many attempts — locked for 15 minutes. Try again later.');
       } else {
-        setError('Invalid email or password. Try seeded demo: rep.juandelacruz@primepower.ph / PrimePower123!');
+        setError('Invalid email or password. Try seeded demo: rep.juandelacruz@primepower.ph / Primepower123!');
       }
     } finally {
       setBusy(false);
@@ -62,9 +62,9 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto mt-20 w-full max-w-md">
-      <p className="text-sm font-bold text-red-600">PRIMEPOWER MANPOWER</p>
+      <p className="text-sm font-bold text-red-600">Primepower Manpower</p>
       <h1 className="text-2xl font-bold">CRM sign in</h1>
-      <p className="mb-4 text-sm text-[var(--text-muted)]">Use your PrimePower account. Admins and opted-in users verify a 6-digit code next.</p>
+      <p className="mb-4 text-sm text-[var(--text-muted)]">Use your Primepower account. Admins and opted-in users verify a 6-digit code next.</p>
       {params.get('expired') && <p className="card mb-3 border-l-4 border-l-amber-500 p-3 text-sm">Session expired after inactivity — please log in again.</p>}
       <form onSubmit={submit} className="card flex flex-col gap-3 p-6">
         <label className="text-sm">

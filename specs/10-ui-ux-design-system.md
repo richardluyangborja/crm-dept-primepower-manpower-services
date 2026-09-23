@@ -3,7 +3,7 @@
 Reference: `light-mode.png` (light) + `dark-mode.webp` (Settings → Appearance). CRM reuses this visual language with CRM nav.
 
 ## 1. Layout shell (both modes)
-- **Left sidebar (grouped, collapsible):** logo `PRIMEPOWER MANPOWER / CRM`, sections:
+- **Left sidebar (grouped, collapsible):** logo `Primepower Manpower / CRM`, sections:
   - `Dashboard` (KPIs + **AI insights preview + at-risk list**, see `15`)
   - `SALES`: Lead & Client Tracking (collapsible → Leads, Clients), Opportunity Pipeline (collapsible → Visualization Board, Billing, Deployed Staff, Contracts), Follow-ups
   - Hub pattern: parent auto-expands on the active child, chevron toggle with `aria-expanded`, collapsed state in `localStorage`, plain-language child titles, active style on children only (never the parent). Hub list pages are filter-first (KPI strip + one table + search/filter/chips) rather than tabbed or section-stacked; cross-module moves are links, never copies. Billing and Deployed Staff each carry a per-client section plus a full cross-client section (ledger/board folded in; standalone Finance/Operations pages removed, old routes redirect).

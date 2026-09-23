@@ -40,13 +40,18 @@ class FollowupController extends Controller
         $this->authorize('create', Followup::class);
         $data = $request->validated();
         $user = $request->user();
-        $client = Client::visibleTo($user)->findOrFail($data['client_id']);
+        $client = ! empty($data['client_id']) ? Client::visibleTo($user)->findOrFail($data['client_id']) : null;
+        if (! empty($data['company_id'])) {
+            \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
+        } elseif ($client?->company_id) {
+            $data['company_id'] = $client->company_id;
+        }
         if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
             $data['owner_id'] = $user->id;
         }
         $data['priority'] ??= 'medium';
         $followup = Followup::create($data);
-        $followup->audit('created', $user->id, ['client_id' => $client->id]);
+        $followup->audit('created', $user->id, ['client_id' => $client?->id]);
 
         return $this->created(new FollowupResource($followup), 'Reminder set — we\'ll notify you.');
     }

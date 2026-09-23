@@ -26,7 +26,7 @@ Locked stack (all OSS):
 - `vite ^5 + typescript ^5 + react ^18`, `react-router-dom ^6`, `tailwindcss ^3 + tailwind-merge + clsx`, `shadcn/ui` (copied components, not a paid lib), `@tanstack/react-query ^5`, `axios ^1`, `react-hook-form ^7 + zod ^3 + @hookform/resolvers`, `recharts ^2`, `date-fns ^3`, `lucide-react`, `zustand ^4` (session/theme only).
 - API layer: single `apiClient` (axios) with JWT interceptors (attach, 401→refresh→retry once, queue concurrent 401s). All server state via React Query (keys `['leads']`, `['opportunities', stage]`, etc.); no ad-hoc fetch.
 - Reusable components (see `10-ui-ux-design-system.md`): `AppSidebar, Topbar, KpiCard, DataTable, EmptyState, FormField, ConfirmDialog, Timeline, KanbanBoard, SurveyBuilder, ReminderCalendar, ThemeToggle, Toaster`.
-- Env: `VITE_API_URL`, `VITE_APP_NAME=PrimePower CRM`.
+- Env: `VITE_API_URL`, `VITE_APP_NAME=Primepower CRM`.
 
 ## 3b. AI & reports (required by research title, OSS/free only — see `15`)
 - **Phase 1 (v1, no new infra):** rule-based customer intelligence in Laravel (`App\Services\Insights\*`): lead score, at-risk client flags, weighted forecast, NPS/CSAT aggregates + narrative summaries via reusable `ReportService` (CSV + print-ready HTML → PDF via browser print, no paid lib).

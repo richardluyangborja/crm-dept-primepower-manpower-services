@@ -44,7 +44,7 @@ git add -A && git commit -m "feat(<scope>): <what>" && git push -u origin featur
 - [ ] Seeder covers the happy path (no Faker); `insight` links where spec'd.
 - [ ] `BUILD_TRACKER.md` row moved to Done with PR link.
 
-## 5. Seeded demo logins (all `PrimePower123!`, override via `SEED_PASSWORD`)
+## 5. Seeded demo logins (all `Primepower123!`, override via `SEED_PASSWORD`)
 superadmin@primepower.ph · admin@primepower.ph · manager@primepower.ph ·
 rep.juandelacruz@primepower.ph · rep.mariasantos@primepower.ph · otp.demo@primepower.ph (mock OTP `123456`)
 

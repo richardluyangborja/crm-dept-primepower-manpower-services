@@ -1,8 +1,18 @@
-# BUILD TRACKER — PrimePower CRM (kanban)
+# BUILD TRACKER — Primepower CRM (kanban)
 
 > One feature at a time, in the order below (see `specs/17-*.md`). Move rows
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
+
+## Phase 4 — seeds + rebrand + batch (branch `feature/phase-4-seeds-brand`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Primepower rebrand (UI/seeds/docs/tests) | ✅ | Password Primepower123! |
+| 20 companies + 2025-2026 dates | ✅ | 35 cos, 0 null FKs |
+| Nullable touchpoint clients | ✅ | Pre-client rituals post cleanly |
+| Dup settings / superadmin lock / team modal | ✅ | Guards tested |
+| Specs 09 + tracker | ✅ | Suite green, merged |
 
 ## Phase 3 — won-creates-client (branch `feature/phase-3-won-client`, on develop)
 

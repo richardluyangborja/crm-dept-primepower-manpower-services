@@ -192,7 +192,7 @@ function NarrativeStrip({ data }: { data: {  forecast: { open_centavos: number; 
   ];
   return (
     <div className="card border-l-4 border-l-sky-500 p-4">
-      <p className="text-sm leading-relaxed"><span className="font-semibold">Today at PrimePower: </span>{sentences.join(' ')}</p>
+      <p className="text-sm leading-relaxed"><span className="font-semibold">Today at Primepower: </span>{sentences.join(' ')}</p>
     </div>
   );
 }

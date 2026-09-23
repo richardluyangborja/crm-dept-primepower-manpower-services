@@ -9,7 +9,8 @@ import { StageUpModal, defaultDue, type RitualOpp, type RitualPayload } from '..
 
 interface Opp {
   id: string;
-  client_id: string;
+  client_id: string | null;
+  company_id: string | null;
   client_name?: string;
   owner_id: number;
   title: string;
@@ -108,7 +109,7 @@ export function PipelinePage() {
       const moved = (qc.getQueryData<Opp[]>(['opportunities', q]) ?? rows).find((o) => o.id === vars.id);
       toast('success', {
         title: d.message ?? 'Moved.',
-        ...(moved ? { action: { label: 'Open client', href: `/clients/${moved.client_id}` } } : {}),
+        ...(moved?.client_id ? { action: { label: 'Open client', href: `/clients/${moved.client_id}` } } : {}),
       });
     },
     onSettled: () => {
@@ -122,7 +123,8 @@ export function PipelinePage() {
     if (payload.touch) {
       const label = labels[ritual?.stage ?? ''] ?? ritual?.stage ?? '';
       await api.post('/activities', {
-        client_id: opp.client_id,
+        client_id: opp.client_id ?? undefined,
+        company_id: opp.company_id ?? undefined,
         opportunity_id: opp.id,
         type: payload.touch.type,
         subject: `${label} touch — ${opp.title}`,
@@ -132,7 +134,8 @@ export function PipelinePage() {
     }
     if (payload.followup) {
       await api.post('/followups', {
-        client_id: opp.client_id,
+        client_id: opp.client_id ?? undefined,
+        company_id: opp.company_id ?? undefined,
         opportunity_id: opp.id,
         title: payload.followup.title,
         due_at: new Date(payload.followup.due).toISOString(),
@@ -156,7 +159,7 @@ export function PipelinePage() {
           const jobs = (await api.get('/job-orders', { params: { client_id: opp.client_id, per_page: 50 } })).data.data as { ref: string; opportunity_id: string | null }[];
           const mine = jobs.find((j) => j.opportunity_id === vars.id) ?? jobs[0];
           const fresh = (await api.get(`/opportunities/${vars.id}`)).data.data as { monthly_billing_centavos: number | null; contract_total_centavos: number | null };
-          if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id, monthly: fresh.monthly_billing_centavos, total: fresh.contract_total_centavos });
+          if (mine) setWonInfo({ ref: mine.ref, clientId: opp.client_id ?? '', monthly: fresh.monthly_billing_centavos, total: fresh.contract_total_centavos });
         }
       } catch {
         // Narration is best-effort; the win itself succeeded.
@@ -271,7 +274,7 @@ export function PipelinePage() {
           </div>
           <StageStepper stage={detail.stage} />
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-            <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? `#${detail.client_id}`}</p></div>
+            <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? detail.client_id ?? 'Pre-client deal'}</p></div>
             <div><p className="text-xs text-[var(--text-muted)]">Value</p><p className="tabular-nums">{formatPHP(detail.value_centavos)} × {detail.probability}%</p></div>
             <div><p className="text-xs text-[var(--text-muted)]">Billing</p><p className="tabular-nums">{detail.monthly_billing_centavos ? `${formatPHP(detail.monthly_billing_centavos)}/mo × ${detail.contract_months ?? '?'} mo` : 'Terms not set'}</p></div>
             <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ?? '—'}</p></div>
@@ -323,7 +326,8 @@ export function PipelinePage() {
               if (extra.proposal) {
                 try {
                   await api.post('/activities', {
-                    client_id: opp.client_id,
+                    client_id: opp.client_id ?? undefined,
+                    company_id: opp.company_id ?? undefined,
                     opportunity_id: opp.id,
                     type: 'email',
                     subject: `Proposal sent — ${opp.title}`,
@@ -375,9 +379,9 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
       </div>
       <p className={`mt-0.5 text-[11px] ${stale}`}>{o.days_in_stage ?? 0}d in stage</p>
       <p className="mt-1 flex gap-2 text-[11px]" onClick={stop}>
-        <Link to={`/pipeline/finance?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Billing</Link>
-        <Link to={`/pipeline/staffing?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Deployed staff</Link>
-        <Link to={`/pipeline/contracts?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Contracts</Link>
+        {o.client_id && <Link to={`/pipeline/finance?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Billing</Link>}
+        {o.client_id && <Link to={`/pipeline/staffing?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Deployed staff</Link>}
+        {o.client_id && <Link to={`/pipeline/contracts?client=${o.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">Contracts</Link>}
       </p>
     </div>
   );

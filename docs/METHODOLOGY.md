@@ -2,7 +2,7 @@
 
 Research title: *"Design and Development of an Enterprise Service Management System
 with Data Analytics and Customer Intelligence for Enhanced Decision Support and Operations"
-(CRM track, PrimePower Manpower Services).*
+(CRM track, Primepower Manpower Services).*
 
 Each row is one verifiable claim for the paper. "Evidence" names the exact files
 a panelist can open; "How to verify" is runnable in under 5 minutes.

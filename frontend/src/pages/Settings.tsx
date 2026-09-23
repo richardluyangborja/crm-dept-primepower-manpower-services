@@ -185,6 +185,7 @@ function OrganizationSection() {
   const qc = useQueryClient();
   const [name, setName] = useState('');
   const [region, setRegion] = useState('');
+  const [membersOf, setMembersOf] = useState<Team | null>(null);
   const teamsQ = useQuery({
     queryKey: ['teams'],
     queryFn: async () => (await api.get('/teams')).data.data as Team[],
@@ -213,10 +214,15 @@ function OrganizationSection() {
           columns={[
             { key: 'n', header: 'Team', render: (r) => <span className="font-medium">{r.name}</span> },
             { key: 'r', header: 'Region', render: (r) => r.region ?? '—' },
-            { key: 'u', header: 'Members', render: (r) => String(r.users_count ?? '—') },
+            { key: 'u', header: 'Members', render: (r) => (
+              <button onClick={() => setMembersOf(r)} className="text-sky-700 hover:underline dark:text-sky-300" title={`View members of ${r.name}`}>
+                {r.users_count ?? '—'} →
+              </button>
+            )},
           ]}
           empty={teamsQ.isLoading ? <p className="text-sm">Loading…</p> : <EmptyState title="No teams" hint="Create the first sales territory." />}
         />
+        {membersOf && <TeamMembersModal team={membersOf} onClose={() => setMembersOf(null)} />}
         <form onSubmit={create} className="mt-3 flex flex-wrap gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Team name (e.g. Davao)" className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
           <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region" className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
@@ -224,6 +230,47 @@ function OrganizationSection() {
         </form>
       </div>
       <MasterDataSection />
+    </div>
+  );
+}
+
+function TeamMembersModal({ team, onClose }: { team: Team; onClose: () => void }) {
+  const membersQ = useQuery({
+    queryKey: ['users', `team-${team.id}`],
+    queryFn: async () => (await api.get('/users', { params: { team_id: team.id, per_page: 100 } })).data.data as U[],
+  });
+  const rows = membersQ.data ?? [];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="card max-h-[80vh] w-full max-w-lg overflow-y-auto p-6">
+        <h2 className="text-lg font-semibold">{team.name}</h2>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">{team.region ?? 'No region set'} · {rows.length} member{rows.length === 1 ? '' : 's'}</p>
+        {membersQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading members…</p>
+          : membersQ.isError ? <p className="text-sm text-red-600">Couldn't load members.</p>
+          : rows.length === 0 ? <p className="text-sm text-[var(--text-muted)]">Nobody assigned yet.</p>
+          : (
+            <ul className="flex flex-col gap-2">
+              {rows.map((u) => (
+                <li key={u.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-2.5 text-sm">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+                    {(u.name ?? '?').slice(0, 1)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{u.name}</span>
+                    <span className="block truncate text-xs text-[var(--text-muted)]">{u.email} · {u.phone ?? 'no phone'}</span>
+                  </span>
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <StatusBadge value={u.role} />
+                    <span className="text-[11px] text-[var(--text-muted)]">{u.is_active ? `active${u.last_login_at ? ` · last seen ${new Date(u.last_login_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}` : ''}` : 'deactivated'}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        <div className="mt-4 flex justify-end">
+          <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Close</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -427,7 +474,9 @@ function UsersSection() {
             { key: 't', header: 'Team', render: (r) => r.team_name ?? '—' },
             { key: 'a', header: 'Active', render: (r) => (r.is_active ? 'Yes' : 'No') },
             {
-              key: 'x', header: 'Actions', render: (r) => readonly ? <span className="text-xs text-[var(--text-muted)]">—</span> : (
+              key: 'x', header: 'Actions', render: (r) => r.role === 'superadmin'
+                ? <span className="text-xs text-[var(--text-muted)]" title="Seed-managed top account">locked</span>
+                : readonly ? <span className="text-xs text-[var(--text-muted)]">—</span> : (
                 <span className="flex flex-wrap gap-1">
                   <button onClick={() => setRoleEdit(r)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Role/team</button>
                   <button onClick={() => setResetId(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Reset pw</button>

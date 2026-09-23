@@ -37,7 +37,12 @@ class ActivityController extends Controller
         $this->authorize('create', Activity::class);
         $data = $request->validated();
         $user = $request->user();
-        $client = Client::visibleTo($user)->findOrFail($data['client_id']);
+        $client = ! empty($data['client_id']) ? Client::visibleTo($user)->findOrFail($data['client_id']) : null;
+        if (! empty($data['company_id'])) {
+            \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
+        } elseif ($client?->company_id) {
+            $data['company_id'] = $client->company_id;
+        }
         if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
             $data['owner_id'] = $user->id;
         }

@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TeamUserSeeder::class,
             CrmCoreSeeder::class,
+            CrmCompanySeeder::class,
             CrmActivitySeeder::class,
             SettingsSeeder::class,
             InsightsCacheSeeder::class,
