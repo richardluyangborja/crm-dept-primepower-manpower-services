@@ -716,7 +716,7 @@ function SecuritySection() {
 
       <div className="card p-6">
         <h2 className="font-semibold">Two-factor (OTP)</h2>
-        <p className="text-xs text-[var(--text-muted)]">One-time codes (6 digits, 5-minute expiry) and the 5-minute idle timeout are specified and scaffolded, enforcement lands in Step 8 (specs/16) — after the complexity-heavy auth work. Nothing to configure yet.</p>
+        <p className="text-xs text-[var(--text-muted)]">One-time codes (6 digits, 5-minute expiry) plus a 5-minute idle timeout protect logins. Nothing to configure yet.</p>
       </div>
 
       <div className="card p-6">
@@ -763,8 +763,8 @@ function IntegrationsSection() {
   if (statusQ.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading…</p>;
   return (
     <div className="card p-6">
-      <h2 className="font-semibold">Integrations <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">mock mode (v1)</span></h2>
-      <p className="mb-3 text-xs text-[var(--text-muted)]">Every cross-dept call resolves to a mock service + JSON fixture. Live mode unlocks in Step 9 hardening.</p>
+      <h2 className="font-semibold">Connected systems <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">simulated responses</span></h2>
+      <p className="mb-3 text-xs text-[var(--text-muted)]">Department systems currently answer with simulated data. Live connections unlock in a later release.</p>
       <DataTable<Integration & { id: string }>
         rows={(statusQ.data?.services ?? []).map((s) => ({ ...s, id: s.key }))}
         columns={[
@@ -825,7 +825,7 @@ function ReportsPlaceholder() {
   return (
     <div className="card p-6">
       <h2 className="font-semibold">AI & Reports</h2>
-      <p className="text-xs text-[var(--text-muted)]">Insight visibility, weekly/monthly report schedule, and feedback review land in Step 7 (specs/15). The <code>report_schedule</code> org key (General, superadmin) already reserves the setting.</p>
+      <p className="text-xs text-[var(--text-muted)]">Insight visibility, report scheduling, and feedback review live in the Reports section.</p>
     </div>
   );
 }

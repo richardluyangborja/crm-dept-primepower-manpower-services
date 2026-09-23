@@ -21,12 +21,12 @@ const STEPS: Step[] = [
   {
     route: '/leads',
     title: '2/5 · Capture and convert',
-    body: 'Leads live here: work the Needs-a-response queue, then browse all inquiries. Converted clients move to Clients — open one for the full profile: profile, deals & orders, conversations, and billing.',
+    body: 'Leads live here: work the Needs-a-response queue, then browse all inquiries. Converted clients move to Clients — open one for the full profile: deals, contracts, operations, billing, and insights.',
   },
   {
     route: '/pipeline',
     title: '3/5 · Win the deal',
-    body: 'Drag deals across the kanban. Marking one won creates Job Order JO-2026-XXXX automatically — staffing starts, and the client timeline tells the story.',
+    body: 'Drag deals across the board. Marking one won creates the job order automatically — staffing starts, and the client timeline tells the story.',
   },
   {
     route: '/followups',
@@ -36,7 +36,7 @@ const STEPS: Step[] = [
   {
     route: '/reports',
     title: '5/5 · Prove it with reports',
-    body: 'Weekly and monthly packs with the executive narrative, CSV exports, and print-to-PDF. This is the decision-support output of the research title.',
+    body: 'Weekly and monthly packs with the executive narrative, CSV exports, and print-to-PDF. Proof of the work, ready for management.',
   },
 ];
 

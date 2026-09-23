@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
+import { InfoCallout } from '../components/ui/InfoCallout';
 import { KpiCard } from '../components/ui/KpiCard';
+import { SectionHead } from '../components/ui/SectionHead';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toaster';
@@ -46,25 +48,38 @@ function apiErr(e: unknown, fallback: string): string {
 }
 
 export function SurveysPage() {
-  const [tab, setTab] = useState<'surveys' | 'templates' | 'analytics'>('surveys');
-
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Satisfaction & Surveys</h1>
-        <p className="text-sm text-[var(--text-muted)]">Send NPS/CSAT surveys, track responses, act on low scores.</p>
+        <p className="text-sm text-[var(--text-muted)]">Send satisfaction surveys, track responses, act on low scores.</p>
       </div>
-      <div className="flex gap-2">
-        {(['surveys', 'templates', 'analytics'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-medium capitalize ${tab === t ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border border-[var(--border)]'}`}>
-            {t}
-          </button>
+      <InfoCallout lead="How scores work.">
+        Net Promoter Score asks “how likely are you to recommend us” on a 0–10 scale (9–10 are promoters, 7–8 passives, 0–6 detractors). Customer Satisfaction rates a recent experience from 1–5. Low scores flag the client for a check-in.
+      </InfoCallout>
+      <nav aria-label="Page sections" className="flex flex-wrap gap-1.5">
+        {[
+          { id: 'inbox', label: 'Inbox' },
+          { id: 'templates', label: 'Templates' },
+          { id: 'performance', label: 'Performance' },
+        ].map((s) => (
+          <a key={s.id} href={`#${s.id}`} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+            {s.label}
+          </a>
         ))}
-      </div>
-      {tab === 'surveys' && <SurveysInbox />}
-      {tab === 'templates' && <TemplatesTab />}
-      {tab === 'analytics' && <AnalyticsTab />}
+      </nav>
+      <section id="inbox" aria-label="Survey inbox" className="flex scroll-mt-24 flex-col gap-3">
+        <SectionHead title="Inbox" hint="Every survey sent, who answered, and what they said." />
+        <SurveysInbox />
+      </section>
+      <section id="templates" aria-label="Templates" className="flex scroll-mt-24 flex-col gap-3">
+        <SectionHead title="Templates" hint="Reusable question sets — Net Promoter Score, Customer Satisfaction, or custom." />
+        <TemplatesTab />
+      </section>
+      <section id="performance" aria-label="Performance" className="flex scroll-mt-24 flex-col gap-3">
+        <SectionHead title="Performance" hint="Scores over time, per client, and where to act." />
+        <AnalyticsTab />
+      </section>
     </div>
   );
 }
@@ -135,7 +150,7 @@ function SurveysInbox() {
                 ),
               },
             ]}
-            empty={<EmptyState title="No surveys sent yet" hint="Pick a template and a client — the share link is ready instantly (mock send, no real email)." action={<button onClick={() => setShowSend(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ Send survey</button>} />}
+            empty={<EmptyState title="No surveys sent yet" hint="Pick a template and a client — the share link is ready instantly." action={<button onClick={() => setShowSend(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ Send survey</button>} />}
           />
         )}
       {showSend && <SendSurveyForm onClose={() => setShowSend(false)} onDone={() => qc.invalidateQueries({ queryKey: ['surveys'] })} />}
@@ -203,7 +218,7 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <form onSubmit={submit} className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Send survey</h2>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">Mock send — logged to the client timeline, no real email/SMS leaves the system.</p>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">Logged to the client timeline — no real email or SMS leaves the system.</p>
         <div className="flex flex-col gap-2 text-sm">
           <label>Template *<select required value={f.template_id} onChange={set('template_id')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="">Pick a template…</option>
@@ -215,8 +230,8 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
           </select></label>
           <label>Channel<select value={f.channel} onChange={set('channel')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="link">Share link</option>
-            <option value="email_mock">Email (mock)</option>
-            <option value="sms_mock">SMS (mock)</option>
+            <option value="email_mock">Email (simulated)</option>
+            <option value="sms_mock">SMS (simulated)</option>
           </select></label>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
@@ -280,7 +295,7 @@ function TemplatesTab() {
                   : <span className="text-xs text-[var(--text-muted)]">Manager+ only</span>,
               },
             ]}
-            empty={<EmptyState title="No templates yet" hint="Managers can build NPS, CSAT, or custom templates with a live preview." />}
+            empty={<EmptyState title="No templates yet" hint="Managers can build Net Promoter Score, Customer Satisfaction, or custom templates with a live preview." />}
           />
         )}
       {showBuilder && (
@@ -305,6 +320,8 @@ function TemplateBuilder({ initial, onClose, onDone }: { initial: Template | nul
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [step, setStep] = useState(0);
+  const STEPS = ['Details', 'Questions', 'Preview'];
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -327,18 +344,35 @@ function TemplateBuilder({ initial, onClose, onDone }: { initial: Template | nul
     }
   };
 
+  const canNext = step === 0 ? !!name.trim() : !questions.some((q) => !q.q.trim());
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true">
       <form onSubmit={submit} className="card my-8 w-full max-w-2xl p-6">
         <h2 className="text-lg font-semibold">{initial ? 'Edit template' : 'New template'}</h2>
-        <div className="mt-3 grid gap-4 md:grid-cols-2">
-          <div className="flex flex-col gap-2 text-sm">
-            <label>Name *<input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Quarterly NPS" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Type<select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-              <option value="nps">NPS (0–10)</option>
-              <option value="csat">CSAT (1–5)</option>
-              <option value="custom">Custom</option>
+        <ol className="mt-2 flex items-center gap-1 text-xs" aria-label="Progress">
+          {STEPS.map((s, i) => (
+            <li key={s} className="flex items-center gap-1">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full font-semibold ${i <= step ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{i + 1}</span>
+              <span className={i === step ? 'font-semibold' : 'text-[var(--text-muted)]'}>{s}</span>
+              {i < STEPS.length - 1 && <span className="mx-1 h-px w-6 bg-[var(--border)]" />}
+            </li>
+          ))}
+        </ol>
+        {step === 0 && (
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <p className="text-xs text-[var(--text-muted)]">First, what is this survey for and how is it scored?</p>
+            <label>Name *<input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Quarterly check-in" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Scoring<select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+              <option value="nps">Net Promoter Score (0–10) — “would you recommend us”</option>
+              <option value="csat">Customer Satisfaction (1–5) — rate a recent experience</option>
+              <option value="custom">Custom — per-question scales</option>
             </select></label>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <p className="text-xs text-[var(--text-muted)]">Write the questions clients will actually see. Each needs text; scale defaults to the scoring above.</p>
             {questions.map((q, i) => (
               <div key={i} className="rounded-lg border border-[var(--border)] p-2">
                 <label className="text-xs text-[var(--text-muted)]">Question {i + 1} *
@@ -356,8 +390,10 @@ function TemplateBuilder({ initial, onClose, onDone }: { initial: Template | nul
             ))}
             {questions.length < 10 && <button type="button" onClick={() => setQuestions([...questions, { q: '', scale: 10 }])} className="rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-sm">+ Add question</button>}
           </div>
-          <div className="rounded-lg border border-[var(--border)] p-3">
-            <p className="mb-2 text-xs font-semibold uppercase text-[var(--text-muted)]">Live preview</p>
+        )}
+        {step === 2 && (
+          <div className="mt-3 rounded-lg border border-[var(--border)] p-3">
+            <p className="mb-2 text-xs font-semibold uppercase text-[var(--text-muted)]">Preview — exactly what the client sees</p>
             <p className="text-sm font-medium">{name || 'Untitled survey'}</p>
             {questions.map((q, i) => (
               <div key={i} className="mt-2">
@@ -370,11 +406,16 @@ function TemplateBuilder({ initial, onClose, onDone }: { initial: Template | nul
               </div>
             ))}
           </div>
-        </div>
+        )}
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Saving…' : 'Save template'}</button>
+        <div className="mt-4 flex justify-between gap-2">
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
+            {step > 0 && <button type="button" onClick={() => { setErr(''); setStep(step - 1); }} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">← Back</button>}
+          </div>
+          {step < 2
+            ? <button type="button" disabled={!canNext} onClick={() => { setErr(canNext ? '' : 'Finish this step first — name and every question need text.'); if (canNext) setStep(step + 1); }} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Next →</button>
+            : <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Saving…' : 'Save template'}</button>}
         </div>
       </form>
     </div>
@@ -411,14 +452,14 @@ function AnalyticsTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="NPS score" value={a.nps.score !== null ? String(a.nps.score) : '—'} sub={`${a.nps.promoters} promoters · ${a.nps.detractors} detractors`} />
-        <KpiCard label="CSAT average" value={a.csat_avg !== null ? a.csat_avg.toFixed(2) : '—'} sub="1–5 scale" />
+        <KpiCard label="Net Promoter Score" value={a.nps.score !== null ? String(a.nps.score) : '—'} sub={`${a.nps.promoters} promoters · ${a.nps.detractors} detractors`} />
+        <KpiCard label="Customer Satisfaction" value={a.csat_avg !== null ? a.csat_avg.toFixed(2) : '—'} sub="1–5 scale" />
         <KpiCard label="Response rate" value={a.response_rate !== null ? `${a.response_rate}%` : '—'} sub={`${a.totals.responded}/${a.totals.surveys} answered`} />
         <KpiCard label="Pending / expired" value={`${a.totals.pending} / ${a.totals.expired}`} sub="follow up on pending" />
       </div>
 
       <div className="card p-4">
-        <h2 className="font-semibold">NPS split</h2>
+        <h2 className="font-semibold">Net Promoter Score split</h2>
         <div className="mt-2 flex h-4 overflow-hidden rounded-full text-[11px] text-white">
           <span style={{ width: `${(a.nps.promoters / total) * 100}%` }} className="bg-green-500" title="Promoters" />
           <span style={{ width: `${(a.nps.passives / total) * 100}%` }} className="bg-amber-400" title="Passives" />

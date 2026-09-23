@@ -295,7 +295,7 @@ function SurveysTab({ clientId }: { clientId: string }) {
           { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
           { key: 'sc', header: 'Score', render: (r) => (r.response ? <span><Star size={11} className="mr-0.5 inline" />{r.response.score}</span> : '—') },
         ]}
-        empty={<EmptyState title="No surveys yet" hint="Send the first NPS check to this client." action={<Link to="/surveys" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Go to Surveys</Link>} />}
+        empty={<EmptyState title="No surveys yet" hint="Send the first satisfaction check to this client." action={<Link to="/surveys" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Go to Surveys</Link>} />}
       />
       <Link to="/surveys" className="mt-2 inline-block text-sm text-sky-600 underline">Send survey →</Link>
     </>
@@ -437,7 +437,7 @@ function FinanceTab({ clientId }: { clientId: string }) {
       <div className="card p-4">
         <h3 className="mb-2 font-medium">Invoices</h3>
         {invQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading invoices…</p>
-          : (invQ.data ?? []).length === 0 ? <p className="text-sm text-[var(--text-muted)]">No invoices yet — win a deal and the mock draft appears here.</p> : (
+          : (invQ.data ?? []).length === 0 ? <p className="text-sm text-[var(--text-muted)]">No invoices yet — win a deal and the first draft appears here.</p> : (
             <ul className="flex flex-col gap-2 text-sm">
               {invQ.data!.map((inv) => (
                 <li key={inv.id} className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-2 last:border-0">

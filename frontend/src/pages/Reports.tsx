@@ -173,7 +173,7 @@ function PackView({ pack, type }: { pack: Pack; type: string }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Open pipeline" value={formatPHP(t.forecast.open_centavos)} sub={`${t.forecast.open_count} open deals`} />
         <KpiCard label="Weighted forecast" value={formatPHP(t.forecast.weighted_centavos)} sub="Value × probability" />
-        <KpiCard label="NPS" value={t.satisfaction.nps.score !== null ? String(t.satisfaction.nps.score) : '—'} sub={`${t.satisfaction.totals.responded}/${t.satisfaction.totals.surveys} responded`} />
+        <KpiCard label="Net Promoter Score" value={t.satisfaction.nps.score !== null ? String(t.satisfaction.nps.score) : '—'} sub={`${t.satisfaction.totals.responded}/${t.satisfaction.totals.surveys} responded`} />
         <KpiCard label="Overdue follow-ups" value={String(t.followup_compliance.overdue)} sub={`${t.followup_compliance.done} done`} />
       </div>
 
@@ -249,7 +249,7 @@ function PackView({ pack, type }: { pack: Pack; type: string }) {
           <h2 className="font-semibold">Satisfaction & comment sentiment</h2>
           <button onClick={csv.satisfaction} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs"><span className="inline-flex items-center gap-1"><Download size={11} /> CSV</span></button>
         </div>
-        <p className="text-sm">NPS <strong>{t.satisfaction.nps.score ?? '—'}</strong> ({t.satisfaction.nps.promoters} promoters · {t.satisfaction.nps.passives} passives · {t.satisfaction.nps.detractors} detractors) · CSAT <strong>{t.satisfaction.csat_avg ?? '—'}</strong> · response rate <strong>{t.satisfaction.response_rate ?? '—'}%</strong></p>
+        <p className="text-sm">Net Promoter Score <strong>{t.satisfaction.nps.score ?? '—'}</strong> ({t.satisfaction.nps.promoters} promoters · {t.satisfaction.nps.passives} passives · {t.satisfaction.nps.detractors} detractors) · Customer Satisfaction <strong>{t.satisfaction.csat_avg ?? '—'}</strong> · response rate <strong>{t.satisfaction.response_rate ?? '—'}%</strong></p>
         {t.comment_sentiment.length === 0 ? <p className="mt-1 text-xs text-[var(--text-muted)]">No comments in period.</p> : (
           <ul className="mt-2 flex flex-col gap-1.5 text-sm">
             {t.comment_sentiment.map((c, i) => (

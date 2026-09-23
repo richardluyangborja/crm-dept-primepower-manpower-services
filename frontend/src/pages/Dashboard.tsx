@@ -29,14 +29,14 @@ export function DashboardPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Dashboard</h1>
-        <p className="text-sm text-[var(--text-muted)]">The whole client lifecycle — sales, contracts, Client Management, and Finance summaries. AI insights carry an “AI preview” badge (specs/15).</p>
+        <p className="text-sm text-[var(--text-muted)]">The whole client lifecycle — sales, contracts, staffing, and collections at a glance.</p>
       </div>
       <NarrativeStrip data={data} />
       <LifecycleStrip />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} />
         <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" />
-        <KpiCard label="NPS avg" value={data.nps_avg ?? '—'} sub={`${data.nps_count} responses`} />
+        <KpiCard label="Satisfaction" value={data.nps_avg ?? '—'} sub={`Net Promoter Score · ${data.nps_count} responses`} />
         <KpiCard label="Win rate (90d)" value={data.win_rate_90d !== null && data.win_rate_90d !== undefined ? `${data.win_rate_90d}%` : '—'} sub={data.avg_cycle_days !== null && data.avg_cycle_days !== undefined ? `Avg cycle ${data.avg_cycle_days}d` : 'Close deals to unlock'} />
       </div>
 
@@ -182,7 +182,7 @@ function NarrativeStrip({ data }: { data: {  forecast: { open_centavos: number; 
   const sentences = [
     `${data.forecast.count} open deals worth ${formatPHP(data.forecast.open_centavos)} (${formatPHP(data.forecast.weighted_centavos)} weighted).`,
     data.nps_avg !== null && data.nps_avg !== undefined
-      ? `Client sentiment sits at NPS ${data.nps_avg}.`
+      ? `Client sentiment sits at ${data.nps_avg} out of 10.`
       : 'No satisfaction data yet — send a survey to unlock it.',
     overdue > 0 ? `${overdue} overdue follow-up${overdue === 1 ? '' : 's'} need${overdue === 1 ? 's' : ''} clearing.` : 'Follow-ups are under control.',
     topRisk ? `Top concern: ${topRisk.client_name} (${topRisk.level} risk).` : 'No at-risk clients right now.',

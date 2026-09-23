@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase C — language + satisfaction (branch `feature/phase-c-satisfaction`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| System-spec copy purged (UI only) | ✅ | Comments + specs keep refs |
+| Full words + how-scores explainer | ✅ | NPS→Net Promoter Score etc |
+| Surveys page sectionized + anchors | ✅ | Inbox/Templates/Performance |
+| Template builder stepper | ✅ | Details→Questions→Preview |
+| Specs 06 + tracker | ✅ | Verified + merged to develop |
+
 ## Phase B — ritual polish (branch `feature/phase-b-rituals`, on develop)
 
 | Item | Status | Notes |

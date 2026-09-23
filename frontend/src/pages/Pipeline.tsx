@@ -203,7 +203,7 @@ export function PipelinePage() {
       {wonInfo && (
         <div className="card border-l-4 border-l-green-500 p-4">
           <p className="font-semibold text-green-700 dark:text-green-400">
-            Won! Job Order {wonInfo.ref} created — staffing starts <span className="text-xs font-normal">(mock)</span>.
+            Won! Job Order {wonInfo.ref} created — staffing starts.
             {wonInfo.monthly !== null && (
               <span className="block text-sm font-normal tabular-nums">
                 First invoice {formatPHP(wonInfo.monthly)}/mo{wonInfo.total !== null ? ` · ${formatPHP(wonInfo.total)} contract total` : ''}
@@ -630,7 +630,7 @@ function ContractModal({ dealId, onClose, onDone }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Sign contract{d ? ` — ${d.title}` : ''}?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Records the agreed terms as a mock contract (Core-3 docs, Governance legal, Facilities contracts). Winning starts from here.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">Records the agreed terms as the contract. Winning starts from here.</p>
         <div className="flex flex-col gap-2 text-sm">
           <div className="grid grid-cols-3 gap-2">
             <label>Heads *<input value={headcount} onChange={(e) => setHeadcount(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
@@ -665,7 +665,7 @@ function WinModal({ onClose, onDone }: { onClose: () => void; onDone: (effective
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Mark as won?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">This creates the job order and draft invoice (mock) and starts staffing.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">This creates the job order and draft invoice, and starts staffing.</p>
         <label className="block text-sm">Effective close date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
           <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
         </label>

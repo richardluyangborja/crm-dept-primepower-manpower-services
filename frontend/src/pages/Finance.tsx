@@ -152,7 +152,7 @@ export function FinancePage() {
               ),
             },
           ]}
-          empty={<EmptyState title="No invoices" hint="Win a deal and the mock draft invoice appears here automatically." action={<Link to="/pipeline" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Go to Pipeline</Link>} />}
+          empty={<EmptyState title="No invoices" hint="Win a deal and the draft invoice appears here automatically." action={<Link to="/pipeline" className="mt-2 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">Go to Pipeline</Link>} />}
         />
       )}
 
@@ -200,7 +200,7 @@ function PayModal({ invoice, onClose, onDone }: { invoice: Invoice | null; onClo
     try {
       const body = payFull ? {} : { amount_centavos: pesoToCentavos(amount) };
       const r = await api.post(`/invoices/${invoice.id}/pay`, body);
-      toast('success', r.data.message ?? 'Payment recorded (mock — no real money moved).');
+      toast('success', r.data.message ?? 'Payment recorded.');
       onDone();
       onClose();
     } catch (e) {

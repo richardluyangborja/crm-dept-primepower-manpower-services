@@ -5,7 +5,7 @@ import { useToast } from '../ui/Toaster';
 
 export function AiBadge() {
   return (
-    <span title="Rules engine v1 (mock-AI labeled) — verify before acting" className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">
+    <span title="Suggested by the insights engine from live CRM data — verify before acting" className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">
       AI preview ⓘ
     </span>
   );

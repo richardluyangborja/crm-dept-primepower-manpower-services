@@ -22,7 +22,7 @@ export function TrendsCard({ trend }: { trend: MonthPoint[] }) {
     return (
       <EmptyState
         title="No trend data yet"
-        hint="Close deals and collect survey responses — six months of win-rate and NPS trends will chart here."
+        hint="Close deals and collect survey responses — six months of win-rate and satisfaction trends will chart here."
       />
     );
   }
@@ -53,7 +53,7 @@ export function TrendsCard({ trend }: { trend: MonthPoint[] }) {
         )}
         {hasNps && (
           <div>
-            <p className="mb-1 text-xs text-[var(--text-muted)]">NPS average</p>
+            <p className="mb-1 text-xs text-[var(--text-muted)]">Satisfaction average</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={trend}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
