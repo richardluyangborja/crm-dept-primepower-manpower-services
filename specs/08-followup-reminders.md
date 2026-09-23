@@ -4,7 +4,7 @@
 1. **Reminders CRUD** — title, linked client/opp, due datetime (Asia/Manila), priority, assignee.
 2. **Snooze / done / overdue** — lifecycle `open→done|snoozed→open|overdue→escalated`.
 3. **Escalation** — overdue >24h notifies owner + manager; >72h auto-escalates (`escalated_to=manager`, bell + in-app).
-4. **Calendar & tasks** — month/week/day + "My tasks" list, drag to reschedule (manager/owner only).
+4. **Calendar & tasks** — month (prev/next/today, past + future) /week/day + "My tasks" list, drag to reschedule (manager/owner only). Month view is full-width with the selected day's reminders as a section below. Actions share one hierarchy everywhere: Done (primary green) · Snooze · Escalate (danger, overdue only).
 
 ## 2. User stories & acceptance
 - As rep I create reminder → due picker blocks past, priority color preview, link picker (client/opp search); toast "Reminder set for Tue 9:00 AM — we'll notify you".
@@ -22,7 +22,7 @@ GET /notifications  POST /notifications/{id}/read
 Rules: `due_at` > now on create; only owner/manager/admin can complete others' (policy); delete = soft + audit.
 
 ## 4. UI
-- `ReminderCalendar` (month grid with priority dots, click day → side list) + "My tasks" `DataTable`; bell badge = unread count; browser Notification API opt-in (fallback in-app).
+- `ReminderCalendar` (month grid with priority dots + month nav, click day → full-width details section below) + "My tasks" `DataTable`; bell badge = unread count; browser Notification API opt-in (fallback in-app).
 - Feedback: overdue banner ("3 overdue — clear them to keep pipeline healthy"), snooze toast with Undo, escalation notice ("Escalated to Marites Reyes (Manager)").
 
 ## 5. Seeds

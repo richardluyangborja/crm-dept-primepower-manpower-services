@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase E — follow-ups polish (branch `feature/phase-e-followups`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Icon action hierarchy (Done/Snooze/Escalate) | ✅ | Shared FupActions, queue + overdue |
+| Month nav (past/future) + Today | ✅ | Week/day already had nav |
+| Day details as section below | ✅ | Full-width month grid |
+| Specs 08 + tracker | ✅ | Verified + merged to develop |
+
 ## Phase D — dashboard charts (branch `feature/phase-d-dashboard`, on develop)
 
 | Item | Status | Notes |

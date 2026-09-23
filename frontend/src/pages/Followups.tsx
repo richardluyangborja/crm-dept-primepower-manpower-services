@@ -6,7 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
-import { Check } from 'lucide-react';
+import { Check, Clock, ArrowUpRight } from 'lucide-react';
 
 interface Fup {
   id: string;
@@ -24,6 +24,34 @@ interface Fup {
 
 const fmtDT = (iso: string) =>
   new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** One hierarchy for all reminder actions: Done (primary) · Snooze · Escalate (danger, when relevant). */
+function FupActions({ r, onDone, onSnooze, onEscalate }: {
+  r: Fup;
+  onDone: (id: string) => void;
+  onSnooze: (id: string) => void;
+  onEscalate: (id: string) => void;
+}) {
+  if (r.status === 'done') return <span className="text-[var(--text-muted)]"><Check size={14} /></span>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      <button onClick={() => onDone(r.id)} title="Mark done"
+        className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700">
+        <Check size={12} /> Done
+      </button>
+      <button onClick={() => onSnooze(r.id)} title="Snooze to later"
+        className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+        <Clock size={12} /> Snooze
+      </button>
+      {(r.status === 'overdue' || r.status === 'escalated') && (
+        <button onClick={() => onEscalate(r.id)} title="Escalate to your manager"
+          className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+          <ArrowUpRight size={12} /> Escalate
+        </button>
+      )}
+    </span>
+  );
+}
 
 export function FollowupsPage() {
   const [view, setView] = useState<'queue' | 'calendar'>('queue');
@@ -109,11 +137,7 @@ export function FollowupsPage() {
             {overdue.slice(0, 5).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-2">
                 <span className="truncate">{r.title} <span className="text-xs text-[var(--text-muted)]">· due {fmtDT(r.due_at)}</span></span>
-                <span className="flex shrink-0 gap-1">
-                  <button onClick={() => doneMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Done</button>
-                  <button onClick={() => snooze(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Snooze</button>
-                  <button onClick={() => escMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Escalate</button>
-                </span>
+                <FupActions r={r} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} />
               </li>
             ))}
           </ul>
@@ -144,13 +168,7 @@ export function FollowupsPage() {
                 { key: 'd', header: 'Due', render: (r) => <span className={r.is_overdue ? 'font-semibold text-red-600' : ''}>{fmtDT(r.due_at)}</span> },
                 { key: 'p', header: 'Priority', render: (r) => <StatusBadge value={r.priority} /> },
                 { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
-                { key: 'a', header: 'Actions', render: (r) => r.status === 'done' ? <span className="text-[var(--text-muted)]"><Check size={12} /></span> : (
-                  <span className="flex gap-1">
-                    <button onClick={() => doneMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Done</button>
-                    <button onClick={() => snooze(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Snooze</button>
-                    {(r.status === 'overdue' || r.status === 'escalated') && <button onClick={() => escMut.mutate(r.id)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Escalate</button>}
-                  </span>
-                ) },
+                { key: 'a', header: 'Actions', render: (r) => <FupActions r={r} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} /> },
               ]}
               empty={<EmptyState title="Nothing here" hint="Try a different status filter." />}
             />
@@ -243,6 +261,13 @@ const shiftDay = (key: string, delta: number) => {
   return dayKey(t);
 };
 
+const shiftMonth = (key: string, delta: number) => {
+  const [y, m] = key.split('-').map(Number);
+  const t = new Date(y, m - 1 + delta, 1);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-01`;
+};
+
 function WeekView({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: string; onDay: (d: string) => void; onDropDay: (k: string) => (e: React.DragEvent) => void }) {
   const [y, m, d] = day.split('-').map(Number);
   const base = new Date(y, m - 1, d);
@@ -317,9 +342,16 @@ function MonthCalendar({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: stri
   const selected = forDay(day);
 
   return (
-    <div className="grid gap-3 md:grid-cols-[1fr_280px]">
+    <div className="flex flex-col gap-3">
       <div className="card p-3">
-        <p className="mb-2 font-semibold">{base.toLocaleString('en-PH', { month: 'long', year: 'numeric' })}</p>
+        <div className="mb-2 flex items-center justify-between">
+          <button onClick={() => onDay(shiftMonth(day, -1))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs" aria-label="Previous month">← Prev</button>
+          <p className="font-semibold">{base.toLocaleString('en-PH', { month: 'long', year: 'numeric' })}</p>
+          <div className="flex gap-1.5">
+            <button onClick={() => onDay(dayKey(new Date()))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Today</button>
+            <button onClick={() => onDay(shiftMonth(day, 1))} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs" aria-label="Next month">Next →</button>
+          </div>
+        </div>
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-[var(--text-muted)]">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
           {cells.map((d, i) =>
@@ -333,19 +365,22 @@ function MonthCalendar({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: stri
           )}
         </div>
       </div>
-      <div className="card p-3">
-        <p className="font-semibold">{day}</p>
+      <section aria-label={`Due on ${day}`} className="card p-4">
+        <h2 className="font-semibold">
+          {new Date(day + 'T00:00:00').toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">{selected.length} due</span>
+        </h2>
         {selected.length === 0 ? <p className="mt-2 text-sm text-[var(--text-muted)]">Nothing due — enjoy the quiet.</p> : (
-          <ul className="mt-2 flex flex-col gap-2 text-sm">
+          <ul className="mt-2 grid gap-2 text-sm md:grid-cols-2">
             {selected.map((r) => (
-              <li key={r.id} className="border-b border-[var(--border)] pb-1 last:border-0">
-                <DraggableItem r={r} />
-                <br /><span className="text-xs text-[var(--text-muted)]">{fmtDT(r.due_at)} · {r.status}</span>
+              <li key={r.id} className="rounded-lg border border-[var(--border)] p-2.5">
+                <p className="font-medium">{r.title}</p>
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">{r.client_name ?? ''} · {fmtDT(r.due_at)} · {r.status} · {r.priority} priority</p>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
