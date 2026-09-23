@@ -22,7 +22,7 @@ class StaffingController extends Controller
             $hc = $workforce->headcountByClient($client->id);
 
             return [
-                'client_id' => $client->id,
+                'client_id' => \App\Models\Client::encodeId($client->id),
                 'client_name' => $client->name,
                 'owner_name' => $client->owner?->name,
                 'deployed' => $hc['deployed'] ?? 0,

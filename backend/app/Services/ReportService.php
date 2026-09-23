@@ -70,7 +70,7 @@ class ReportService
             $r = ChurnRisk::assess($c);
             if ($r['level'] !== 'low') {
                 $risks[] = [
-                    'client_id' => $c->id,
+                    'client_id' => \App\Models\Client::encodeId($c->id),
                     'client_name' => $c->name,
                     'owner_name' => $c->owner?->name,
                     'level' => $r['level'],

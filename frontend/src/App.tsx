@@ -39,8 +39,8 @@ export default function App() {
 
   return (
     <QueryClientProvider client={qc}>
-      <Toaster>
-        <BrowserRouter>
+      <BrowserRouter>
+        <Toaster>
           <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -72,8 +72,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </ErrorBoundary>
-        </BrowserRouter>
-      </Toaster>
+        </Toaster>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

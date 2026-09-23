@@ -58,7 +58,7 @@ class OpaqueIdTest extends TestCase
         Activity::create(['owner_id' => $rep->id, 'client_id' => $client->id, 'type' => 'note', 'occurred_at' => now()]);
         Notification::create(['user_id' => $rep->id, 'type' => 'info', 'title' => 'Op Note']);
 
-        foreach (['leads', 'clients', 'opportunities', 'contacts', 'followups', 'activities', 'notifications', 'job-orders', 'invoices', 'surveys'] as $ep) {
+        foreach (['leads', 'clients', 'opportunities', 'contacts', 'followups', 'activities', 'notifications', 'job-orders', 'invoices', 'surveys', 'staffing', 'finance/summary', 'dashboard/summary', 'surveys-analytics'] as $ep) {
             $res = $this->getJson("/api/v1/$ep", $h)->assertOk()->json();
             $this->assertSame([], $this->scan($res), "bare IDs in $ep");
         }
@@ -66,6 +66,11 @@ class OpaqueIdTest extends TestCase
             $res = $this->getJson("/api/v1/$ep", $h)->assertOk()->json();
             $this->assertSame([], $this->scan($res), "bare IDs in $ep");
         }
+
+        $mgr = User::factory()->create(['email' => 'mgr.opaque@primepower.ph', 'role' => 'manager', 'team_id' => $team->id]);
+        $mh = ['Authorization' => 'Bearer '.auth('api')->login($mgr)];
+        $res = $this->getJson('/api/v1/bi/client-breakdown', $mh)->assertOk()->json();
+        $this->assertSame([], $this->scan($res), 'bare IDs in bi/client-breakdown');
     }
 
     public function test_tampered_hash_is_404_and_authz_still_403(): void

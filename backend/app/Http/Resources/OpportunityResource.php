@@ -28,7 +28,7 @@ class OpportunityResource extends JsonResource
             'lost_reason' => $this->lost_reason,
             'won_at' => $this->won_at,
             'lost_at' => $this->lost_at,
-            'days_in_stage' => $this->updated_at?->diffInDays(now()),
+            'days_in_stage' => $this->updated_at ? (int) floor(abs($this->updated_at->diffInDays(now()))) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

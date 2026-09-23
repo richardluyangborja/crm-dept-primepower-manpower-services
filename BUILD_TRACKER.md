@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase A — crash + data fixes (branch `feature/phase-a-crash-data`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Sign-out confirm modal + spec rule | ✅ | Info tone, in Stream-3 family |
+| Blank-page fix (Router outside Toaster) | ✅ | Action Links crashed outside Router |
+| days_in_stage integer | ✅ | Carbon3 float cast |
+| Hash sweep (staffing/risks/analytics) | ✅ | OpaqueIdTest expanded, 43 asserts |
+| Verified + merged to develop | ✅ | Main release after all phases |
+
 ## Stage rituals + realistic money — MERGED to `main` (fast release, no tag)
 
 | Item | Status | Notes |

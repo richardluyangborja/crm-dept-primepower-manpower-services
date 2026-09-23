@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
 import { hasRole, useSession } from '../../store/session';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useToast } from '../ui/Toaster';
 import { useIdleTimer } from '../../hooks/useIdleTimer';
 import { TourCard, useTour } from '../ui/Tour';
@@ -69,6 +70,7 @@ const groups: { label: string; links: NavLinkItem[] }[] = [
 export function AppShell() {
   const { user, logout } = useSession();
   const [open, setOpen] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const nav = useNavigate();
   const toast = useToast();
 
@@ -98,6 +100,11 @@ export function AppShell() {
   const unread = unreadQ.data ?? 0;
 
   const doLogout = async () => {
+    setConfirmLogout(true);
+  };
+
+  const runLogout = async () => {
+    setConfirmLogout(false);
     try {
       await api.post('/auth/logout');
     } catch {
@@ -206,6 +213,15 @@ export function AppShell() {
           </button>
         </div>
       </aside>
+      <ConfirmDialog
+        open={confirmLogout}
+        tone="info"
+        title="Sign out?"
+        body="You'll need your login again to get back in. Unsaved form work on this page will be lost."
+        confirmLabel="Sign out"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={() => void runLogout()}
+      />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-app)]/90 px-4 py-3 backdrop-blur">
           <button className="md:hidden" aria-label="Menu" onClick={() => setOpen((v) => !v)}>

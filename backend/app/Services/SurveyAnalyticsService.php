@@ -51,7 +51,7 @@ class SurveyAnalyticsService
         $perClient = $surveys->groupBy('client_id')->map(function ($group) {
             $scores = SurveyResponse::whereIn('survey_id', $group->pluck('id'))->pluck('score');
             return [
-                'client_id' => $group->first()->client_id,
+                'client_id' => \App\Models\Client::encodeId($group->first()->client_id),
                 'client_name' => $group->first()->client?->name,
                 'surveys' => $group->count(),
                 'avg_score' => $scores->isNotEmpty() ? round($scores->avg(), 2) : null,
@@ -61,7 +61,7 @@ class SurveyAnalyticsService
 
         $lowScores = $responses->filter(fn ($r) => $r->score !== null && $r->score < 7)
             ->map(fn ($r) => [
-                'survey_id' => $r->survey_id,
+                'survey_id' => \App\Models\Survey::encodeId($r->survey_id),
                 'client_name' => $r->survey?->client?->name,
                 'score' => $r->score,
                 'comment' => $r->comment,
