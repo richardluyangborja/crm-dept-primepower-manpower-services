@@ -24,9 +24,10 @@ class JobOrderJourneyTest extends TestCase
 
     protected function oppFor(User $owner): Opportunity
     {
-        $client = Client::create(['owner_id' => $owner->id, 'name' => 'JO Client '.uniqid(), 'status' => 'active']);
+        $company = \App\Models\Company::create(['owner_id' => $owner->id, 'name' => 'JO Co '.uniqid()]);
+        $client = Client::create(['owner_id' => $owner->id, 'company_id' => $company->id, 'name' => 'JO Client '.uniqid(), 'status' => 'active']);
         return Opportunity::create([
-            'client_id' => $client->id, 'owner_id' => $owner->id, 'title' => 'Deal '.uniqid(),
+            'client_id' => $client->id, 'company_id' => $company->id, 'owner_id' => $owner->id, 'title' => 'Deal '.uniqid(),
             'stage' => 'negotiation', 'value_centavos' => 200000000, 'probability' => 80,
         ]);
     }

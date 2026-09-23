@@ -28,8 +28,9 @@ class FrontOfficeTest extends TestCase
 
     protected function clientFor(User $owner): Client
     {
+        $company = \App\Models\Company::create(['owner_id' => $owner->id, 'name' => 'Front Co '.uniqid()]);
         return Client::create([
-            'owner_id' => $owner->id, 'name' => 'Front Client '.uniqid(),
+            'owner_id' => $owner->id, 'company_id' => $company->id, 'name' => 'Front Client '.uniqid(),
             'status' => 'active', 'last_contacted_at' => now(),
         ]);
     }

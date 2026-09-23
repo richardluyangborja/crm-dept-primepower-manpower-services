@@ -64,30 +64,52 @@ class LeadClientTest extends TestCase
         $this->assertCount(0, $list->json('data'));
     }
 
-    public function test_convert_creates_client_contact_and_is_idempotent(): void
+    public function test_won_deal_creates_client_and_converts_lead(): void
     {
         $rep = $this->rep(['email' => 'rep.conv@primepower.ph']);
         $t = $this->token($rep);
-        $leadId = $this->postJson('/api/v1/leads', [
+        $lead = $this->postJson('/api/v1/leads', [
             'company' => ['name' => 'Davao Prime Hotel', 'industry' => 'Hospitality', 'address_city' => 'Davao'],
             'contact_name' => 'Mark Villanueva', 'contact_position' => 'HR Manager',
             'contact_email' => 'admin@davaoprime.ph', 'contact_phone' => '+639175555555',
+            'headcount_needed' => 80, 'positions' => 'guards',
+        ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data');
+        $leadId = $lead['id'];
+        $companyId = $lead['company_id'];
+        $this->assertNotNull($companyId);
+
+        // Qualify, then open the deal for the company (no client yet).
+        $this->putJson("/api/v1/leads/$leadId", ['status' => 'qualified'], ['Authorization' => "Bearer $t"])->assertOk();
+        $oppId = $this->postJson('/api/v1/opportunities', [
+            'company_id' => $companyId, 'title' => '80 guards — Davao Prime', 'value_centavos' => 240000000,
+            'headcount' => 80, 'rate_per_head_centavos' => 250000, 'contract_months' => 12,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
-        $res = $this->postJson("/api/v1/leads/$leadId/convert", [
-            'create_opportunity' => true, 'opportunity_title' => '80 guards — Davao Prime',
-            'opportunity_value_centavos' => 240000000,
-        ], ['Authorization' => "Bearer $t"])->assertCreated();
-        $clientId = $res->json('data.client_id');
-        $this->assertNotNull($res->json('data.opportunity_id'));
+        // Sign, then win: client born, lead converted, account activated.
+        $this->postJson("/api/v1/opportunities/$oppId/move", [
+            'stage' => 'contract', 'headcount' => 80, 'rate_per_head_centavos' => 250000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $t"])->assertOk();
+        $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $t"])->assertOk();
 
-        // Client 360 header includes primary contact from the lead.
-        $client = $this->getJson("/api/v1/clients/$clientId", ['Authorization' => "Bearer $t"])->assertOk()->json('data');
+        $leadRow = $this->getJson("/api/v1/leads/$leadId", ['Authorization' => "Bearer $t"])->assertOk()->json('data');
+        $this->assertSame('converted', $leadRow['status']);
+        $this->assertNotNull($leadRow['converted_client_id']);
+
+        $client = $this->getJson("/api/v1/clients/{$leadRow['converted_client_id']}", ['Authorization' => "Bearer $t"])->assertOk()->json('data');
         $this->assertSame('Davao Prime Hotel', $client['name']);
+        $this->assertSame('active', $client['status']);
+        $this->assertSame('Hospitality', $client['industry']);
         $this->assertSame('Mark Villanueva', $client['contacts'][0]['full_name']);
 
-        // Second convert → 409.
-        $this->postJson("/api/v1/leads/$leadId/convert", [], ['Authorization' => "Bearer $t"])->assertStatus(409);
+        // Lost deals leave the lead qualified — start a second deal and lose it.
+        $opp2 = $this->postJson('/api/v1/opportunities', [
+            'company_id' => $companyId, 'client_id' => $client['id'], 'title' => 'Second need', 'value_centavos' => 100000,
+        ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/opportunities/$opp2/move", ['stage' => 'lost', 'lost_reason' => 'Timing'], ['Authorization' => "Bearer $t"])->assertOk();
+
+        // Retired convert endpoint is gone.
+        $this->postJson("/api/v1/leads/$leadId/convert", [], ['Authorization' => "Bearer $t"])->assertNotFound();
     }
 
     public function test_one_active_lead_per_company(): void

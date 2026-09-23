@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ConvertLeadRequest;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Http\Resources\LeadResource;
@@ -129,16 +128,5 @@ class LeadController extends Controller
         $result = $importer->import($request->file('file'), $request->user()->id, $service);
 
         return $this->ok($result, "{$result['imported']} imported, ".count($result['failed'])." failed.");
-    }
-
-    public function convert(ConvertLeadRequest $request, Lead $lead, LeadService $service)
-    {
-        $this->authorize('update', $lead);
-        ['client' => $client, 'opportunity' => $opp] = $service->convertToClient($lead, $request->validated(), $request->user()->id);
-
-        return $this->created(
-            ['client_id' => $client->opaqueId(), 'opportunity_id' => $opp?->opaqueId()],
-            'Lead converted — client created.'
-        );
     }
 }

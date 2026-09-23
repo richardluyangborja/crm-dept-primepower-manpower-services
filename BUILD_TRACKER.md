@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase 3 — won-creates-client (branch `feature/phase-3-won-client`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| ensureClient helper (sign + won) | ✅ | Contact carryover, auto-active |
+| Convert endpoint retired | ✅ | Route+method+request removed |
+| Lead→qualify→deal→sign→win test | ✅ | Lost neutrality covered |
+| Specs 04 + tracker | ✅ | Suite 94 tests green |
+
 ## Phase 2 — lead flow rewrite (branch `feature/phase-2-leads`, on develop)
 
 | Item | Status | Notes |

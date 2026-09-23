@@ -18,6 +18,74 @@ class OpportunityService
     ) {}
 
     /**
+     * Phase 3 company root (specs/04): every commercial record needs the
+     * company's client. Find-or-create it and link the opp. With $settle
+     * (won only): convert open leads and auto-activate prospects.
+     * Returns [client, created?].
+     */
+    protected function ensureClientForOpp(\App\Models\Opportunity $opp, int $actorId, array &$meta, bool $settle = false): array
+    {
+        $company = $opp->company ?? $opp->client?->company;
+        if (! $company) {
+            abort(422, 'This deal is not linked to a company yet.');
+        }
+        if (! $opp->company_id) {
+            $opp->update(['company_id' => $company->id]);
+        }
+        $client = $opp->client;
+        $created = false;
+        if (! $client) {
+            $client = \App\Models\Client::create([
+                'owner_id' => $opp->owner_id,
+                'company_id' => $company->id,
+                'name' => $company->name,
+                'industry' => $company->industry,
+                'address_city' => $company->address_city,
+                'address_province' => $company->address_province,
+                'contact_email' => $company->contact_email,
+                'contact_phone' => $company->contact_phone,
+                'status' => 'prospect',
+                'source' => $company->source,
+            ]);
+            $client->audit('created', $actorId, ['via' => 'deal_won', 'company_id' => $company->id]);
+            $opp->update(['client_id' => $client->id]);
+            $meta['client_created'] = $client->id;
+            $created = true;
+            // The lead contact carries over as the account's primary contact.
+            if ($lead = $company->leads()->orderBy('id')->first()) {
+                $client->contacts()->create([
+                    'full_name' => $lead->contact_name,
+                    'position' => $lead->contact_position,
+                    'email' => $lead->contact_email,
+                    'phone' => $lead->contact_phone,
+                    'is_primary' => true,
+                ]);
+            }
+        }
+        // The company's open leads convert exactly once — when the first deal is won.
+        // Lost deals leave the lead qualified.
+        if ($settle) {
+            $converted = 0;
+            foreach ($company->leads()->whereNotIn('status', ['unqualified', 'converted'])->get() as $lead) {
+                $lead->update(['status' => 'converted', 'converted_client_id' => $client->id]);
+                $lead->audit('converted', $actorId, ['client_id' => $client->id, 'via' => 'deal_won']);
+                $converted++;
+            }
+            if ($converted > 0) {
+                $meta['leads_converted'] = $converted;
+            }
+            // First win activates the commercial account.
+            if ($client->status === 'prospect') {
+                $client->update(['status' => 'active']);
+                $client->audit('activated', $actorId, ['via' => 'first_win']);
+                $meta['client_activated'] = true;
+            }
+        }
+
+        return [$client->refresh(), $created];
+    }
+
+    /**
      * @throws \Symfony\Component\HttpKernel\Exception\HttpException (403 reopen denied)
      */
     public function moveStage(Opportunity $opp, array $input, int $actorId, string $actorRole): Opportunity
@@ -65,6 +133,9 @@ class OpportunityService
 
             $meta = ['from' => $from, 'to' => $to];
             if ($to === 'contract') {
+                // Commercial records need the company client — created here on first signing.
+                [$client] = $this->ensureClientForOpp($opp->refresh(), $actorId, $meta);
+                $opp->client_id = $client->id;
                 // Signing requires agreed terms: heads, monthly rate, months, start date.
                 $headcount = $input['headcount'] ?? $opp->headcount;
                 $rate = $input['rate_per_head_centavos'] ?? $opp->rate_per_head_centavos;
@@ -105,6 +176,8 @@ class OpportunityService
                 $meta['monthly_billing_centavos'] = $monthly;
             }
             if ($to === 'won') {
+                // Won settles the company: client ensured, open leads converted, prospect activated.
+                $this->ensureClientForOpp($opp->refresh(), $actorId, $meta, true);
                 // Mock cross-dept docs (specs/11) persisted as a first-class
                 // JobOrder so the client timeline can show the journey (specs/18).
                 // Idempotent: re-winning reuses the existing row for this opp.

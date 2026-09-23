@@ -77,9 +77,10 @@ class Phase2CGapsTest extends TestCase
     public function test_win_accepts_effective_date(): void
     {
         $rep = $this->rep('rep.eff@primepower.ph');
-        $client = Client::create(['owner_id' => $rep->id, 'name' => 'Eff Client', 'status' => 'active']);
+        $company = \App\Models\Company::create(['owner_id' => $rep->id, 'name' => 'Eff Co']);
+        $client = Client::create(['owner_id' => $rep->id, 'company_id' => $company->id, 'name' => 'Eff Client', 'status' => 'active']);
         $opp = Opportunity::create([
-            'client_id' => $client->id, 'owner_id' => $rep->id, 'title' => 'Eff deal',
+            'client_id' => $client->id, 'company_id' => $company->id, 'owner_id' => $rep->id, 'title' => 'Eff deal',
             'stage' => 'negotiation', 'value_centavos' => 100000, 'probability' => 80,
         ]);
         $date = now()->subDays(5)->toDateString();

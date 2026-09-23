@@ -40,7 +40,6 @@ Route::prefix('v1')->group(function () {
         Route::get('leads/import-template', [LeadController::class, 'importTemplate']);
         Route::post('leads/import', [LeadController::class, 'import']);
         Route::apiResource('leads', LeadController::class);
-        Route::post('leads/{lead}/convert', [LeadController::class, 'convert']);
         Route::apiResource('clients', ClientController::class);
         Route::get('clients/{client}/contacts', [ClientController::class, 'contacts']);
         Route::post('clients/{client}/contacts', [ClientController::class, 'storeContact']);

@@ -21,7 +21,7 @@ Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipe
 ```
 GET    /leads?q&status&owner_id&company_id&sort  POST /leads {company_id?|company:{}, contact_*, requirement_*}
 GET|PUT|DELETE /leads/{id}  (PUT rejects status=converted: system-only)
-POST   /leads/{id}/convert {…} — DEPRECATED (Phase 3 removes manual conversion)
+POST   /leads/{id}/convert — REMOVED (Phase 3; clients are born from won deals)
 GET    /companies?q&industry&owner_id  POST /companies  GET|PUT /companies/{id}
 GET    /companies/lookup?name&phone (duplicate-company prompt + open-lead counts)
 GET    /clients?q&status&industry&owner_id  POST /clients  GET|PUT|DELETE /clients/{id}

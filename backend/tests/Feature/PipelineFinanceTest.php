@@ -25,9 +25,10 @@ class PipelineFinanceTest extends TestCase
 
     protected function oppFor(User $owner, array $over = []): Opportunity
     {
-        $client = Client::create(['owner_id' => $owner->id, 'name' => 'PF Client '.uniqid(), 'status' => 'active']);
+        $company = \App\Models\Company::create(['owner_id' => $owner->id, 'name' => 'PF Co '.uniqid()]);
+        $client = Client::create(['owner_id' => $owner->id, 'company_id' => $company->id, 'name' => 'PF Client '.uniqid(), 'status' => 'active']);
         return Opportunity::create(array_merge([
-            'client_id' => $client->id, 'owner_id' => $owner->id, 'title' => 'Deal '.uniqid(),
+            'client_id' => $client->id, 'company_id' => $company->id, 'owner_id' => $owner->id, 'title' => 'Deal '.uniqid(),
             'stage' => 'negotiation', 'value_centavos' => 0, 'probability' => 80,
         ], $over));
     }
