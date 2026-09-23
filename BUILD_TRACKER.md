@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase D — dashboard charts (branch `feature/phase-d-dashboard`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Stage donut + clickable slices | ✅ | Recharts Pie, opens board |
+| All KPI cards clickable | ✅ | Main + lifecycle strips |
+| Forecast/at-risk links, trimmed copy | ✅ | Live by_stage verified |
+| Verified + merged to develop | ✅ | Main release after all phases |
+
 ## Phase C — language + satisfaction (branch `feature/phase-c-satisfaction`, on develop)
 
 | Item | Status | Notes |

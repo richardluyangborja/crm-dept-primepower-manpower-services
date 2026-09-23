@@ -6,13 +6,14 @@ import { KpiCard } from '../components/ui/KpiCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
-import { TrendsCard, type MonthPoint } from '../components/crm/TrendCharts';
+import { TrendsCard, StageDonut, useStageLabels, type MonthPoint } from '../components/crm/TrendCharts';
 
 export function DashboardPage() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => (await api.get('/dashboard/summary')).data.data,
   });
+  const stageLabels = useStageLabels();
 
   if (isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading dashboard…</p>;
   if (isError)
@@ -34,19 +35,21 @@ export function DashboardPage() {
       <NarrativeStrip data={data} />
       <LifecycleStrip />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} />
-        <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" />
-        <KpiCard label="Satisfaction" value={data.nps_avg ?? '—'} sub={`Net Promoter Score · ${data.nps_count} responses`} />
-        <KpiCard label="Win rate (90d)" value={data.win_rate_90d !== null && data.win_rate_90d !== undefined ? `${data.win_rate_90d}%` : '—'} sub={data.avg_cycle_days !== null && data.avg_cycle_days !== undefined ? `Avg cycle ${data.avg_cycle_days}d` : 'Close deals to unlock'} />
+        <KpiCard label="Open pipeline" value={formatPHP(data.forecast.open_centavos)} sub={`${data.forecast.count} open opps`} href="/pipeline" />
+        <KpiCard label="Weighted forecast" value={formatPHP(data.forecast.weighted_centavos)} sub="Value × probability" href="/pipeline" />
+        <KpiCard label="Satisfaction" value={data.nps_avg ?? '—'} sub={`Net Promoter Score · ${data.nps_count} responses`} href="/surveys" />
+        <KpiCard label="Win rate (90d)" value={data.win_rate_90d !== null && data.win_rate_90d !== undefined ? `${data.win_rate_90d}%` : '—'} sub={data.avg_cycle_days !== null && data.avg_cycle_days !== undefined ? `Avg cycle ${data.avg_cycle_days}d` : 'Close deals to unlock'} href="/reports" />
       </div>
 
-      <div className="card p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <h2 className="font-semibold">Forecast: weighted vs AI-adjusted</h2>
-          <AiBadge />
+      <div className="grid gap-3 xl:grid-cols-2">
+        <StageDonut byStage={data.by_stage ?? []} labels={stageLabels} />
+        <div className="card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-semibold">Forecast: weighted vs adjusted</h2>
+            <Link to="/pipeline" className="text-xs text-sky-700 hover:underline dark:text-sky-300">Open board →</Link>
+          </div>
+          <ForecastBar weighted={data.forecast.weighted_centavos} adjusted={data.forecast.ai_adjusted_centavos} open={data.forecast.open_centavos} />
         </div>
-        <ForecastBar weighted={data.forecast.weighted_centavos} adjusted={data.forecast.ai_adjusted_centavos} open={data.forecast.open_centavos} />
-        <p className="mt-1 text-xs text-[var(--text-muted)]">AI-adjusted applies the recency/activity multiplier per deal. Rules-based v1 — verify before board use.</p>
       </div>
 
       {(data.at_risk ?? []).length === 0 ? (
@@ -61,7 +64,7 @@ export function DashboardPage() {
             {data.at_risk.map((c: { client_id: string; client_name: string; owner_name?: string; level: string; drivers: string[] }) => (
               <li key={c.client_id} className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-2 last:border-0">
                 <StatusBadge value={c.level} />
-                <span className="font-medium">{c.client_name}</span>
+                <Link to={`/clients/${c.client_id}`} className="font-medium text-sky-700 hover:underline dark:text-sky-300">{c.client_name}</Link>
                 <span className="text-xs text-[var(--text-muted)]" title={c.drivers.join('; ')}>{c.drivers.join(' · ')}</span>
                 <span className="ml-auto flex items-center gap-2">
                   <FeedbackThumbs insightKey={`at_risk:${c.client_id}`} />
@@ -149,10 +152,10 @@ function LifecycleStrip() {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Active contracts" value={loading ? '…' : String(contracts.length)} sub="commercial relationships live now" />
-        <KpiCard label="Monthly recurring" value={loading ? '…' : formatPHP(monthly)} sub="via Finance-tracked contracts" />
-        <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="via Client Management" />
-        <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="via Finance" />
+        <KpiCard label="Active contracts" value={loading ? '…' : String(contracts.length)} sub="commercial relationships live now" href="/pipeline/contracts" />
+        <KpiCard label="Monthly recurring" value={loading ? '…' : formatPHP(monthly)} sub="contracted billing per month" href="/pipeline/finance" />
+        <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="via Client Management" href="/pipeline/staffing" />
+        <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="open balances" href="/finance" />
       </div>
       {renewals.length > 0 && (
         <div className="card p-4">
