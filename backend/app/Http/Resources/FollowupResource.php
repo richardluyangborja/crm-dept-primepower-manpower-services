@@ -13,6 +13,7 @@ class FollowupResource extends JsonResource
             'id' => $this->opaqueId(),
             'owner_id' => $this->owner_id,
             'client_id' => \App\Models\Client::encodeId($this->client_id),
+            'company_id' => \App\Models\Company::encodeId($this->company_id),
             'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
             'opportunity_id' => \App\Models\Opportunity::encodeId($this->opportunity_id),
             'title' => $this->title,

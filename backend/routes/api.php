@@ -45,6 +45,9 @@ Route::prefix('v1')->group(function () {
         Route::get('clients/{client}/contacts', [ClientController::class, 'contacts']);
         Route::post('clients/{client}/contacts', [ClientController::class, 'storeContact']);
         Route::get('clients/{client}/operations', [ClientController::class, 'operations']); // v2 journey A
+        // Phase 1 company root (specs/03): lookup before resource so the literal wins.
+        Route::get('companies/lookup', [\App\Http\Controllers\CompanyController::class, 'lookup']);
+        Route::apiResource('companies', \App\Http\Controllers\CompanyController::class)->only(['index', 'show', 'store', 'update']);
         // Lead & Client hub (specs/04 hub): cross-client contacts directory.
         Route::get('contacts', [\App\Http\Controllers\ContactController::class, 'index']);
         // v2 journey A — visible mock job-order timeline (specs/18).

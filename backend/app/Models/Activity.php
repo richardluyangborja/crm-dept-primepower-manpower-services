@@ -14,7 +14,7 @@ class Activity extends Model
     public const TYPES = ['call', 'email', 'meeting', 'site_visit', 'note'];
 
     protected $fillable = [
-        'owner_id', 'client_id', 'opportunity_id', 'type',
+        'owner_id', 'client_id', 'company_id', 'opportunity_id', 'type',
         'subject', 'body', 'outcome', 'duration_minutes', 'occurred_at', 'attachments',
     ];
 
@@ -26,6 +26,11 @@ class Activity extends Model
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo

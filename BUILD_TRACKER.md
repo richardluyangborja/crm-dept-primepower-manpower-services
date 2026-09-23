@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase 1 — company model (branch `feature/phase-1-companies`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| companies table + FKs + backfill service | ✅ | 15 companies from seeds, all rows linked |
+| Company CRUD/lookup/policy/resource | ✅ | Opaque IDs, owner scoping |
+| company_id on 5 resources | ✅ | Old endpoints keep working |
+| CompanyTest (3 tests) + suite green | ✅ | 93 tests, 538 assertions |
+
 ## Phase F — RBAC + fold + release — MERGED to `main` (all phases released)
 
 | Item | Status | Notes |

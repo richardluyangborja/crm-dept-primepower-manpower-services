@@ -16,7 +16,7 @@ class Followup extends Model
     public const PRIORITIES = ['low', 'medium', 'high'];
 
     protected $fillable = [
-        'owner_id', 'client_id', 'opportunity_id', 'title', 'due_at',
+        'owner_id', 'client_id', 'company_id', 'opportunity_id', 'title', 'due_at',
         'priority', 'status', 'snoozed_until', 'escalated_to',
     ];
 
@@ -35,5 +35,10 @@ class Followup extends Model
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

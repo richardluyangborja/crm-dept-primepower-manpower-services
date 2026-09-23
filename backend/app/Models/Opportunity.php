@@ -19,7 +19,7 @@ class Opportunity extends Model
     ];
 
     protected $fillable = [
-        'client_id', 'owner_id', 'title', 'stage', 'value_centavos',
+        'client_id', 'company_id', 'owner_id', 'title', 'stage', 'value_centavos',
         'headcount', 'rate_per_head_centavos', 'contract_months',
         'probability', 'expected_close_date', 'lost_reason', 'won_at', 'lost_at',
     ];
@@ -62,6 +62,11 @@ class Opportunity extends Model
     public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo

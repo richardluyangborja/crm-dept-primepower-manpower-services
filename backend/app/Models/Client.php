@@ -15,7 +15,7 @@ class Client extends Model
     public const STATUSES = ['prospect', 'active', 'inactive', 'blacklisted'];
 
     protected $fillable = [
-        'owner_id', 'name', 'industry', 'size_band', 'address_city', 'address_province',
+        'owner_id', 'company_id', 'name', 'industry', 'size_band', 'address_city', 'address_province',
         'contact_email', 'contact_phone', 'status', 'source', 'created_from_lead_id', 'last_contacted_at',
     ];
 
@@ -27,6 +27,11 @@ class Client extends Model
     public function contacts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Contact::class);
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo

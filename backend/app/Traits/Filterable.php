@@ -17,6 +17,7 @@ trait Filterable
         'contact_id' => \App\Models\Contact::class,
         'lead_id' => \App\Models\Lead::class,
         'job_order_id' => \App\Models\JobOrder::class,
+        'company_id' => \App\Models\Company::class,
     ];
 
     public function scopeFilter(Builder $query, mixed $request, array $allowed): Builder

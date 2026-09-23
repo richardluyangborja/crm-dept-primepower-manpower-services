@@ -12,6 +12,7 @@ class OpportunityResource extends JsonResource
         return [
             'id' => $this->opaqueId(),
             'client_id' => \App\Models\Client::encodeId($this->client_id),
+            'company_id' => \App\Models\Company::encodeId($this->company_id),
             'client_name' => $this->whenLoaded('client', fn () => $this->client?->name),
             'owner_id' => $this->owner_id,
             'title' => $this->title,

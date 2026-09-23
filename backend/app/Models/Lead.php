@@ -16,7 +16,7 @@ class Lead extends Model
     public const SOURCES = ['facebook', 'gmail', 'phone', 'referral', 'walk_in', 'website', 'cold_call', 'event'];
 
     protected $fillable = [
-        'owner_id', 'company_name', 'contact_name', 'contact_email',
+        'owner_id', 'company_id', 'company_name', 'contact_name', 'contact_email',
         'contact_phone', 'headcount_needed', 'positions',
         'source', 'status', 'score', 'notes', 'converted_client_id',
     ];
@@ -29,5 +29,10 @@ class Lead extends Model
     public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }
