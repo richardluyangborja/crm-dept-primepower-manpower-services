@@ -137,7 +137,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 border-r border-[var(--border)] p-4 md:block`}>
+      <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 self-start border-r border-[var(--border)] p-4 md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto`}>
         <p className="px-2 text-sm font-bold text-red-600">Primepower Manpower</p>
         <p className="mb-4 px-2 text-xs text-[var(--text-muted)]">CRM — Client Management</p>
         {groups.map((g, i) => (

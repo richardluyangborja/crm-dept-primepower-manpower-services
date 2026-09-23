@@ -107,7 +107,7 @@ export function StageUpModal({
         {children}
         <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={logTouch} onChange={(e) => setLogTouch(e.target.checked)} />
-          Log this touchpoint to history
+          Log this touchpoint to communications
         </label>
         {logTouch && (
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">

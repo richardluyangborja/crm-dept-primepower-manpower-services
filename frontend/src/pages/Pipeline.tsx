@@ -268,9 +268,9 @@ export function PipelinePage() {
 
       {detail && (
         <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">{detail.title}</h2>
-            <button onClick={() => setDetailId(null)} className="text-sm text-[var(--text-muted)]"aria-label="Close">Close</button>
+          <div className="flex items-center justify-between gap-2">
+            <DealTitleEditor key={detail.id} detail={detail} />
+            <button onClick={() => setDetailId(null)} className="shrink-0 text-sm text-[var(--text-muted)]"aria-label="Close">Close</button>
           </div>
           <StageStepper stage={detail.stage} />
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
@@ -387,8 +387,62 @@ function OppCard({ o, onOpen, onDrag }: { o: Opp; onOpen: () => void; onDrag: ()
   );
 }
 
-function StageStepper({ stage }: { stage: string }) {
-  const labels = useStageLabels();
+/** Inline deal-title editor (audited PUT, same as terms edits). */
+function DealTitleEditor({ detail }: { detail: Opp }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(detail.title);
+  const [busy, setBusy] = useState(false);
+  if (!editing) {
+    return (
+      <h2 className="font-semibold">
+        {detail.title}{' '}
+        <button onClick={() => { setTitle(detail.title); setEditing(true); }} className="text-xs font-normal text-sky-700 hover:underline dark:text-sky-300" aria-label="Edit deal title">
+          Edit
+        </button>
+      </h2>
+    );
+  }
+  const save = async () => {
+    const v = title.trim();
+    if (!v || v === detail.title) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.put(`/opportunities/${detail.id}`, { title: v });
+      toast('success', 'Deal title updated.');
+      qc.invalidateQueries({ queryKey: ['opportunities'] });
+      setEditing(false);
+    } catch (e) {
+      toast('error', apiErr(e, 'Could not update title.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-2">
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void save();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-transparent px-2 py-1 text-base font-semibold"
+        aria-label="Deal title"
+      />
+      <button disabled={busy} onClick={() => void save()} className="shrink-0 rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">
+        {busy ? '…' : 'Save'}
+      </button>
+    </span>
+  );
+}
+
+function StageStepper({ stage }: { stage: string }) {  const labels = useStageLabels();
   const open = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract'];
   if (stage === 'won' || stage === 'lost') return <p className="mt-2 text-sm font-semibold">{stage === 'won' ? 'Won' : 'Lost'}</p>;
   const idx = open.indexOf(stage);

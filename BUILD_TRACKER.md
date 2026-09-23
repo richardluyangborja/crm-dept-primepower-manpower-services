@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase A2 — shell fixes (branch `feature/phase-a2-shell`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Sidebar independent scroll | ✅ | Sticky + own overflow |
+| Touch label → communications | ✅ | StageUpModal |
+| Deal title inline edit | ✅ | Audited PUT |
+| Parent-active rule verified | ✅ | Children only, in place |
+| Verified + merged to develop | ✅ | Main release after all phases |
+
 ## Phase 5 — specs + release — MERGED to `main` (company rebuild released)
 
 | Item | Status | Notes |
