@@ -13,7 +13,7 @@ interface LoginTokens {
 }
 
 export function LoginPage() {
-  const [email, setEmail] = useState('rep.juandelacruz@primepower.ph');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
