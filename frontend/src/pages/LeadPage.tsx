@@ -5,6 +5,7 @@ import api from '../lib/apiClient';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { OppPrompt } from '../components/crm/OppPrompt';
+import { LeadTouchPrompt } from '../components/crm/LeadTouchPrompt';
 import { useToast } from '../components/ui/Toaster';
 import { apiErr } from '../components/crm/ClientWidgets';
 
@@ -41,6 +42,7 @@ export function LeadPage() {
   const { id = '' } = useParams();
   const [unqualify, setUnqualify] = useState(false);
   const [oppPrompt, setOppPrompt] = useState(false);
+  const [touchPrompt, setTouchPrompt] = useState(false);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -67,8 +69,10 @@ export function LeadPage() {
     } else {
       setStatusMut.mutate({ st }, {
         onSuccess: () => {
-          // Qualifying opens the deal prompt — clients are born from won deals.
-          if (st === 'qualified' && leadQ.data?.company_id) setOppPrompt(true);
+          if (!leadQ.data?.company_id) return;
+          // Contacted ritual mirrors the opportunity one; qualifying opens the deal prompt.
+          if (st === 'contacted') setTouchPrompt(true);
+          if (st === 'qualified') setOppPrompt(true);
         },
       });
     }
@@ -152,6 +156,15 @@ export function LeadPage() {
                   headcount={leadQ.data.headcount_needed}
                   onClose={() => setOppPrompt(false)}
                   onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }}
+                />
+              )}
+              {touchPrompt && leadQ.data?.company_id && (
+                <LeadTouchPrompt
+                  companyId={leadQ.data.company_id}
+                  companyName={leadQ.data.company_name}
+                  headcount={leadQ.data.headcount_needed}
+                  onClose={() => setTouchPrompt(false)}
+                  onDone={() => { qc.invalidateQueries({ queryKey: ['followups'] }); }}
                 />
               )}
             </>

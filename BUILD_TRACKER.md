@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase B2 — per-head money + lead rituals (branch `feature/phase-b2-money`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Value derives everywhere (no value inputs) | ✅ | OppPrompt, New deal, qualified, proposal |
+| Lead contacted comm-log prompt | ✅ | Company-scoped touch + follow-up |
+| Won/move refresh leads + clients | ✅ | Converted renders immediately |
+| Verified + merged to develop | ✅ | Suite 95 tests green |
+
 ## Phase A2 — shell fixes (branch `feature/phase-a2-shell`, on develop)
 
 | Item | Status | Notes |

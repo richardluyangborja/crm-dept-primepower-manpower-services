@@ -115,6 +115,11 @@ export function PipelinePage() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      // Stage moves can settle leads/clients (won converts + activates).
+      qc.invalidateQueries({ queryKey: ['leads'] });
+      qc.invalidateQueries({ queryKey: ['lead'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['client'] });
     },
   });
 
@@ -152,6 +157,10 @@ export function PipelinePage() {
       toast('success', d.message ?? 'Won!');
       qc.invalidateQueries({ queryKey: ['opportunities'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['leads'] });
+      qc.invalidateQueries({ queryKey: ['lead'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['client'] });
       // Narrate the handoff: fetch the freshly persisted mock job order + terms.
       try {
         const opp = rows.find((o) => o.id === vars.id);
@@ -488,17 +497,15 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
     staleTime: 30000,
   });
   const src = detailQ.data ?? opp;
-  // P2 · qualified: terms editor (heads/rate/months + value + expected close).
+  // P2 · qualified: terms editor (heads/rate/months + expected close). Value derives.
   const [heads, setHeads] = useState('');
   const [rate, setRate] = useState('');
   const [months, setMonths] = useState('12');
-  const [value, setValue] = useState('');
   const [closeDate, setCloseDate] = useState('');
   useEffect(() => {
     if (src.headcount) setHeads(String(src.headcount));
     if (src.rate_per_head_centavos) setRate(String(src.rate_per_head_centavos / 100));
     if (src.contract_months) setMonths(String(src.contract_months));
-    if (src.value_centavos) setValue(String(src.value_centavos / 100));
     if (src.expected_close_date) setCloseDate(src.expected_close_date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src.id, detailQ.dataUpdatedAt]);
@@ -507,10 +514,11 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
   const [negNote, setNegNote] = useState('');
   const NEG_SUGGESTIONS = ['Pushing on rate', 'Decision on Friday', 'Needs HO approval', 'Competitor in play', 'Waiting on budget release'];
   const monthlyPreview = (Number(heads) || 0) * pesoToCentavos(rate || '0');
+  const totalPreview = monthlyPreview * (Number(months) || 0);
   const termsValid = to !== 'qualified' || (
-    pesoToCentavos(value || '0') > 0 && Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0
+    Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0
   );
-  const proposalValid = to !== 'proposal' || (pesoToCentavos(value || '0') > 0 && !!sentDate);
+  const proposalValid = to !== 'proposal' || (totalPreview > 0 && !!sentDate);
 
   const confirm = (payload: RitualPayload) => {
     if (fromTerminal && !reopenNote.trim()) {
@@ -524,13 +532,18 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
         headcount: Number(heads),
         rate_per_head_centavos: pesoToCentavos(rate),
         contract_months: Number(months),
-        value_centavos: pesoToCentavos(value),
+        value_centavos: totalPreview,
         expected_close_date: closeDate || undefined,
       };
     }
     if (to === 'proposal') {
-      extra.put = { value_centavos: pesoToCentavos(value) };
-      extra.proposal = { value_centavos: pesoToCentavos(value), sent_date: sentDate };
+      extra.put = {
+        headcount: Number(heads),
+        rate_per_head_centavos: pesoToCentavos(rate),
+        contract_months: Number(months),
+        value_centavos: totalPreview,
+      };
+      extra.proposal = { value_centavos: totalPreview, sent_date: sentDate };
     }
     if (to === 'negotiation') {
       // Win chance is automatic (stage default) — no manual slider.
@@ -565,33 +578,30 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
     >
       {to === 'qualified' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Confirm the requirement — qualifying locks the money story. Value and terms are required from here on.</p>
+          <p className="text-xs text-[var(--text-muted)]">Confirm the requirement — qualifying locks the money story. Heads, rate, and months are required from here on; the value computes itself.</p>
           <div className="grid grid-cols-3 gap-2">
             <label>Heads *<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label>Deal value (₱) *<input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Expected close<input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          </div>
-          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
-            {monthlyPreview > 0 ? `${formatPHP(monthlyPreview)}/mo` : 'Set heads + rate to preview monthly billing'}
+          <label>Expected close<input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800" aria-live="polite">
+            {monthlyPreview > 0 ? `${formatPHP(monthlyPreview)}/mo × ${months || '?'} mo = ${formatPHP(totalPreview)} total` : 'Fill heads + rate + months — the value computes itself.'}
           </p>
         </div>
       )}
       {to === 'proposal' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Record the quotation — value syncs to the deal and a follow-up is booked automatically.</p>
-          <div className="grid grid-cols-2 gap-2">
-            <label>Quoted value (₱) *<input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Sent date *<input type="date" value={sentDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setSentDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <p className="text-xs text-[var(--text-muted)]">Record the quotation — confirm the per-head terms, value follows automatically, and a follow-up is booked.</p>
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads *<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
-          {opp.monthly_billing_centavos || monthlyPreview > 0 ? (
-            <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
-              ≈ {formatPHP(opp.monthly_billing_centavos ?? monthlyPreview)}/mo in per-head terms
-            </p>
-          ) : null}
+          <label>Sent date *<input type="date" value={sentDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setSentDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800" aria-live="polite">
+            {totalPreview > 0 ? `Quoted ${formatPHP(totalPreview)} (${formatPHP(monthlyPreview)}/mo)` : 'Fill the terms — the quoted value computes itself.'}
+          </p>
         </div>
       )}
       {to === 'negotiation' && (
@@ -742,23 +752,28 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
     queryKey: ['clients-mini'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
-  const [f, setF] = useState({ client_id: initialClientId, title: '', value: '', headcount: '', rate: '', months: '12', expected_close_date: '' });
+  const [f, setF] = useState({ client_id: initialClientId, title: '', headcount: '', rate: '', months: '12', expected_close_date: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  const monthly = (Number(f.headcount) || 0) * pesoToCentavos(f.rate || '0');
+  const total = monthly * (Number(f.months) || 0);
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (pesoToCentavos(f.value) <= 0) { setErr('A peso value is required — every deal must be worth something.'); return; }
+    if (!(Number(f.headcount) > 0 && monthly > 0 && Number(f.months) > 0)) {
+      setErr('Heads, rate, and months are all required — the value computes from them.');
+      return;
+    }
     setBusy(true);
     setErr('');
     try {
       await api.post('/opportunities', {
         client_id: f.client_id, title: f.title,
-        value_centavos: pesoToCentavos(f.value),
-        headcount: f.headcount ? Number(f.headcount) : undefined,
-        rate_per_head_centavos: f.rate ? pesoToCentavos(f.rate) : undefined,
-        contract_months: f.months ? Number(f.months) : undefined,
+        value_centavos: total,
+        headcount: Number(f.headcount),
+        rate_per_head_centavos: pesoToCentavos(f.rate),
+        contract_months: Number(f.months),
         expected_close_date: f.expected_close_date || undefined,
       });
       toast('success', 'Deal created on the board.');
@@ -781,12 +796,14 @@ function NewOppForm({ initialClientId = '', onClose, onDone }: { initialClientId
             {clientsQ.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select></label>
           <label>Title *<input required value={f.title} onChange={set('title')} placeholder="e.g. 80 guards — Davao Prime" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <label>Value (₱) *<input required value={f.value} onChange={set('value')} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <div className="grid grid-cols-3 gap-2">
-            <label>Heads<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Rate/head/mo (₱)<input value={f.rate} onChange={set('rate')} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Months<input value={f.months} onChange={set('months')} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Heads *<input required value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱) *<input required value={f.rate} onChange={set('rate')} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months *<input required value={f.months} onChange={set('months')} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800" aria-live="polite">
+            {monthly > 0 ? `${formatPHP(monthly)}/mo × ${f.months || '?'} mo = ${formatPHP(total)} total` : 'Fill heads + rate + months — the value computes itself.'}
+          </p>
           <label>Expected close<input type="date" value={f.expected_close_date} onChange={set('expected_close_date')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}

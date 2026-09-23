@@ -8,6 +8,7 @@ import { KpiCard } from '../components/ui/KpiCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { OppPrompt } from '../components/crm/OppPrompt';
+import { LeadTouchPrompt } from '../components/crm/LeadTouchPrompt';
 import { Download, Upload } from 'lucide-react';
 import { useToast } from '../components/ui/Toaster';
 import { useSettingsList } from '../hooks/useSettings';
@@ -48,6 +49,7 @@ export function LeadsPage() {
   const [showImport, setShowImport] = useState(false);
   const [unqualify, setUnqualify] = useState<Lead | null>(null);
   const [oppPrompt, setOppPrompt] = useState<Lead | null>(null);
+  const [touchPrompt, setTouchPrompt] = useState<Lead | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -81,6 +83,8 @@ export function LeadsPage() {
       setUnqualify(r);
     } else {
       setStatusMut.mutate({ id: r.id, st });
+      // Contacted ritual mirrors the opportunity one — log the first touch.
+      if (st === 'contacted' && r.company_id) setTouchPrompt(r);
       // Qualifying opens the deal prompt — clients are born from won deals, never by hand.
       if (st === 'qualified' && r.company_id) setOppPrompt(r);
     }
@@ -160,6 +164,15 @@ export function LeadsPage() {
           headcount={oppPrompt.headcount_needed}
           onClose={() => setOppPrompt(null)}
           onDone={() => { invalidate(); qc.invalidateQueries({ queryKey: ['opportunities'] }); }}
+        />
+      )}
+      {touchPrompt?.company_id && (
+        <LeadTouchPrompt
+          companyId={touchPrompt.company_id}
+          companyName={touchPrompt.company_name}
+          headcount={touchPrompt.headcount_needed}
+          onClose={() => setTouchPrompt(null)}
+          onDone={() => { invalidate(); qc.invalidateQueries({ queryKey: ['activities'] }); qc.invalidateQueries({ queryKey: ['followups'] }); }}
         />
       )}
       <ConfirmDialog

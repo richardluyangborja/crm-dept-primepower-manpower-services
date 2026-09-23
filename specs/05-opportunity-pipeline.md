@@ -5,7 +5,7 @@
 2. **Drag-drop + value** — optimistic move, WIP counts, weighted value **plus expected monthly billing per column**.
 3. **Win/Loss capture** — reason required on terminal move, comment, effective date.
 4. **Contract signing** — moving into Contract requires agreed terms (headcount, monthly rate/head, months) + start date; persists a mock `contracts` row (Core-3 docs, Governance legal, Facilities contracts — all paper-backed mocks). Terms editable until win; re-signing updates, never duplicates. **Winning without an active contract is rejected (422) — the UI reroutes into signing.**
-5. **Financing** — per-head monthly billing (`headcount × rate`), contract total (`monthly × months`), computed server-side; win issues the **first monthly invoice** (not the contract total). Deal value required at creation; manpower terms required from Qualified on. Won job orders carry headcount + value; Finance read-back sums real open invoices.
+5. **Financing** — per-head monthly billing (`headcount × rate`), contract total (`monthly × months`), computed server-side; win issues the **first monthly invoice** (not the contract total). Deal value required at creation; manpower terms required from Qualified on. Value is never typed directly — every form takes heads + rate/head + months and shows monthly + total readonly. Won job orders carry headcount + value; Finance read-back sums real open invoices.
 6. **Forecasting** — weighted pipeline (`value × probability`), expected-close month bar, aging alert (>30d no activity → amber, >60d → red).
 
 ## 2. User stories & acceptance

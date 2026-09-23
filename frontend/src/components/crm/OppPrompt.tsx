@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../lib/apiClient';
+import { formatPHP } from '../../lib/format';
 import { useToast } from '../ui/Toaster';
 import { apiErr } from './ClientWidgets';
 
@@ -15,22 +16,30 @@ export function OppPrompt({ companyId, companyName, headcount, onClose, onDone }
 }) {
   const toast = useToast();
   const [title, setTitle] = useState(`Opening — ${companyName}`);
-  const [value, setValue] = useState('');
   const [heads, setHeads] = useState(headcount ? String(headcount) : '');
+  const [rate, setRate] = useState('');
+  const [months, setMonths] = useState('12');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const monthly = (Number(heads) || 0) * pesoToCentavos(rate || '0');
+  const total = monthly * (Number(months) || 0);
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (pesoToCentavos(value) <= 0) { setErr('A peso value is required — every deal must be worth something.'); return; }
+    if (!(Number(heads) > 0 && monthly > 0 && Number(months) > 0)) {
+      setErr('Heads, rate, and months are all required — the value computes from them.');
+      return;
+    }
     setBusy(true);
     setErr('');
     try {
       await api.post('/opportunities', {
         company_id: companyId,
         title: title.trim() || `Opening — ${companyName}`,
-        value_centavos: pesoToCentavos(value),
-        headcount: heads ? Number(heads) : undefined,
+        value_centavos: total,
+        headcount: Number(heads),
+        rate_per_head_centavos: pesoToCentavos(rate),
+        contract_months: Number(months),
       });
       toast('success', {
         title: 'Deal opened.',
@@ -53,10 +62,14 @@ export function OppPrompt({ companyId, companyName, headcount, onClose, onDone }
         <p className="mb-3 text-xs text-[var(--text-muted)]">{companyName} is qualified — put the requirement on the board, or skip for now.</p>
         <div className="flex flex-col gap-2 text-sm">
           <label>Deal title *<input required value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <div className="grid grid-cols-2 gap-2">
-            <label>Value (₱) *<input required value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder="2400000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Heads<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <div className="grid grid-cols-3 gap-2">
+            <label>Heads *<input required value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱) *<input required value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months *<input required value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800" aria-live="polite">
+            {monthly > 0 ? `${formatPHP(monthly)}/mo × ${months || '?'} mo = ${formatPHP(total)} total` : 'Fill heads + rate + months — the value computes itself.'}
+          </p>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-between gap-2">
