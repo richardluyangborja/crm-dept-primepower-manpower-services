@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase 5 — specs + release (branch `feature/phase-5-release`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Specs 03/04/12/14 overhaul | ✅ | Company root documented |
+| docs/DEMO.md company flow | ✅ | 5-act script |
+| Full rehearsal + release to main | 🔄 | Then CI green |
+
 ## Phase 4 — seeds + rebrand + batch (branch `feature/phase-4-seeds-brand`, on develop)
 
 | Item | Status | Notes |

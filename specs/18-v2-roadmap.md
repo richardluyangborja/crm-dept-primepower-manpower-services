@@ -258,6 +258,17 @@ below-layout. F: superadmin hidden + creation constraints; active style on
 children only; Finance/Operations folded into Billing/Deployed Staff with
 redirects; `docs/DEMO.md` demo script. Full regression → develop → main.
 
+## 19. Company-centric rebuild (branches `feature/phase-1-companies` … `phase-5-release`)
+Company becomes the root: `companies` table + FKs + idempotent backfill;
+`opportunities.client_id` and touchpoint `client_id`s nullable;
+`GET /companies` + `/companies/lookup`; opaque IDs everywhere. Lead capture
+is company-first (duplicate prompt, full identity fields, one-active-lead
+409); manual statuses shrink (converted is system-only); qualify opens the
+deal prompt; won creates/links the client, converts open leads, auto-activates;
+lost is neutral; convert endpoint retired. Seeds: 35 companies, dates
+2025-11 → 2026-09. Primepower rebrand; superadmin lockdown; team member
+modal; duplicate Settings removed; `docs/DEMO.md` rewritten for the flow.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

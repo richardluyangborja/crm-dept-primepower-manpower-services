@@ -3,35 +3,42 @@
 ## 1. ERD (Mermaid)
 ```mermaid
 erDiagram
+  users ||--o{ companies : owns
   users ||--o{ leads : owns
   users ||--o{ opportunities : owns
   users ||--o{ followups : assigned
   teams ||--o{ users : has
-  leads ||--o| clients : converts_to
+  companies ||--o{ leads : nurtures
+  companies ||--o| clients : accounts
+  companies ||--o{ opportunities : pursues
+  companies ||--o{ activities : records
+  companies ||--o{ followups : needs
   clients ||--o{ contacts : has
-  clients ||--o{ opportunities : has
-  opportunities ||--o{ activities : logs
+  clients ||--o{ opportunities : holds
   clients ||--o{ activities : logs
+  opportunities ||--o{ activities : logs
+  opportunities ||--o{ followups : needs
   survey_templates ||--o{ surveys : instantiates
   clients ||--o{ surveys : targets
   surveys ||--o{ survey_responses : collects
-  clients ||--o{ followups : needs
-  opportunities ||--o{ followups : needs
   users ||--o{ audit_logs : performs
 ```
+
+**Root rule:** `companies` own identity; leads/opportunities hang off a company from birth; the client is created for a company only when its first deal is won (`converted` on leads is system-set, never manual; one active lead per company; lost deals change nothing).
 
 ## 2. Tables (Postgres; `id` = bigint PKs — internal only; timestamps + `deleted_at` soft delete)
 - `teams(id, name, region)` — e.g. Manila, Cebu, Davao.
 - `users(id, team_id→teams, name, email unique, password, role enum[superadmin,admin,manager,sales_rep], is_active, last_login_at)`.
-- `clients(id, owner_id→users, name, industry, size_band, address_city, address_province, contact_email, contact_phone, status enum[prospect,active,inactive,blacklisted], source, created_from_lead_id nullable)`.
+- `companies(id, owner_id→users, name, industry, address_city, address_province, contact_email, contact_phone, source)` — the root every record hangs off.
+- `clients(id, owner_id→users, company_id→companies, name, industry, size_band, address_city, address_province, contact_email, contact_phone, status enum[prospect,active,inactive,blacklisted], source, created_from_lead_id nullable)` — born from won deals, one per company.
 - `contacts(id, client_id, full_name, position, email, phone, is_primary)`.
-- `leads(id, owner_id, company_name, contact_name, contact_email, contact_phone, source enum[referral,walk_in,website,fb, холод…], status enum[new,contacted,qualified,unqualified,converted], score 0-100, notes)`.
-- `opportunities(id, client_id, owner_id, title, stage enum[new,contacted,qualified,proposal,negotiation,won,lost], value_centavos, probability %, expected_close_date, lost_reason nullable, won_at/lost_at nullable)`.
-- `activities(id, owner_id, client_id, opportunity_id nullable, type enum[call,email,meeting,site_visit,note], subject, body, occurred_at, attachments jsonb)`.
+- `leads(id, owner_id→users, company_id→companies, company_name, contact_name, contact_position, contact_email, contact_phone, headcount_needed, positions, source enum[…], status enum[new,contacted,qualified,unqualified,converted(system-only)], score 0-100, notes, converted_client_id nullable)`.
+- `opportunities(id, company_id→companies, client_id nullable→clients, owner_id, title, stage enum[…], value_centavos, probability %, terms…, expected_close_date, lost_reason/won_at/lost_at nullable)` — pre-client deals carry only the company.
+- `activities(id, owner_id, company_id nullable, client_id nullable, opportunity_id nullable, type enum[…], subject, body, outcome, occurred_at, attachments jsonb)` — pre-client touchpoints carry the company.
 - `survey_templates(id, name, type enum[nps,csat,custom], questions jsonb, is_active)`.
 - `surveys(id, template_id, client_id, sent_by, channel enum[link,email_mock,sms_mock], token unique, due_at, status enum[draft,sent,responded,expired])`.
 - `survey_responses(id, survey_id, score, answers jsonb, comment, responded_at)`.
-- `followups(id, owner_id, client_id, opportunity_id nullable, title, due_at, priority enum[low,medium,high], status enum[open,done,snoozed,overdue,escalated], snoozed_until nullable, escalated_to nullable)`.
+- `followups(id, owner_id, company_id nullable, client_id nullable, opportunity_id nullable, title, due_at, priority enum[…], status enum[…], snoozed_until/escalated_to nullable)`.
 - `notifications(id, user_id, type, title, body, read_at nullable, link nullable)`.
 - `audit_logs(id, user_id, action, entity, entity_id, meta jsonb, created_at)`.
 

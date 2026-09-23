@@ -30,8 +30,9 @@
 ```
 POST /auth/login|refresh|logout|me
 POST /auth/otp/send|verify|resend        # 16 (v1 mock, v2 enforced; 5-min expiry)
-CRUD /leads, /clients, /contacts, /opportunities, /activities, /survey-templates, /surveys, /surveys/{id}/respond, /followups, /notifications
-POST /leads/{id}/convert  POST /opportunities/{id}/move  POST /opportunities/{id}/win|lose
+CRUD /leads (company_id|company:{}, one-active-lead 409, converted is system-only), /clients, /contacts, /opportunities (company_id required unless client given; client adopted), /activities, /survey-templates, /surveys, /surveys/{id}/respond, /followups, /notifications
+GET /companies /companies/lookup?name&phone /companies/{id}   # company root + duplicate prompt
+POST /opportunities/{id}/move  POST /opportunities/{id}/win|lose
 GET  /dashboard/summary  GET /reports/* (BI-compatible)
 GET  /insights/clients/{id}  GET /insights/opportunities/{id}   # 15
 GET  /reports/weekly|monthly  POST /reports/generate  POST /insights/feedback  # 15
