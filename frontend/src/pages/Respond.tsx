@@ -76,7 +76,7 @@ export function RespondPage() {
 
   return (
     <div className="mx-auto mt-10 w-full max-w-md px-4">
-      <img src={logo} alt="Primepower" className="mb-2 h-10 w-auto rounded-md bg-white p-0.5" />
+      <img src={logo} alt="Primepower" className="mb-2 h-10 w-auto" />
       <h1 className="text-xl font-bold">Client survey</h1>
 
       {surveyQ.isLoading && <p className="mt-4 text-sm text-[var(--text-muted)]">Loading your survey…</p>}

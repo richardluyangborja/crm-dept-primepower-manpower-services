@@ -3,16 +3,20 @@
 namespace App\Providers;
 
 use App\Services\Contracts\AiServiceInterface;
+use App\Services\Contracts\AttendanceServiceInterface;
 use App\Services\Contracts\BillingServiceInterface;
 use App\Services\Contracts\JobOrderServiceInterface;
 use App\Services\Contracts\NotifyServiceInterface;
 use App\Services\Contracts\OtpServiceInterface;
+use App\Services\Contracts\PerformanceServiceInterface;
 use App\Services\Contracts\WorkforceServiceInterface;
 use App\Services\Mocks\MockAiService;
+use App\Services\Mocks\MockAttendanceService;
 use App\Services\Mocks\MockBillingService;
 use App\Services\Mocks\MockJobOrderService;
 use App\Services\Mocks\MockNotifyService;
 use App\Services\Mocks\MockOtpService;
+use App\Services\Mocks\MockPerformanceService;
 use App\Services\Mocks\MockWorkforceService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(NotifyServiceInterface::class, MockNotifyService::class);
         $this->app->bind(OtpServiceInterface::class, MockOtpService::class);
         $this->app->bind(AiServiceInterface::class, MockAiService::class);
+        $this->app->bind(AttendanceServiceInterface::class, MockAttendanceService::class);
+        $this->app->bind(PerformanceServiceInterface::class, MockPerformanceService::class);
     }
 
     public function boot(): void

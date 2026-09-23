@@ -140,7 +140,7 @@ export function AppShell() {
     <div className="flex min-h-screen">
       <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 self-start border-r border-[var(--border)] p-4 md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto`}>
         <div className="mb-4 flex items-center gap-2 px-2">
-          <img src={logo} alt="Primepower" className="h-10 w-auto rounded-md bg-white p-0.5" />
+          <img src={logo} alt="Primepower" className="h-10 w-auto" />
           <div>
             <p className="text-sm font-bold leading-tight">Primepower</p>
             <p className="text-[11px] text-[var(--text-muted)]">CRM — Client Management</p>

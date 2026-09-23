@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase H1 — HR contracts + mocks (branch `feature/phase-h1-contracts`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Logo transparent (login/sidebar/survey) | ✅ | Chips removed |
+| Attendance + Performance contracts | ✅ | GET-only, read-only |
+| hr.json config + deterministic mocks | ✅ | Blended composite |
+| HrMockTest (2 tests) + suite green | ✅ | 97 tests, 572 assertions |
+
 ## Phase D2 — auth UI + RELEASE to main
 
 | Item | Status | Notes |

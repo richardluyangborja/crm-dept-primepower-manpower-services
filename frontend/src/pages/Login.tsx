@@ -65,7 +65,7 @@ export function LoginPage() {
     <div className="mx-auto mt-10 w-full max-w-4xl md:mt-20">
       <div className="grid overflow-hidden rounded-2xl border border-[var(--border)] shadow-sm md:grid-cols-2">
         <div className="hidden flex-col justify-between bg-gradient-to-br from-sky-700 via-sky-800 to-slate-900 p-8 text-white md:flex">
-          <img src={logo} alt="Primepower" className="h-16 w-auto self-start rounded-lg bg-white/95 p-1.5" />
+          <img src={logo} alt="Primepower" className="h-16 w-auto self-start" />
           <div>
             <h1 className="text-2xl font-bold leading-snug">Every client,<br />one relationship.</h1>
             <p className="mt-2 text-sm text-sky-100">Leads to contracts to collections — the front office for manpower sales.</p>
@@ -73,7 +73,7 @@ export function LoginPage() {
           <p className="text-xs text-sky-200">Primepower Manpower · CRM</p>
         </div>
         <div className="bg-[var(--bg-card)] p-6 md:p-8">
-          <img src={logo} alt="Primepower" className="mb-3 h-12 w-auto rounded-lg bg-white p-1 md:hidden" />
+          <img src={logo} alt="Primepower" className="mb-3 h-12 w-auto md:hidden" />
           <h1 className="text-2xl font-bold">CRM sign in</h1>
           <p className="mb-4 text-sm text-[var(--text-muted)]">Use your Primepower account. Admins and opted-in users verify a 6-digit code next.</p>
           {params.get('expired') && <p className="card mb-3 border-l-4 border-l-amber-500 p-3 text-sm">Session expired after inactivity — please log in again.</p>}

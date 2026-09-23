@@ -1,0 +1,13 @@
+{
+  "_note": "Core-2 HR mock config (specs/11). Daily patterns are deterministic per user+date; this file holds allowances, targets, bands, and per-email overrides for seeded demo users.",
+  "leave_allowance": { "vacation": 15, "sick": 15 },
+  "leave_used_fallback": { "vacation": 3, "sick": 1 },
+  "targets": { "won_value_centavos": 50000000, "touches": 40, "completion_pct": 90 },
+  "weights": { "won": 0.35, "touches": 0.2, "completion": 0.2, "attendance": 0.15, "punctuality": 0.1 },
+  "rating_bands": [[90, 4.8], [75, 4.2], [60, 3.6], [0, 3.0]],
+  "overrides": {
+    "rep.juandelacruz@primepower.ph": { "rating": 4.6, "leave_used": { "vacation": 4, "sick": 2 } },
+    "rep.mariasantos@primepower.ph": { "rating": 4.3, "leave_used": { "vacation": 2, "sick": 0 } },
+    "manager@primepower.ph": { "rating": 4.7, "leave_used": { "vacation": 6, "sick": 1 } }
+  }
+}
