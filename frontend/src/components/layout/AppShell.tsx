@@ -261,7 +261,6 @@ export function AppShell() {
             <CircleHelp size={18} />
           </button>
           <ThemeToggle />
-          <ThemeToggle />
         </header>
         <main className="mx-auto max-w-[1400px] p-4 md:p-6">
           <Outlet />
