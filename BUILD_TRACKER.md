@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase H2 — HR endpoints (branch `feature/phase-h2-endpoints`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| HrController (attendance/leave/performance/directory) | ✅ | GET-only, role-scoped |
+| HrEndpointTest (4 tests) + suite green | ✅ | 101 tests, 604 assertions |
+| Verified + merged to develop | ✅ | Main release after H3 |
+
 ## Phase H1 — HR contracts + mocks (branch `feature/phase-h1-contracts`, on develop)
 
 | Item | Status | Notes |

@@ -104,5 +104,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index']);
         Route::post('/reports/generate', [\App\Http\Controllers\ReportController::class, 'generate']);
         Route::post('/insights/feedback', [\App\Http\Controllers\InsightFeedbackController::class, 'store']);
+        // Phase H2 — Core-2 HR integration (specs/11): read-only, role-scoped.
+        Route::get('/hr/attendance', [\App\Http\Controllers\HrController::class, 'attendance']);
+        Route::get('/hr/leave', [\App\Http\Controllers\HrController::class, 'leave']);
+        Route::get('/hr/performance', [\App\Http\Controllers\HrController::class, 'performance']);
+        Route::get('/hr/directory', [\App\Http\Controllers\HrController::class, 'directory']);
     });
 });
