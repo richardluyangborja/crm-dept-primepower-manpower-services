@@ -54,52 +54,57 @@ export function CommsPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [showNew, setShowNew] = useState(false);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
+  const resetPage = () => setPage(1);
   const toast = useToast();
   const qc = useQueryClient();
   const { user } = useSession();
 
   const actsQ = useQuery({
-    queryKey: ['activities', q, type, clientId, mineOnly, from, to],
+    queryKey: ['activities', q, type, clientId, mineOnly, from, to, page],
     queryFn: async () =>
       (await api.get('/activities', {
         params: {
           q: q || undefined, type: type || undefined, client_id: clientId || undefined,
           owner_id: mineOnly && user ? user.id : undefined,
-          from: from || undefined, to: to || undefined, per_page: 50,
+          from: from || undefined, to: to || undefined, page, per_page: PER_PAGE,
         },
-      })).data.data as Act[],
+      })).data,
   });
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
-  const rows = actsQ.data ?? [];
+  const rows = (actsQ.data?.data ?? []) as Act[];
+  const total = actsQ.data?.meta?.total ?? rows.length;
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Communications</h1>
-          <p className="text-sm text-[var(--text-muted)]">Every touchpoint, one timeline. Mock mode — no real emails leave the system.</p>
+          <p className="text-sm text-[var(--text-muted)]">Every touchpoint, one timeline. Logged here — no real emails leave the system.</p>
         </div>
         <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">+ Log activity</button>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search subject, notes… (try “quotation”)" className="card min-w-52 flex-1 px-3 py-2 text-sm outline-none" />
-        <select value={type} onChange={(e) => setType(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by type">
+        <input value={q} onChange={(e) => { setQ(e.target.value); resetPage(); }} placeholder="Search subject, notes… (try “quotation”)" className="card min-w-52 flex-1 px-3 py-2 text-sm outline-none" />
+        <select value={type} onChange={(e) => { setType(e.target.value); resetPage(); }} className="card px-3 py-2 text-sm" aria-label="Filter by type">
           <option value="">All types</option>
           {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by client">
+        <select value={clientId} onChange={(e) => { setClientId(e.target.value); resetPage(); }} className="card px-3 py-2 text-sm" aria-label="Filter by client">
           <option value="">All clients</option>
           {clientsQ.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <label className="card flex items-center gap-1.5 px-3 py-2 text-sm">
-          <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} /> Mine only
+          <input type="checkbox" checked={mineOnly} onChange={(e) => { setMineOnly(e.target.checked); resetPage(); }} /> Mine only
         </label>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="card px-3 py-2 text-sm" aria-label="From date" />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="card px-3 py-2 text-sm" aria-label="To date" />
+        <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); resetPage(); }} className="card px-3 py-2 text-sm" aria-label="From date" />
+        <input type="date" value={to} onChange={(e) => { setTo(e.target.value); resetPage(); }} className="card px-3 py-2 text-sm" aria-label="To date" />
       </div>
 
       {actsQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading timeline…</p>
@@ -125,6 +130,15 @@ export function CommsPage() {
                 </div>
               </div>
             ))}
+            {pages > 1 && (
+              <div className="flex items-center justify-between px-4 py-2 text-xs text-[var(--text-muted)]">
+                <span className="tabular-nums">Page {page} of {pages} · {total} total</span>
+                <span className="flex gap-1.5">
+                  <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 font-medium text-inherit disabled:opacity-40">← Prev</button>
+                  <button disabled={page >= pages} onClick={() => setPage(page + 1)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 font-medium text-inherit disabled:opacity-40">Next →</button>
+                </span>
+              </div>
+            )}
           </div>
         )}
 

@@ -48,10 +48,14 @@ export function ClientsPage() {
   const [view, setView] = useState<View>('clients');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
+  const switchView = (v: View) => { setView(v); setPage(1); };
 
   const clientsQ = useQuery({
-    queryKey: ['clients', q, status],
-    queryFn: async () => (await api.get('/clients', { params: { q: q || undefined, status: status || undefined, per_page: 50 } })).data,
+    queryKey: ['clients', q, status, page],
+    queryFn: async () => (await api.get('/clients', { params: { q: q || undefined, status: status || undefined, page, per_page: PER_PAGE } })).data,
+    enabled: view === 'clients',
   });
   const totalsQ = useQuery({
     queryKey: ['clients', 'totals'],
@@ -62,13 +66,13 @@ export function ClientsPage() {
     queryFn: async () => (await api.get('/invoices', { params: { per_page: 100 } })).data.data as Invoice[],
   });
   const peopleQ = useQuery({
-    queryKey: ['contacts', q],
-    queryFn: async () => (await api.get('/contacts', { params: { q: q || undefined, per_page: 50 } })).data,
+    queryKey: ['contacts', q, page],
+    queryFn: async () => (await api.get('/contacts', { params: { q: q || undefined, page, per_page: PER_PAGE } })).data,
     enabled: view === 'people',
   });
   const wonQ = useQuery({
-    queryKey: ['leads', 'converted'],
-    queryFn: async () => (await api.get('/leads', { params: { status: 'converted', per_page: 50 } })).data,
+    queryKey: ['leads', 'converted', page],
+    queryFn: async () => (await api.get('/leads', { params: { status: 'converted', page, per_page: PER_PAGE } })).data,
     enabled: view === 'won',
   });
 
@@ -95,7 +99,7 @@ export function ClientsPage() {
 
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Views">
         {([['clients', 'All clients'], ['people', 'People'], ['won', 'Recently won over']] as [View, string][]).map(([v, label]) => (
-          <button key={v} onClick={() => setView(v)} aria-pressed={view === v}
+          <button key={v} onClick={() => switchView(v)} aria-pressed={view === v}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium ${view === v ? 'bg-sky-600 text-white' : 'border border-[var(--border)]'}`}>
             {label}
           </button>
@@ -104,11 +108,11 @@ export function ClientsPage() {
 
       <div className="flex gap-2">
         <input
-          value={q} onChange={(e) => setQ(e.target.value)}
+          value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
           placeholder={view === 'people' ? 'Search person, position, or company…' : 'Search name, city, email…'}
           className="card flex-1 px-3 py-2 text-sm outline-none" />
         {view === 'clients' && (
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+          <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
@@ -125,6 +129,7 @@ export function ClientsPage() {
         ) : (
           <DataTable<Client>
             rows={clientsQ.data?.data ?? []}
+            pagination={{ page, perPage: PER_PAGE, total: clientsQ.data?.meta?.total ?? 0, onPage: setPage }}
             columns={[
               { key: 'n', header: 'Client', render: (r) => <Link to={`/clients/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.name}</Link> },
               { key: 'i', header: 'Industry', render: (r) => r.industry ?? '—' },
@@ -145,6 +150,7 @@ export function ClientsPage() {
         ) : (
           <DataTable<Contact>
             rows={peopleQ.data?.data ?? []}
+            pagination={{ page, perPage: PER_PAGE, total: peopleQ.data?.meta?.total ?? 0, onPage: setPage }}
             columns={[
               { key: 'n', header: 'Person', render: (r) => <span className="font-medium">{r.full_name} {r.is_primary && <span className="text-xs text-sky-600">(primary)</span>}</span> },
               { key: 'c', header: 'Client', render: (r) => <Link to={`/clients/${r.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">{r.client_name ?? `#${r.client_id}`}</Link> },
@@ -164,6 +170,7 @@ export function ClientsPage() {
         ) : (
           <DataTable<ConvertedLead>
             rows={wonQ.data?.data ?? []}
+            pagination={{ page, perPage: PER_PAGE, total: wonQ.data?.meta?.total ?? 0, onPage: setPage }}
             columns={[
               { key: 'co', header: 'Was', render: (r) => <Link to={`/leads/${r.id}`} className="text-sky-700 hover:underline dark:text-sky-300">{r.company_name}</Link> },
               { key: 'ct', header: 'Contact', render: (r) => r.contact_name },

@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase C2 — pagination (branch `feature/phase-c2-pager`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| DataTable pager (15/page, total) | ✅ | Optional prop, all tables |
+| Leads/clients/followups/comms paged | ✅ | Queue keeps full scope; live 0-overlap |
+| Verified + merged to develop | ✅ | Main release after Phase D2 |
+
 ## Phase B2 — per-head money + lead rituals (branch `feature/phase-b2-money`, on develop)
 
 | Item | Status | Notes |

@@ -45,6 +45,8 @@ export function LeadsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [needsOnly, setNeedsOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [unqualify, setUnqualify] = useState<Lead | null>(null);
@@ -54,8 +56,14 @@ export function LeadsPage() {
   const qc = useQueryClient();
 
   const leadsQ = useQuery({
-    queryKey: ['leads', q, status],
-    queryFn: async () => (await api.get('/leads', { params: { q: q || undefined, status: status || undefined, per_page: 50 } })).data,
+    // Needs-a-response loads the whole queue (small by design); browsing pages 15 at a time.
+    queryKey: ['leads', q, status, needsOnly ? 'queue' : page],
+    queryFn: async () => (await api.get('/leads', {
+      params: {
+        q: q || undefined, status: status || undefined,
+        page: needsOnly ? undefined : page, per_page: needsOnly ? 100 : PER_PAGE,
+      },
+    })).data,
   });
   // Unfiltered totals for the KPI strip (queues are small; same cap as the table).
   const totalsQ = useQuery({
@@ -100,6 +108,7 @@ export function LeadsPage() {
   const toggleNeeds = () => {
     if (!needsOnly) setStatus('');
     setNeedsOnly((v) => !v);
+    setPage(1);
   };
 
   return (
@@ -132,8 +141,8 @@ export function LeadsPage() {
       </div>
 
       <div className="flex gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
-        <select value={status} onChange={(e) => { setStatus(e.target.value); setNeedsOnly(false); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search company, contact, email…" className="card flex-1 px-3 py-2 text-sm outline-none" />
+        <select value={status} onChange={(e) => { setStatus(e.target.value); setNeedsOnly(false); setPage(1); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
           <option value="">All statuses</option>
           {LEAD_STATUSES.map((s) => (
             <option key={s} value={s}>{s}</option>
@@ -149,6 +158,12 @@ export function LeadsPage() {
           rows={rows}
           onStatus={changeStatus}
           onDeal={setOppPrompt}
+          pagination={needsOnly ? undefined : {
+            page,
+            perPage: PER_PAGE,
+            total: leadsQ.data?.meta?.total ?? rows.length,
+            onPage: setPage,
+          }}
           empty={needsOnly
             ? <EmptyState title="All caught up" hint="Nothing waiting for a first response. New inquiries will land here." />
             : <EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
@@ -191,15 +206,17 @@ export function LeadsPage() {
   );
 }
 
-function LeadTable({ rows, onStatus, onDeal, empty }: {
+function LeadTable({ rows, onStatus, onDeal, empty, pagination }: {
   rows: Lead[];
   onStatus: (r: Lead, st: string) => void;
   onDeal: (r: Lead) => void;
   empty: React.ReactNode;
+  pagination?: { page: number; perPage: number; total: number; onPage: (page: number) => void };
 }) {
   return (
     <DataTable<Lead>
       rows={rows}
+      pagination={pagination}
       columns={[
         { key: 'co', header: 'Company', render: (r) => <Link to={`/leads/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.company_name}</Link> },
         { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },

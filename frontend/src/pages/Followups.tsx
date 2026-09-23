@@ -59,20 +59,23 @@ export function FollowupsPage() {
   const [showNew, setShowNew] = useState(false);
   const [snoozeTarget, setSnoozeTarget] = useState<string | null>(null);
   const [day, setDay] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 15;
   const toast = useToast();
   const qc = useQueryClient();
 
   const fupsQ = useQuery({
-    queryKey: ['followups', status],
+    queryKey: ['followups', status, page],
+    queryFn: async () => (await api.get('/followups', { params: { status: status || undefined, page, per_page: PER_PAGE } })).data,
+  });
+  const rows: Fup[] = fupsQ.data?.data ?? [];
+  // Full-scope rows for the overdue banner, due-today strip, and calendar (not just the page).
+  const scopeQ = useQuery({
+    queryKey: ['followups', status, 'scope'],
     queryFn: async () => (await api.get('/followups', { params: { status: status || undefined, per_page: 100 } })).data.data as Fup[],
   });
-  const rows = fupsQ.data ?? [];
-  const overdue = rows.filter((r) => r.status === 'overdue' || r.status === 'escalated');
-  const dueToday = rows.filter((r) => {
-    const d = new Date(r.due_at);
-    const now = new Date();
-    return r.status !== 'done' && d.toDateString() === now.toDateString();
-  });
+  const scopeRows = scopeQ.data ?? [];
+  const overdue = scopeRows.filter((r) => r.status === 'overdue' || r.status === 'escalated');
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['followups'] });
@@ -150,7 +153,7 @@ export function FollowupsPage() {
             {v === 'queue' ? 'My tasks' : 'Calendar'}
           </button>
         ))}
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-1.5 text-sm" aria-label="Filter by status">
+        <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="card px-3 py-1.5 text-sm" aria-label="Filter by status">
           <option value="">All open-ish</option>
           {['open', 'snoozed', 'overdue', 'escalated', 'done'].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -159,10 +162,11 @@ export function FollowupsPage() {
       {fupsQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading reminders…</p>
         : fupsQ.isError ? <div className="card p-6 text-sm">Couldn't load reminders. <button className="text-sky-600 underline" onClick={() => fupsQ.refetch()}>Retry</button></div>
         : view === 'queue' ? (
-          dueToday.length === 0 && rows.length === 0
+          scopeRows.length === 0 && rows.length === 0
             ? <EmptyState title="No follow-ups due" hint="Set a reminder on any client and it will appear here with a nudge before it's due." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ Reminder</button>} />
             : <DataTable<Fup>
-              rows={[...dueToday, ...rows.filter((r) => !dueToday.includes(r))]}
+              rows={rows}
+              pagination={{ page, perPage: PER_PAGE, total: fupsQ.data?.meta?.total ?? rows.length, onPage: setPage }}
               columns={[
                 { key: 't', header: 'Reminder', render: (r) => <span className="font-medium">{r.title}<br /><span className="text-xs font-normal text-[var(--text-muted)]">{r.client_name ?? ''}</span></span> },
                 { key: 'd', header: 'Due', render: (r) => <span className={r.is_overdue ? 'font-semibold text-red-600' : ''}>{fmtDT(r.due_at)}</span> },
@@ -173,7 +177,7 @@ export function FollowupsPage() {
               empty={<EmptyState title="Nothing here" hint="Try a different status filter." />}
             />
         ) : (
-          <CalendarSection rows={rows} day={day} onDay={setDay} />
+          <CalendarSection rows={scopeRows} day={day} onDay={setDay} />
         )}
 
       {showNew && <NewReminderForm onClose={() => setShowNew(false)} onDone={invalidate} />}
