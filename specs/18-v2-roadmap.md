@@ -248,6 +248,16 @@ contract 422s (UI reroutes to signing); value required at create; won job
 orders carry headcount + value; Finance AR sums real open invoices. Lost
 shows value walked away from; won narration links the survey page.
 
+## 17. Polish phases A–F + release (branches `feature/phase-*`, merged to develop, released to main)
+A: sign-out confirm; Router-outside-Toaster blank-page fix; integer days-in-stage;
+hash sweep (staffing, report risks, survey analytics). B: fresh-detail ritual
+prefill; auto win-chance on Approval; suggestion chips. C: plain-language purge;
+full-word scores + explainer; sectionized Surveys; template stepper. D: stage
+donut; clickable dashboard. E: follow-up action hierarchy; calendar month nav +
+below-layout. F: superadmin hidden + creation constraints; active style on
+children only; Finance/Operations folded into Billing/Deployed Staff with
+redirects; `docs/DEMO.md` demo script. Full regression → develop → main.
+
 ## 13. Opaque IDs (branch `feature/crm-opaque-ids`, Stream 1 of 3)
 Autoincrement IDs no longer leave the API for customer-facing entities: Hashids
 at the boundary (`HasOpaqueId`: per-model salt, min-length 8), integer PKs

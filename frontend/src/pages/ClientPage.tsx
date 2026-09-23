@@ -448,7 +448,7 @@ function FinanceTab({ clientId }: { clientId: string }) {
               ))}
             </ul>
           )}
-        <Link to="/finance" className="mt-2 inline-block text-sm text-sky-600 underline">Open Finance section →</Link>
+        <Link to="/pipeline/finance" className="mt-2 inline-block text-sm text-sky-600 underline">Open Billing section →</Link>
       </div>
     </div>
   );

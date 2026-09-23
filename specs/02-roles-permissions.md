@@ -10,6 +10,8 @@
 
 Future roles (reserve ids/slugs): `viewer` (read-only), `client_contact` (portal, post-v1), `api_consumer` (BI/other depts). Adding a role = new row + policy update, no schema change.
 
+**Top-account rule:** `superadmin` is seeded (never created via UI/API) and hidden from user lists for everyone else. Creation constraints (backend-enforced): superadmin → admin/manager/sales_rep; admin → manager/sales_rep only. Nobody creates another superadmin.
+
 ## 2. Permission matrix (enforced backend via Policy + `role` middleware; frontend hides/guards routes)
 | Capability | superadmin | admin | manager | sales_rep |
 |---|---|---|---|---|

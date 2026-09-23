@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Wallet, Factory, ChevronDown } from 'lucide-react';
+import { Bell, LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -62,8 +62,7 @@ const groups: { label: string; links: NavLinkItem[] }[] = [
     ],
   },
   { label: 'AI & Analytics', links: [{ to: '/reports', label: 'Reports', icon: <BarChart3 size={18} /> }] },
-  { label: 'Finance', links: [{ to: '/finance', label: 'Receivables', icon: <Wallet size={18} /> }] },
-  { label: 'Operations', links: [{ to: '/operations', label: 'Staffing Board', icon: <Factory size={18} /> }] },
+  { label: 'System', links: [{ to: '/settings', label: 'Settings', icon: <Settings size={18} /> }] },
   { label: 'System', links: [{ to: '/settings', label: 'Settings', icon: <Settings size={18} /> }] },
 ];
 
@@ -163,7 +162,15 @@ export function AppShell() {
                 return (
                   <div key={l.to}>
                     <div className="flex items-center gap-1">
-                      <NavLink to={l.to} end className={linkCls} onClick={() => setOpen(false)}>
+                      <NavLink
+                        to={l.to}
+                        end
+                        onClick={() => setOpen(false)}
+                        className={({ isActive }: { isActive: boolean }) =>
+                          // Only the active child gets styled — never the parent alongside it.
+                          linkCls({ isActive: isActive && !childActive(l.children) })
+                        }
+                      >
                         <span className="flex items-center gap-3">
                           {l.icon}
                           {l.label}

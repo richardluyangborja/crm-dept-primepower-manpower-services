@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase F — RBAC + fold + release — MERGED to `main` (all phases released)
+
+| Item | Status | Notes |
+|---|---|---|
+| Superadmin hidden + creation constraints | ✅ | Backend 403-tested, forms filtered |
+| Sidebar active on children only | ✅ | Parent never styled alongside |
+| Finance/Operations folded into hub | ✅ | Redirects keep old URLs working |
+| docs/DEMO.md + specs 02/05/10/18 | ✅ | 10-min demo script |
+
 ## Phase E — follow-ups polish (branch `feature/phase-e-followups`, on develop)
 
 | Item | Status | Notes |

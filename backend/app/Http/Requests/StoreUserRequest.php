@@ -8,13 +8,21 @@ use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
+    /** Creatable roles by actor (specs/02): superadmin → anyone but superadmin; admin → manager/sales_rep only. */
+    public static function creatableRoles(?string $actorRole): array
+    {
+        return $actorRole === 'superadmin'
+            ? ['admin', 'manager', 'sales_rep']
+            : ['manager', 'sales_rep'];
+    }
+
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:10'],
-            'role' => ['required', Rule::in(User::ROLES)],
+            'role' => ['required', Rule::in(self::creatableRoles($this->user()?->role))],
             'team_id' => ['required_if:role,manager,sales_rep', 'nullable', 'exists:teams,id'],
             'phone' => ['nullable', 'regex:/^\+63\d{10}$/'],
         ];

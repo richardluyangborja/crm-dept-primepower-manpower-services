@@ -65,9 +65,39 @@ class SettingsAccessTest extends TestCase
         User::find($id)->delete();
     }
 
-    public function test_self_and_last_superadmin_guards(): void
+    public function test_superadmin_hidden_and_role_creation_constrained(): void
     {
         $o = $this->setupOrg();
+        // NOTE: auth('api')->login() caches the user on the guard for the
+        // whole test, so re-login before every block that switches actors.
+        $at = $this->token($o['admin']);
+
+        // Admin list hides the superadmin; superadmin sees everyone.
+        $adminList = $this->getJson('/api/v1/users?per_page=100', ['Authorization' => "Bearer $at"])->assertOk()->json('data');
+        $this->assertNotEmpty($adminList);
+        foreach ($adminList as $row) $this->assertNotSame('superadmin', $row['role']);
+        $st = $this->token($o['super']);
+        $superList = $this->getJson('/api/v1/users?per_page=100', ['Authorization' => "Bearer $st"])->assertOk()->json('data');
+        $this->assertContains('superadmin', array_column($superList, 'role'));
+
+        $mk = fn ($email, $role) => [
+            'name' => $email, 'email' => $email, 'password' => 'Temporary123!',
+            'role' => $role, 'team_id' => $o['manila']->id,
+        ];
+        // Admin cannot invite another admin (422); superadmin can invite admins, not superadmins.
+        $at = $this->token($o['admin']);
+        $this->postJson('/api/v1/users', $mk('a2@primepower.ph', 'admin'), ['Authorization' => "Bearer $at"])->assertStatus(422);
+        $st = $this->token($o['super']);
+        $this->postJson('/api/v1/users', $mk('a3@primepower.ph', 'admin'), ['Authorization' => "Bearer $st"])->assertCreated();
+        $this->postJson('/api/v1/users', $mk('s2@primepower.ph', 'superadmin'), ['Authorization' => "Bearer $st"])->assertStatus(422);
+        // Admin cannot promote anyone to admin either.
+        $at = $this->token($o['admin']);
+        $grant = $this->stepUpToken($at);
+        $this->putJson("/api/v1/users/{$o['rep']->id}", ['role' => 'admin'], ['Authorization' => "Bearer $at", 'X-StepUp-Token' => $grant])->assertStatus(422);
+    }
+
+    public function test_self_and_last_superadmin_guards(): void
+    {        $o = $this->setupOrg();
         $at = $this->token($o['admin']);
 
         $this->postJson("/api/v1/users/{$o['admin']->id}/deactivate", [], ['Authorization' => "Bearer $at"])->assertStatus(422);

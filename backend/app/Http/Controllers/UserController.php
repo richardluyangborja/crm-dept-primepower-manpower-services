@@ -24,6 +24,9 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
         $user = $request->user();
         $q = User::with('team');
+        if ($user->role !== 'superadmin') {
+            $q->where('role', '!=', 'superadmin'); // the top account is seeded, never listed
+        }
         if ($user->role === 'manager') {
             $q->where('team_id', $user->team_id); // read-only team view; writes blocked by policy
         }

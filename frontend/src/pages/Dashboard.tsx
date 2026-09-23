@@ -155,7 +155,7 @@ function LifecycleStrip() {
         <KpiCard label="Active contracts" value={loading ? '…' : String(contracts.length)} sub="commercial relationships live now" href="/pipeline/contracts" />
         <KpiCard label="Monthly recurring" value={loading ? '…' : formatPHP(monthly)} sub="contracted billing per month" href="/pipeline/finance" />
         <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="via Client Management" href="/pipeline/staffing" />
-        <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="open balances" href="/finance" />
+        <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="open balances" href="/pipeline/finance" />
       </div>
       {renewals.length > 0 && (
         <div className="card p-4">

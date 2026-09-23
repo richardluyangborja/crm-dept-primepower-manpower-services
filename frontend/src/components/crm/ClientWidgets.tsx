@@ -54,7 +54,7 @@ export function ClientOpsCards({ clientId }: { clientId: string }) {
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
         <p className="text-xs text-[var(--text-muted)]">Job orders</p>
-        <p className="font-semibold tabular-nums"><Link to="/operations" className="text-sky-700 hover:underline dark:text-sky-300">{ops.job_orders.active} active / {ops.job_orders.count}</Link></p>
+        <p className="font-semibold tabular-nums"><Link to={`/pipeline/staffing?client=${clientId}`} className="text-sky-700 hover:underline dark:text-sky-300">{ops.job_orders.active} active / {ops.job_orders.count}</Link></p>
       </div>
     </div>
   );

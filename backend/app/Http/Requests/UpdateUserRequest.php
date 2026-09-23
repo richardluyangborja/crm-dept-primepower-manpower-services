@@ -12,7 +12,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'role' => ['sometimes', Rule::in(User::ROLES)],
+            'role' => ['sometimes', Rule::in(StoreUserRequest::creatableRoles($this->user()?->role))],
             'team_id' => ['nullable', 'exists:teams,id'],
             'phone' => ['nullable', 'regex:/^\+63\d{10}$/'],
             'is_active' => ['sometimes', 'boolean'],

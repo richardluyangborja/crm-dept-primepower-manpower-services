@@ -449,6 +449,8 @@ function UsersSection() {
 
 function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const { user: me } = useSession();
+  const roles = me?.role === 'superadmin' ? ['admin', 'manager', 'sales_rep'] : ['manager', 'sales_rep'];
   const [f, setF] = useState({ name: '', email: '', password: '', role: 'sales_rep', team_id: '', phone: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -481,7 +483,7 @@ function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => vo
           <label>Temporary password (10+ chars) *<input required minLength={10} type="text" value={f.password} onChange={set('password')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           <div className="flex gap-2">
             <label className="flex-1">Role<select value={f.role} onChange={set('role')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-              {['sales_rep', 'manager', 'admin', 'superadmin'].map((r) => <option key={r} value={r}>{r}</option>)}
+              {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select></label>
             <label className="flex-1">Team<select value={f.team_id} onChange={set('team_id')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
               <option value="">—</option>
@@ -502,6 +504,8 @@ function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => vo
 
 function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const { user: me } = useSession();
+  const roles = me?.role === 'superadmin' ? ['admin', 'manager', 'sales_rep'] : ['manager', 'sales_rep'];
   const [role, setRole] = useState(user.role);
   const [teamId, setTeamId] = useState(user.team_id ? String(user.team_id) : '');
   const [busy, setBusy] = useState(false);
@@ -541,7 +545,8 @@ function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onD
         <h2 className="text-lg font-semibold">Role & team — {user.name}</h2>
         <div className="mt-2 flex flex-col gap-2 text-sm">
           <label>Role<select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-            {['sales_rep', 'manager', 'admin', 'superadmin'].map((r) => <option key={r} value={r}>{r}</option>)}
+            {roles.includes(role) ? null : <option value={role}>{role} (current)</option>}
+            {roles.map((r) => <option key={r} value={r}>{r}</option>)}
           </select></label>
           <label>Team<select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="">—</option>
