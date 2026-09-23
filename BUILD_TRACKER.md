@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Phase H3 — Workforce hub (branch `feature/phase-h3-workforce`)
+## Phase H3 — Workforce hub — MERGED to `main` (HR integration released)
 
 | Item | Status | Notes |
 |---|---|---|
