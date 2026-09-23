@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Phase 5 — specs + release (branch `feature/phase-5-release`)
+## Phase 5 — specs + release — MERGED to `main` (company rebuild released)
 
 | Item | Status | Notes |
 |---|---|---|
