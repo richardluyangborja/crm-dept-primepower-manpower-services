@@ -422,16 +422,32 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
   const [reopenNote, setReopenNote] = useState('');
   const [reopenErr, setReopenErr] = useState('');
 
+  // Fresh detail (Phase B): prefill from the server record, not the possibly
+  // stale board row (optimistic updates only patch `stage`).
+  const detailQ = useQuery({
+    queryKey: ['opportunity', opp.id],
+    queryFn: async () => (await api.get(`/opportunities/${opp.id}`)).data.data as Opp,
+    staleTime: 30000,
+  });
+  const src = detailQ.data ?? opp;
   // P2 · qualified: terms editor (heads/rate/months + value + expected close).
-  const [heads, setHeads] = useState(opp.headcount ? String(opp.headcount) : '');
-  const [rate, setRate] = useState(opp.rate_per_head_centavos ? String(opp.rate_per_head_centavos / 100) : '');
-  const [months, setMonths] = useState(opp.contract_months ? String(opp.contract_months) : '12');
-  const [value, setValue] = useState(opp.value_centavos ? String(opp.value_centavos / 100) : '');
-  const [closeDate, setCloseDate] = useState(opp.expected_close_date ?? '');
-  // P3 · proposal: quoted value + sent date. P4 · negotiation: probability + terms tweak + note.
+  const [heads, setHeads] = useState('');
+  const [rate, setRate] = useState('');
+  const [months, setMonths] = useState('12');
+  const [value, setValue] = useState('');
+  const [closeDate, setCloseDate] = useState('');
+  useEffect(() => {
+    if (src.headcount) setHeads(String(src.headcount));
+    if (src.rate_per_head_centavos) setRate(String(src.rate_per_head_centavos / 100));
+    if (src.contract_months) setMonths(String(src.contract_months));
+    if (src.value_centavos) setValue(String(src.value_centavos / 100));
+    if (src.expected_close_date) setCloseDate(src.expected_close_date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src.id, detailQ.dataUpdatedAt]);
+  // P3 · proposal: quoted value + sent date. P4 · negotiation: terms tweak + note.
   const [sentDate, setSentDate] = useState(new Date().toISOString().slice(0, 10));
-  const [probability, setProbability] = useState(opp.probability);
   const [negNote, setNegNote] = useState('');
+  const NEG_SUGGESTIONS = ['Pushing on rate', 'Decision on Friday', 'Needs HO approval', 'Competitor in play', 'Waiting on budget release'];
   const monthlyPreview = (Number(heads) || 0) * pesoToCentavos(rate || '0');
   const termsValid = to !== 'qualified' || (
     pesoToCentavos(value || '0') > 0 && Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0
@@ -459,13 +475,12 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
       extra.proposal = { value_centavos: pesoToCentavos(value), sent_date: sentDate };
     }
     if (to === 'negotiation') {
-      extra.probability = probability;
+      // Win chance is automatic (stage default) — no manual slider.
       if (Number(heads) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0) {
         extra.put = {
           headcount: Number(heads),
           rate_per_head_centavos: pesoToCentavos(rate),
           contract_months: Number(months),
-          probability,
         };
       }
       if (negNote.trim()) extra.negNote = negNote.trim();
@@ -475,7 +490,7 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
 
   return (
     <StageUpModal
-      opp={opp as RitualOpp}
+      opp={(detailQ.data ?? opp) as RitualOpp}
       fromLabel={labels[opp.stage] ?? opp.stage}
       toLabel={labels[to] ?? to}
       backward={backward}
@@ -523,16 +538,22 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
       )}
       {to === 'negotiation' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Take the temperature — set the win chance and note what the client is pushing on.</p>
-          <label>Win probability: <strong className="tabular-nums">{probability}%</strong>
-            <input type="range" min={0} max={100} value={probability} onChange={(e) => setProbability(Number(e.target.value))} className="mt-1 w-full" />
-          </label>
+          <p className="text-xs text-[var(--text-muted)]">Take the temperature — the win chance updates automatically on Approval (currently {src.probability}%). Note what the client is pushing on.</p>
           <div className="grid grid-cols-3 gap-2">
-            <label>Heads<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder={opp.headcount ? String(opp.headcount) : '40'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Rate/head/mo (₱)<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder={opp.rate_per_head_centavos ? String(opp.rate_per_head_centavos / 100) : '15000'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Months<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder={opp.contract_months ? String(opp.contract_months) : '12'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Heads<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder={src.headcount ? String(src.headcount) : '40'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Rate/head/mo (₱)<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder={src.rate_per_head_centavos ? String(src.rate_per_head_centavos / 100) : '15000'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            <label>Months<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder={src.contract_months ? String(src.contract_months) : '12'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
-          <label>Discussion note<textarea value={negNote} onChange={(e) => setNegNote(e.target.value)} rows={2} placeholder="e.g. Pushing on rate — wants ₱14k/head, decision Friday" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          <div>
+            <div className="mb-1.5 flex flex-wrap gap-1.5">
+              {NEG_SUGGESTIONS.map((s) => (
+                <button key={s} type="button" onClick={() => setNegNote((v) => (v ? (v.endsWith('.') || v.endsWith(',') ? `${v} ` : `${v}, `) : '') + s.toLowerCase())} className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-800">
+                  {s}
+                </button>
+              ))}
+            </div>
+            <label>Discussion note<textarea value={negNote} onChange={(e) => setNegNote(e.target.value)} rows={2} placeholder="e.g. Pushing on rate — wants ₱14k/head, decision Friday" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          </div>
         </div>
       )}
       {fromTerminal && (

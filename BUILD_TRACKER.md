@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase B — ritual polish (branch `feature/phase-b-rituals`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Fresh-detail prefill + MoneyStrip in shell | ✅ | No more stale-row editors |
+| Approval auto probability (slider gone) | ✅ | Stage default rules |
+| Suggestion chips above discussion notes | ✅ | 5 one-tap phrases |
+| Verified + merged to develop | ✅ | Main release after all phases |
+
 ## Phase A — crash + data fixes (branch `feature/phase-a-crash-data`, on develop)
 
 | Item | Status | Notes |
