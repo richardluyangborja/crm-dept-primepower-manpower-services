@@ -19,8 +19,9 @@ class OpportunityPipelineTest extends TestCase
 
     protected function clientFor(User $owner): Client
     {
+        $company = \App\Models\Company::create(['owner_id' => $owner->id, 'name' => 'Test Co '.uniqid()]);
         return Client::create([
-            'owner_id' => $owner->id, 'name' => 'Test Client Co.', 'status' => 'active',
+            'owner_id' => $owner->id, 'company_id' => $company->id, 'name' => 'Test Client Co.', 'status' => 'active',
         ]);
     }
 
@@ -29,7 +30,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.pipe@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(),
             'title' => '40 crew — BGC', 'value_centavos' => 120000000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()
             ->assertJsonPath('data.stage', 'new')
@@ -46,7 +47,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.move@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Move me', 'value_centavos' => 100000,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'Move me', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'proposal'], ['Authorization' => "Bearer $t"])
@@ -63,7 +64,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.qual@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Qualify me', 'value_centavos' => 100000,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'Qualify me', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         // Value present but no manpower terms → 422.
@@ -84,7 +85,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.win@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Win me', 'value_centavos' => 50000000,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'Win me', 'value_centavos' => 50000000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/opportunities/$id/move", [
@@ -106,7 +107,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.closed@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'Closed deal', 'value_centavos' => 100000,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'Closed deal', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
         $this->postJson("/api/v1/opportunities/$id/lose", ['lost_reason' => 'Timing'], ['Authorization' => "Bearer $t"])->assertOk();
 
@@ -128,7 +129,7 @@ class OpportunityPipelineTest extends TestCase
         $rep = $this->rep('rep.nostage@primepower.ph');
         $t = auth('api')->login($rep);
         $id = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $this->clientFor($rep)->id, 'title' => 'No shortcut', 'value_centavos' => 100000,
+            'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'No shortcut', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
         $this->putJson("/api/v1/opportunities/$id", ['stage' => 'won'], ['Authorization' => "Bearer $t"])->assertStatus(422);
     }

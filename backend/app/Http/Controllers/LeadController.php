@@ -20,7 +20,7 @@ class LeadController extends Controller
     {
         $this->authorize('viewAny', Lead::class);
         $leads = Lead::visibleTo($request->user())
-            ->filter($request, ['status', 'source', 'owner_id'])
+            ->filter($request, ['status', 'source', 'owner_id', 'company_id'])
             ->search($request->query('q'), ['company_name', 'contact_name', 'contact_email'])
             ->latest()->paginate(min(100, (int) $request->query('per_page', 15)));
 
@@ -36,10 +36,38 @@ class LeadController extends Controller
         if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
             $data['owner_id'] = $user->id;
         }
+        // Resolve or create the company; it owns the lead from here on.
+        if (! empty($data['company_id'])) {
+            $company = \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
+        } else {
+            $c = $data['company'] ?? [];
+            $company = \App\Models\Company::create([
+                'owner_id' => $data['owner_id'],
+                'name' => $c['name'],
+                'industry' => $c['industry'] ?? null,
+                'address_city' => $c['address_city'] ?? null,
+                'address_province' => $c['address_province'] ?? null,
+                'contact_email' => $c['contact_email'] ?? $data['contact_email'] ?? null,
+                'contact_phone' => $c['contact_phone'] ?? $data['contact_phone'] ?? null,
+                'source' => $data['source'] ?? null,
+            ]);
+        }
+        // One active lead per company — point at the open one instead.
+        $open = $company->leads()->whereNotIn('status', ['unqualified', 'converted'])->first();
+        if ($open) {
+            return response()->json([
+                'message' => "{$company->name} already has an open lead — work that one instead.",
+                'errors' => ['company_id' => ['Company already has an open lead.']],
+                'meta' => ['existing_lead_id' => $open->opaqueId()],
+            ], 409);
+        }
+        $data['company_id'] = $company->id;
+        $data['company_name'] = $data['company_name'] ?? $company->name;
+        unset($data['company']);
         $duplicate = $service->findDuplicate($data);
         $lead = Lead::create($data);
         $service->score($lead);
-        $lead->audit('created', $user->id, []);
+        $lead->audit('created', $user->id, ['company_id' => $company->id]);
         $res = (new LeadResource($lead))->toArray($request);
 
         return response()->json(
@@ -59,6 +87,9 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
         $data = $request->validated();
+        if (($data['status'] ?? null) === 'converted') {
+            return $this->fail('Leads convert automatically when their deal is won — pick qualified or unqualified.', 422);
+        }
         if (isset($data['owner_id'])) {
             $this->authorize('assign', Lead::class);
         }

@@ -15,6 +15,7 @@ class LeadResource extends JsonResource
             'company_id' => \App\Models\Company::encodeId($this->company_id),
             'company_name' => $this->whenLoaded('company', fn () => $this->company?->name, $this->company_name),
             'contact_name' => $this->contact_name,
+            'contact_position' => $this->contact_position,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
             'headcount_needed' => $this->headcount_needed,

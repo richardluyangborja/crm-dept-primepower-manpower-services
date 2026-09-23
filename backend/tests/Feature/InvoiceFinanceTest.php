@@ -24,7 +24,8 @@ class InvoiceFinanceTest extends TestCase
 
     protected function clientFor(User $owner): Client
     {
-        return Client::create(['owner_id' => $owner->id, 'name' => 'Invoice Client '.uniqid(), 'status' => 'active']);
+        $company = \App\Models\Company::create(['owner_id' => $owner->id, 'name' => 'Invoice Co '.uniqid()]);
+        return Client::create(['owner_id' => $owner->id, 'company_id' => $company->id, 'name' => 'Invoice Client '.uniqid(), 'status' => 'active']);
     }
 
     protected function invoiceFor(User $owner, Client $client, array $over = []): Invoice
@@ -45,7 +46,7 @@ class InvoiceFinanceTest extends TestCase
         $t = $this->token($o['rep']);
         $client = $this->clientFor($o['rep']);
         $oppId = $this->postJson('/api/v1/opportunities', [
-            'client_id' => $client->id, 'title' => 'Invoice deal', 'value_centavos' => 500000,
+            'client_id' => $client->id, 'company_id' => $client->company->opaqueId(), 'title' => 'Invoice deal', 'value_centavos' => 500000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/opportunities/$oppId/move", [

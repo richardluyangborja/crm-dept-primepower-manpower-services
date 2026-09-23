@@ -12,13 +12,15 @@ class StoreOpportunityRequest extends FormRequest
     {
         $this->merge([
             'client_id' => \App\Models\Client::decodeId($this->input('client_id')) ?? $this->input('client_id'),
+            'company_id' => \App\Models\Company::decodeId($this->input('company_id')) ?? $this->input('company_id'),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'client_id' => ['required', 'exists:clients,id'],
+            'client_id' => ['nullable', 'exists:clients,id'],
+            'company_id' => ['nullable', 'required_without:client_id', 'exists:companies,id'],
             'title' => ['required', 'string', 'max:255'],
             'stage' => ['sometimes', Rule::in(Opportunity::STAGES)],
             'value_centavos' => ['required', 'integer', 'min:1'],

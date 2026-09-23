@@ -1,10 +1,10 @@
 # 04 — Lead & Client Tracking
 
 ## 1. Submodules (locked)
-1. **Capture** — manual form, CSV import (mock template), duplicate guard. Sources are channel-flexible (`facebook` default/first, plus `gmail`, `phone`, referral, walk-in, website, cold_call, event) — Facebook is the common case, never the only one. Capture mirrors the Excel row: company + contact + phone + **headcount needed + positions**.
-2. **Qualification & Scoring** — status flow + 0–100 score (rule-based v1): +20 PH corporate email, +15 complete address, +25 valid +63 phone, +10 buyer signal (`headcount_needed` present), +40 manager override note.
+1. **Capture** — 2-step form (Company → Contact & need) over the company root: company search-or-create with duplicate-company prompt (`GET /companies/lookup`), then single primary contact + requirement. Sources are channel-flexible (`facebook` default/first, plus `gmail`, `phone`, referral, walk-in, website, cold_call, event). Capture collects company identity (name*, industry, city*, province, email, phone) + contact (name*, position, email, mobile) + **headcount needed + positions**. One active lead per company (409 points at the open one). CSV import resolves-or-creates companies per row.
+2. **Qualification & Scoring** — manual statuses `new→contacted→qualified|unqualified` (`converted` is system-only, set on won); 0–100 score (rule-based v1): +20 PH corporate email, +15 complete address, +25 valid +63 phone, +10 buyer signal (`headcount_needed` present), +40 manager override note. Qualifying opens the opportunity prompt (skippable once); unqualified requires reason.
 3. **360° Client Profile** — one scrolling page: header KPI strip (active contracts, open deals, fulfillment %, monthly value, satisfaction) + quick-jump links, then grouped sections (Profile incl. contacts → Deals → Contracts → Operations via Client Management → Conversations incl. comms/surveys/follow-ups → Billing via Finance → Insights).
-4. **Conversion** — lead→client→(optional) opportunity wizard, the single bridge between the two pages (action lives on lead rows, lands on the 360 page).
+4. **Conversion (retired as a manual action)** — clients are born from won deals only (Phase 3): won → find-or-create the company's client → link opp → convert open lead(s) → auto-active. `POST /leads/{id}/convert` deprecated, frontend no longer calls it. Lost deals leave the lead qualified.
 
 ## 1b. Hub model (no overlaps)
 Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipeline hub) with two filter-first pages — no per-operation sub-routes, no stacked sections:
@@ -13,15 +13,17 @@ Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipe
 - Overlap contract: record views live here; cross-record management stays in Comms/Surveys/Follow-ups/Finance/Operations; Client Management execution stays read-only in Pipeline/Operations and is only *linked* (never copied) from hub pages.
 
 ## 2. User stories & acceptance
-- As rep I capture a lead in < 60s with guidance → required: company, contact name, phone/email, source; inline PH validation; duplicate warning (same phone/email) with "View existing" link; toast "Lead created — qualify it next".
-- As rep I qualify → status `new→contacted→qualified|unqualified|converted`; score auto: +20 PH corporate email, +15 complete address, +25 valid +63 phone, +40 manager override note; unqualified requires reason.
+- As rep I capture a lead in < 60s with guidance → company search-or-create (duplicate prompt), then contact + requirement; required: company, contact name, phone/email, source; inline PH validation; duplicate warning (same phone/email) with "View existing" link; one-active-lead guard (409 links the open lead); toast "Lead created — qualify it next".
+- As rep I qualify → status `new→contacted→qualified|unqualified` (never `converted` by hand); score auto: +20 PH corporate email, +15 complete address, +25 valid +63 phone, +40 manager override note; unqualified requires reason; qualifying opens the first-deal prompt.
 - As rep/manager I open client 360 → header (status badge, owner avatar, industry, city), quick-jump anchors to grouped sections; every section has EmptyState + CTA.
-- As rep I convert → 3-step wizard (1 Confirm company → 2 Primary contact → 3 Create opening opportunity?); idempotent (409 if already converted); audit logged.
 
 ## 3. API (see `14` for envelopes)
 ```
-GET    /leads?q&status&owner_id&sort  POST /leads  GET|PUT|DELETE /leads/{id}
-POST   /leads/{id}/convert {client_payload, create_opportunity?:bool}
+GET    /leads?q&status&owner_id&company_id&sort  POST /leads {company_id?|company:{}, contact_*, requirement_*}
+GET|PUT|DELETE /leads/{id}  (PUT rejects status=converted: system-only)
+POST   /leads/{id}/convert {…} — DEPRECATED (Phase 3 removes manual conversion)
+GET    /companies?q&industry&owner_id  POST /companies  GET|PUT /companies/{id}
+GET    /companies/lookup?name&phone (duplicate-company prompt + open-lead counts)
 GET    /clients?q&status&industry&owner_id  POST /clients  GET|PUT|DELETE /clients/{id}
 GET|POST /clients/{id}/contacts  PUT|DELETE /contacts/{id}
 GET    /contacts?q&client_id (cross-client directory; client-scoped visibility, client_name included)
@@ -31,7 +33,7 @@ Validation: `contact_phone` regex `^\+63\d{10}$`, email RFC, company unique-ish 
 ## 4. UI
 - **Leads page:** 3 KPI cards + quick-chip + *All Inquiries* table (search, status filter); capture/import as header buttons; row click → lead detail.
 - **Clients page:** 3 KPI cards + view switch (directory / People / Recently Won Over); per-row staffing deep link (`/pipeline/staffing?client=`).
-- **Client 360:** header KPI strip + grouped sections (Profile / Deals / Contracts / Operations / Conversations / Billing / Insights) with anchor quick-jump; convert wizard uses stepper + review screen.
+- **Client 360:** header KPI strip + grouped sections (Profile / Deals / Contracts / Operations / Conversations / Billing / Insights) with anchor quick-jump; "New deal" deep-links the pipeline form with the client preselected.
 - Feedback: score tooltip explains points; duplicate modal; CSV import shows row errors with line numbers (mock parser, 500-row limit).
 
 ## 5. Seeds (static, `12`)

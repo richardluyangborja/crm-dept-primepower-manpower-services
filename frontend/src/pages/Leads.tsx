@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { KpiCard } from '../components/ui/KpiCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { OppPrompt } from '../components/crm/OppPrompt';
 import { Download, Upload } from 'lucide-react';
 import { useToast } from '../components/ui/Toaster';
 import { useSettingsList } from '../hooks/useSettings';
@@ -14,16 +15,19 @@ import { apiErr } from '../components/crm/ClientWidgets';
 
 interface Lead {
   id: string;
+  company_id: string | null;
   company_name: string;
   contact_name: string;
   contact_email: string | null;
   contact_phone: string | null;
+  headcount_needed: number | null;
   source: string | null;
   status: string;
   score: number;
 }
 
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
+const MANUAL_STATUSES = ['new', 'contacted', 'qualified', 'unqualified'];
 
 function ScoreBar({ v }: { v: number }) {
   return (
@@ -42,8 +46,8 @@ export function LeadsPage() {
   const [needsOnly, setNeedsOnly] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [convertId, setConvertId] = useState<string | null>(null);
   const [unqualify, setUnqualify] = useState<Lead | null>(null);
+  const [oppPrompt, setOppPrompt] = useState<Lead | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
@@ -72,25 +76,14 @@ export function LeadsPage() {
     onError: (e: unknown) => toast('error', apiErr(e, 'Could not update status.')),
   });
 
-  const convertMut = useMutation({
-    mutationFn: async ({ id, withOpp }: { id: string; withOpp: boolean }) =>
-      (await api.post(`/leads/${id}/convert`, withOpp ? { create_opportunity: true, opportunity_title: undefined } : {})).data,
-    onSuccess: (d) => {
-      toast('success', {
-        title: 'Converted — client profile created.',
-        body: 'The new account is ready with the lead contact as primary.',
-        action: { label: 'Open client', href: `/clients/${d.data.client_id}` },
-      });
-      setConvertId(null);
-      invalidate();
-    },
-    onError: (e: unknown) => toast('error', apiErr(e, 'Conversion failed. Maybe already converted?')),
-  });
-
   const changeStatus = (r: Lead, st: string) => {
     if (st === 'unqualified') {
       setUnqualify(r);
-    } else setStatusMut.mutate({ id: r.id, st });
+    } else {
+      setStatusMut.mutate({ id: r.id, st });
+      // Qualifying opens the deal prompt — clients are born from won deals, never by hand.
+      if (st === 'qualified' && r.company_id) setOppPrompt(r);
+    }
   };
 
   const all: Lead[] = leadsQ.data?.data ?? [];
@@ -151,7 +144,7 @@ export function LeadsPage() {
         <LeadTable
           rows={rows}
           onStatus={changeStatus}
-          onConvert={setConvertId}
+          onDeal={setOppPrompt}
           empty={needsOnly
             ? <EmptyState title="All caught up" hint="Nothing waiting for a first response. New inquiries will land here." />
             : <EmptyState title="No leads yet" hint="Capture your first lead — company, contact and a +63 mobile is enough." action={<button onClick={() => setShowNew(true)} className="mt-2 rounded-lg bg-sky-600 px-4 py-2 text-sm text-white">+ New lead</button>} />}
@@ -160,15 +153,15 @@ export function LeadsPage() {
 
       {showNew && <NewLeadForm onClose={() => setShowNew(false)} onDone={invalidate} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={invalidate} />}
-      <ConfirmDialog
-        open={convertId !== null}
-        tone="info"
-        title="Convert lead to client?"
-        body="Quick-convert creates the client profile with the lead's contact as primary. For the full 3-step wizard, open the lead instead."
-        confirmLabel="Convert"
-        onCancel={() => setConvertId(null)}
-        onConfirm={() => convertId !== null && convertMut.mutate({ id: convertId, withOpp: true })}
-      />
+      {oppPrompt?.company_id && (
+        <OppPrompt
+          companyId={oppPrompt.company_id}
+          companyName={oppPrompt.company_name}
+          headcount={oppPrompt.headcount_needed}
+          onClose={() => setOppPrompt(null)}
+          onDone={() => { invalidate(); qc.invalidateQueries({ queryKey: ['opportunities'] }); }}
+        />
+      )}
       <ConfirmDialog
         open={unqualify !== null}
         title={`Disqualify ${unqualify?.company_name ?? 'lead'}?`}
@@ -185,10 +178,10 @@ export function LeadsPage() {
   );
 }
 
-function LeadTable({ rows, onStatus, onConvert, empty }: {
+function LeadTable({ rows, onStatus, onDeal, empty }: {
   rows: Lead[];
   onStatus: (r: Lead, st: string) => void;
-  onConvert: (id: string) => void;
+  onDeal: (r: Lead) => void;
   empty: React.ReactNode;
 }) {
   return (
@@ -199,27 +192,46 @@ function LeadTable({ rows, onStatus, onConvert, empty }: {
         { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },
         { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
         { key: 'st', header: 'Status', render: (r) => (
-          <select value={r.status} disabled={r.status === 'converted'} onChange={(e) => onStatus(r, e.target.value)}
+          <select value={r.status} disabled={['converted', 'unqualified'].includes(r.status)} onChange={(e) => onStatus(r, e.target.value)}
             className="rounded border border-[var(--border)] bg-transparent px-1 py-0.5 text-xs" aria-label={`Status of ${r.company_name}`}>
-            {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            {MANUAL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         ) },
         { key: 'ac', header: 'Actions', render: (r) => r.status === 'converted'
           ? <StatusBadge value="converted" />
-          : <button onClick={() => onConvert(r.id)} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">Convert →</button> },
+          : r.status === 'unqualified'
+            ? <span className="text-xs text-[var(--text-muted)]">closed</span>
+            : r.company_id
+              ? <button onClick={() => onDeal(r)} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">+ Deal</button>
+              : <span className="text-xs text-[var(--text-muted)]">—</span> },
       ]}
       empty={empty}
     />
   );
 }
 
+interface LookupCompany { id: string; name: string; address_city: string | null; open_leads_count?: number }
+
 function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const sources = useSettingsList('lead_sources', ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event']);
-  const [f, setF] = useState({ company_name: '', contact_name: '', contact_email: '', contact_phone: '', headcount: '', positions: '', source: 'facebook' });
+  const industries = useSettingsList('industries', ['BPO', 'Manufacturing', 'Hospitality', 'Retail', 'Healthcare', 'Logistics']);
+  const [step, setStep] = useState(0);
+  const [companyName, setCompanyName] = useState('');
+  const [useExisting, setUseExisting] = useState<LookupCompany | null>(null);
+  const [co, setCo] = useState({ industry: '', city: '', province: '', email: '', phone: '' });
+  const [f, setF] = useState({ contact_name: '', contact_position: '', contact_email: '', contact_phone: '', headcount: '', positions: '', source: 'facebook' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  const setC = (k: keyof typeof co) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { setCo({ ...co, [k]: e.target.value }); setUseExisting(null); };
+
+  const lookupQ = useQuery({
+    queryKey: ['companies-lookup', companyName],
+    queryFn: async () => (await api.get('/companies/lookup', { params: { name: companyName } })).data.data as LookupCompany[],
+    enabled: companyName.trim().length >= 2 && !useExisting,
+  });
+  const matches = lookupQ.data ?? [];
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -228,45 +240,123 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
     setErr('');
     try {
       const r = await api.post('/leads', {
-        ...f,
+        ...(useExisting ? { company_id: useExisting.id } : {
+          company: {
+            name: companyName.trim(),
+            industry: co.industry || undefined,
+            address_city: co.city || undefined,
+            address_province: co.province || undefined,
+            contact_email: co.email || undefined,
+            contact_phone: co.phone || undefined,
+          },
+        }),
+        contact_name: f.contact_name,
+        contact_position: f.contact_position || undefined,
         contact_email: f.contact_email || undefined,
         contact_phone: f.contact_phone || undefined,
         headcount_needed: f.headcount ? Number(f.headcount) : undefined,
         positions: f.positions || undefined,
+        source: f.source,
       });
       const dup = r.data.meta?.duplicate_warning;
       toast('success', dup ? `Lead created — heads up: possible duplicate ${dup.type} #${dup.id}.` : 'Lead created — qualify it next.');
       onDone();
       onClose();
     } catch (e) {
-      setErr(apiErr(e, 'Could not create lead.'));
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        const existing = (e as { response?: { data?: { meta?: { existing_lead_id?: string } } } })?.response?.data?.meta?.existing_lead_id;
+        setErr(`This company already has an open lead.${existing ? ' Open it instead — use the link below.' : ''}`);
+        if (existing) toast('info', { title: 'Company already has an open lead.', action: { label: 'Open lead', href: `/leads/${existing}` } });
+      } else {
+        setErr(apiErr(e, 'Could not create lead.'));
+      }
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <form onSubmit={submit} className="card w-full max-w-md p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true">
+      <form onSubmit={submit} className="card my-8 w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">New lead</h2>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">Company + contact + PH mobile is enough. Score is computed automatically.</p>
-        <div className="flex flex-col gap-2 text-sm">
-          <label>Company *<input required value={f.company_name} onChange={set('company_name')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <label>Contact person *<input required value={f.contact_name} onChange={set('contact_name')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.ph (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <label>Mobile<input value={f.contact_phone} onChange={set('contact_phone')} placeholder="+639XXXXXXXXX (+25 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-          <div className="grid grid-cols-2 gap-2">
-            <label>Heads needed<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40 (+10 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-            <label>Positions<input value={f.positions} onChange={set('positions')} placeholder="e.g. Guards, Janitors" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+        <ol className="mt-2 flex items-center gap-1 text-xs" aria-label="Progress">
+          {['Company', 'Contact & need'].map((s, i) => (
+            <li key={s} className="flex items-center gap-1">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full font-semibold ${i <= step ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{i + 1}</span>
+              <span className={i === step ? 'font-semibold' : 'text-[var(--text-muted)]'}>{s}</span>
+              {i === 0 && <span className="mx-1 h-px w-6 bg-[var(--border)]" />}
+            </li>
+          ))}
+        </ol>
+        {step === 0 && (
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <p className="text-xs text-[var(--text-muted)]">Which company is asking for manpower? Pick an existing one or describe a new one.</p>
+            <label>Company *<input required value={companyName} onChange={(e) => { setCompanyName(e.target.value); setUseExisting(null); }} placeholder="e.g. ABC Manufacturing" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            {useExisting ? (
+              <p className="rounded-lg bg-sky-50 px-3 py-2 text-sm dark:bg-sky-900/30">
+                Using existing company <strong>{useExisting.name}</strong>
+                {useExisting.open_leads_count ? ` (${useExisting.open_leads_count} open lead — creating another is blocked).` : '.'}{' '}
+                <button type="button" onClick={() => setUseExisting(null)} className="text-sky-700 underline dark:text-sky-300">Change</button>
+              </p>
+            ) : matches.length > 0 && (
+              <div className="rounded-lg border border-[var(--border)] p-2">
+                <p className="mb-1 text-xs text-[var(--text-muted)]">Already in the system?</p>
+                {matches.map((m) => (
+                  <button key={m.id} type="button" onClick={() => setUseExisting(m)} className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <span className="font-medium">{m.name} <span className="font-normal text-xs text-[var(--text-muted)]">{m.address_city ?? ''}</span></span>
+                    <span className="text-xs text-sky-700 dark:text-sky-300">Use →</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!useExisting && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <label>Industry<select value={co.industry} onChange={setC('industry')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+                    <option value="">—</option>
+                    {industries.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select></label>
+                  <label>City<input value={co.city} onChange={setC('city')} placeholder="Calamba" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label>Province<input value={co.province} onChange={setC('province')} placeholder="Laguna" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+                  <label>Company phone<input value={co.phone} onChange={setC('phone')} placeholder="+639…" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+                </div>
+                <label>Company email<input type="email" value={co.email} onChange={setC('email')} placeholder="info@company.ph" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              </>
+            )}
           </div>
-          <label>Source<select value={f.source} onChange={set('source')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-            {sources.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select></label>
-        </div>
+        )}
+        {step === 1 && (
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <p className="text-xs text-[var(--text-muted)]">Who asked, and what do they need? Score is computed automatically.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label>Contact person *<input required value={f.contact_name} onChange={set('contact_name')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Position<input value={f.contact_position} onChange={set('contact_position')} placeholder="HR Manager" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.ph (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Mobile<input value={f.contact_phone} onChange={set('contact_phone')} placeholder="+639XXXXXXXXX (+25 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label>Heads needed<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40 (+10 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Positions<input value={f.positions} onChange={set('positions')} placeholder="e.g. Guards, Janitors" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            </div>
+            <label>Source<select value={f.source} onChange={set('source')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+              {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select></label>
+          </div>
+        )}
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Saving…' : 'Create lead'}</button>
+        <div className="mt-4 flex justify-between gap-2">
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
+            {step > 0 && <button type="button" onClick={() => { setErr(''); setStep(0); }} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">← Back</button>}
+          </div>
+          {step === 0
+            ? <button type="button" disabled={!companyName.trim()} onClick={() => setStep(1)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Next →</button>
+            : <button disabled={busy} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? 'Saving…' : 'Create lead'}</button>}
         </div>
       </form>
     </div>

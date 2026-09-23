@@ -21,7 +21,7 @@ class OpportunityController extends Controller
     {
         $this->authorize('viewAny', Opportunity::class);
         $opps = Opportunity::visibleTo($request->user())->with('client:id,name')
-            ->filter($request, ['stage', 'client_id', 'owner_id'])
+            ->filter($request, ['stage', 'client_id', 'company_id', 'owner_id'])
             ->search($request->query('q'), ['title'])
             ->orderBy('expected_close_date')->paginate(min(100, (int) $request->query('per_page', 50)));
 
@@ -33,15 +33,33 @@ class OpportunityController extends Controller
         $this->authorize('create', Opportunity::class);
         $data = $request->validated();
         $user = $request->user();
-        // Opp owner must be able to see the client; reps own what they create.
-        $client = Client::visibleTo($user)->findOrFail($data['client_id']);
+        $company = ! empty($data['company_id'])
+            ? \App\Models\Company::visibleTo($user)->findOrFail($data['company_id'])
+            : null;
+        // Pre-client deals carry only the company; cliented deals must belong to it.
+        // When only a client is given, adopt its company.
+        $client = null;
+        if (! empty($data['client_id'])) {
+            $client = Client::visibleTo($user)->findOrFail($data['client_id']);
+            if (! $client->company_id) {
+                return $this->fail('That client is not linked to a company yet.', 422);
+            }
+            if ($company && (int) $client->company_id !== (int) $company->id) {
+                return $this->fail('That client belongs to a different company.', 422);
+            }
+            $company ??= $client->company;
+            $data['company_id'] = $company->id;
+        }
+        if (! $company) {
+            return $this->fail('An opportunity needs a company.', 422);
+        }
         if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
             $data['owner_id'] = $user->id;
         }
         $data['stage'] ??= 'new';
         $data['probability'] ??= Opportunity::STAGE_PROBABILITY[$data['stage']];
         $opp = Opportunity::create($data);
-        $opp->audit('created', $user->id, ['client_id' => $client->id]);
+        $opp->audit('created', $user->id, ['company_id' => $company->id, 'client_id' => $client?->id]);
 
         return $this->created(new OpportunityResource($opp), 'Opportunity created.');
     }

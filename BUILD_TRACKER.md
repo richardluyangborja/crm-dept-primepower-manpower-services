@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Phase 2 — lead flow rewrite (branch `feature/phase-2-leads`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Opp client nullable + lead contact_position | ✅ | dbal, company FKs adopted |
+| Lead capture: company/contact/requirement | ✅ | Lookup prompt, 409 guard |
+| Manual convert removed; qualify→opp prompt | ✅ | Convert endpoint deprecated |
+| Import resolves companies | ✅ | Open-lead rows reported |
+| Specs 04 + tracker | ✅ | Suite 94 tests green |
+
 ## Phase 1 — company model (branch `feature/phase-1-companies`, on develop)
 
 | Item | Status | Notes |

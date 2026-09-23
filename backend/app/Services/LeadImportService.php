@@ -53,8 +53,21 @@ class LeadImportService
                 continue;
             }
             $lead = Lead::create($v->validated() + ['owner_id' => $ownerId]);
+            $company = \App\Models\Company::whereRaw('LOWER(name) = ?', [mb_strtolower($lead->company_name)])->first()
+                ?? \App\Models\Company::create([
+                    'owner_id' => $ownerId, 'name' => $lead->company_name,
+                    'contact_email' => $lead->contact_email, 'contact_phone' => $lead->contact_phone,
+                    'source' => $lead->source,
+                ]);
+            $open = $company->leads()->whereNotIn('status', ['unqualified', 'converted'])->where('id', '!=', $lead->id)->first();
+            if ($open) {
+                $lead->delete();
+                $failed[] = ['row' => $i + 2, 'errors' => ["{$company->name} already has an open lead."]];
+                continue;
+            }
+            $lead->update(['company_id' => $company->id]);
             $leads->score($lead);
-            $lead->audit('imported', $ownerId, []);
+            $lead->audit('imported', $ownerId, ['company_id' => $company->id]);
             $imported++;
         }
 
