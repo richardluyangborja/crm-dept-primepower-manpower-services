@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Gov Phase 4 — docs + release (branch `feature/gov-docs-release`)
+## Gov Phase 4 — docs + release — MERGED to `main` (governance released)
 
 | Item | Status | Notes |
 |---|---|---|
