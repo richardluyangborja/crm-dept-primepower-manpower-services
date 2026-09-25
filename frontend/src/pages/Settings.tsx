@@ -445,11 +445,11 @@ function UsersSection() {
   });
   const invalidate = () => qc.invalidateQueries({ queryKey: ['users'] });
 
-  const doDeactivate = async () => {
+  const doDeactivate = async (reassignTo?: number | null) => {
     if (!deactivateId) return;
     try {
-      await api.post(`/users/${deactivateId}/deactivate`);
-      toast('success', 'Account deactivated.');
+      await api.post(`/users/${deactivateId}/deactivate`, reassignTo ? { reassign_to: reassignTo } : {});
+      toast('success', reassignTo ? 'Account deactivated — open records handed over.' : 'Account deactivated.');
       invalidate();
     } catch (e) {
       toast('error', apiErr(e, 'Could not deactivate.'));
@@ -491,13 +491,82 @@ function UsersSection() {
       {showInvite && <InviteForm onClose={() => setShowInvite(false)} onDone={invalidate} />}
       {roleEdit && <RoleForm user={roleEdit} onClose={() => setRoleEdit(null)} onDone={invalidate} />}
       {resetId !== null && <ResetForm userId={resetId} onClose={() => setResetId(null)} />}
-      <ConfirmDialog open={deactivateId !== null} title="Deactivate this account?" body="They will be signed out and cannot log in until reactivated by an admin." onCancel={() => setDeactivateId(null)} onConfirm={doDeactivate} />
+      {deactivateId !== null && (
+        <DeactivateDialog
+          userId={deactivateId}
+          onCancel={() => setDeactivateId(null)}
+          onConfirm={(reassignTo) => void doDeactivate(reassignTo)}
+        />
+      )}
     </>
   );
 }
 
-function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const toast = useToast();
+/** Deactivate with handover: owned-record counts + successor picker when needed. */
+function DeactivateDialog({ userId, onCancel, onConfirm }: {
+  userId: number;
+  onCancel: () => void;
+  onConfirm: (reassignTo: number | null) => void;
+}) {
+  const [successor, setSuccessor] = useState('');
+  const ownedQ = useQuery({
+    queryKey: ['users', userId, 'owned'],
+    queryFn: async () => (await api.get(`/users/${userId}/owned`)).data.data as {
+      open: { companies: number; leads: number; opportunities: number; followups: number; clients: number };
+      suggested_successor: { id: number; name: string; role: string } | null;
+    },
+  });
+  const open = ownedQ.data?.open ?? { companies: 0, leads: 0, opportunities: 0, followups: 0, clients: 0 };
+  const openTotal = open.companies + open.leads + open.opportunities + open.followups;
+  const suggested = ownedQ.data?.suggested_successor ?? null;
+  const membersQ = useQuery({
+    queryKey: ['users', 'successors'],
+    queryFn: async () => (await api.get('/users', { params: { per_page: 100 } })).data.data as U[],
+    enabled: openTotal > 0,
+  });
+  const candidates = (membersQ.data ?? []).filter((u) => u.is_active && u.id !== userId && ['sales_rep', 'manager'].includes(u.role));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="card w-full max-w-md p-6">
+        <h2 className="text-lg font-semibold">Deactivate this account?</h2>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">They will be signed out and cannot log in until reactivated by an admin.</p>
+        {ownedQ.isLoading ? <p className="mt-2 text-sm text-[var(--text-muted)]">Checking their book…</p>
+          : openTotal > 0 ? (
+            <div className="mt-3 text-sm">
+              <p className="font-medium">They still own open records — pick a successor:</p>
+              <ul className="mt-1 flex flex-wrap gap-1.5 text-xs text-[var(--text-muted)]">
+                {open.companies > 0 && <li className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{open.companies} companies</li>}
+                {open.leads > 0 && <li className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{open.leads} leads</li>}
+                {open.opportunities > 0 && <li className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{open.opportunities} deals</li>}
+                {open.followups > 0 && <li className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{open.followups} reminders</li>}
+              </ul>
+              <label className="mt-2 block">Successor *
+                <select required value={successor || String(suggested?.id ?? '')} onChange={(e) => setSuccessor(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+                  <option value="">Pick a teammate…</option>
+                  {candidates.map((u) => <option key={u.id} value={u.id}>{u.name} · {u.role.replace('_', ' ')}{suggested?.id === u.id ? ' (suggested)' : ''}</option>)}
+                </select>
+              </label>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--text-muted)]">Their book is clear — nothing to hand over.</p>
+          )}
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onCancel} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
+          <button
+            disabled={openTotal > 0 && !successor && !suggested}
+            onClick={() => onConfirm(openTotal > 0 ? Number(successor || suggested?.id) : null)}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            Deactivate{openTotal > 0 ? ' + hand over' : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {  const toast = useToast();
   const { user: me } = useSession();
   const roles = me?.role === 'superadmin' ? ['admin', 'manager', 'sales_rep'] : ['manager', 'sales_rep'];
   const [f, setF] = useState({ name: '', email: '', password: '', role: 'sales_rep', team_id: '', phone: '' });

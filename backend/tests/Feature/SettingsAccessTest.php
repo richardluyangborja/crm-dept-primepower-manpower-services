@@ -134,6 +134,30 @@ class SettingsAccessTest extends TestCase
         ], ['Authorization' => "Bearer $st"])->assertOk();
     }
 
+    public function test_deactivation_requires_successor_when_records_open(): void
+    {
+        $o = $this->setupOrg();
+        $at = $this->token($o['admin']);
+        $co = \App\Models\Company::create(['owner_id' => $o['rep']->id, 'name' => 'Handover Co']);
+        \App\Models\Lead::create(['owner_id' => $o['rep']->id, 'company_id' => $co->id, 'company_name' => 'Handover Co', 'contact_name' => 'Ho Person', 'status' => 'new']);
+
+        // Preview pinpoints the open records + a suggested successor.
+        $prev = $this->getJson("/api/v1/users/{$o['rep']->id}/owned", ['Authorization' => "Bearer $at"])->assertOk()->json('data');
+        $this->assertSame(1, $prev['open']['companies']);
+        $this->assertSame(1, $prev['open']['leads']);
+        $this->assertNotNull($prev['suggested_successor']);
+
+        // No successor → 422 with counts.
+        $this->postJson("/api/v1/users/{$o['rep']->id}/deactivate", [], ['Authorization' => "Bearer $at"])
+            ->assertStatus(422)->assertJsonPath('meta.needs_successor', true);
+
+        // With successor → everything open moves, account deactivates.
+        $to = $prev['suggested_successor']['id'];
+        $this->postJson("/api/v1/users/{$o['rep']->id}/deactivate", ['reassign_to' => $to], ['Authorization' => "Bearer $at"])->assertOk();
+        $this->assertSame($to, $co->refresh()->owner_id);
+        $this->assertFalse($o['rep']->refresh()->is_active);
+    }
+
     public function test_reset_password_and_change_password(): void
     {
         $o = $this->setupOrg();

@@ -85,6 +85,7 @@ Route::prefix('v1')->group(function () {
         // Step 6 — Accounts & Settings (specs/09).
         Route::apiResource('users', \App\Http\Controllers\UserController::class)->only(['index', 'store', 'show', 'update']);
         Route::post('users/{user}/deactivate', [\App\Http\Controllers\UserController::class, 'deactivate']);
+        Route::get('users/{user}/owned', [\App\Http\Controllers\UserController::class, 'owned']);
         Route::post('users/{user}/reset-password', [\App\Http\Controllers\UserController::class, 'resetPassword']);
         Route::get('me/preferences', [\App\Http\Controllers\UserController::class, 'preferences']);
         Route::put('me/preferences', [\App\Http\Controllers\UserController::class, 'updatePreferences']);

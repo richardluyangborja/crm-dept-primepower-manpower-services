@@ -92,10 +92,45 @@ class UserController extends Controller
             return $this->fail('The superadmin account is seed-managed and cannot be deactivated.', 422);
         }
         if ($user->id === auth('api')->id()) return $this->fail('You cannot deactivate your own account.', 422);
+        $data = request()->validate([
+            'reassign_to' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+        if (\App\Services\OwnershipService::hasOpen($user) && empty($data['reassign_to'])) {
+            $suggest = \App\Services\OwnershipService::suggestSuccessor($user);
+            return response()->json([
+                'message' => 'This account still owns open records — pick a successor to hand them over.',
+                'errors' => ['reassign_to' => ['Successor required.']],
+                'meta' => [
+                    'needs_successor' => true,
+                    'open' => \App\Services\OwnershipService::openCounts($user),
+                    'suggested_successor' => $suggest ? ['id' => $suggest->id, 'name' => $suggest->name] : null,
+                ],
+            ], 422);
+        }
+        $moved = [];
+        if (! empty($data['reassign_to'])) {
+            $to = User::findOrFail($data['reassign_to']);
+            if (! $to->is_active || ! in_array($to->role, ['sales_rep', 'manager'], true) || $to->id === $user->id) {
+                return $this->fail('Successor must be a different active sales rep or manager.', 422);
+            }
+            $moved = \App\Services\OwnershipService::reassignFrom($user->refresh(), $to, auth('api')->id());
+        }
         $user->update(['is_active' => false]);
-        $user->audit('deactivated', auth('api')->id(), []);
+        $user->audit('deactivated', auth('api')->id(), ['handover' => $moved]);
 
-        return $this->ok(new UserResource($user->refresh()), 'Account deactivated.');
+        return $this->ok(new UserResource($user->refresh()), empty($moved) ? 'Account deactivated.' : 'Account deactivated — open records handed over.');
+    }
+
+    /** Handover preview for the deactivate dialog: open counts + suggested successor. */
+    public function owned(User $user)
+    {
+        $this->authorize('update', $user);
+        $suggest = \App\Services\OwnershipService::suggestSuccessor($user);
+
+        return $this->ok([
+            'open' => \App\Services\OwnershipService::openCounts($user),
+            'suggested_successor' => $suggest ? ['id' => $suggest->id, 'name' => $suggest->name, 'role' => $suggest->role] : null,
+        ]);
     }
 
     public function resetPassword(Request $request, User $user)

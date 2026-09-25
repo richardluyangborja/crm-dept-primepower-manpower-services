@@ -14,6 +14,8 @@ Future roles (reserve ids/slugs): `viewer` (read-only), `client_contact` (portal
 
 **Ownership transfer:** company ownership moves via audited `POST /companies/{id}/transfer {to_user_id, reason?}` — initiators are the owner, a same-team manager, or admin+. The company plus its open leads, open deals, open reminders, and client account move together; closed history keeps original attribution. Targets must be active sales reps or managers.
 
+**Deactivation handover:** deactivating a user with open records requires a successor (`GET /users/{id}/owned` previews counts + suggestion); `POST /users/{id}/deactivate {reassign_to}` moves everything open in one transaction, then deactivates. No silent orphans.
+
 ## 2. Permission matrix (enforced backend via Policy + `role` middleware; frontend hides/guards routes)
 | Capability | superadmin | admin | manager | sales_rep |
 |---|---|---|---|---|

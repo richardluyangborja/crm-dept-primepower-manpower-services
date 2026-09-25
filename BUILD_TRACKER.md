@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Gov Phase 2 — deactivation handover (branch `feature/gov-deactivate`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| OwnershipService + owned preview | ✅ | Shared move logic |
+| Deactivate requires successor | ✅ | 422 with counts + suggestion |
+| DeactivateDialog with picker | ✅ | Counts chips, suggested default |
+| Handover test + suite green | ✅ | 105 tests, 629 assertions |
+
 ## Gov Phase 1 — transfer + owner display (branch `feature/gov-transfer`, on develop)
 
 | Item | Status | Notes |

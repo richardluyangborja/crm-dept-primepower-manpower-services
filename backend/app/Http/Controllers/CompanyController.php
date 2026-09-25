@@ -85,33 +85,7 @@ class CompanyController extends Controller
         if ($to->id === $company->owner_id) {
             return $this->fail('That person already owns this company.', 422);
         }
-        $from = $company->owner_id;
-        $meta = ['from_owner_id' => $from, 'to_owner_id' => $to->id, 'reason' => $request->input('reason')];
-        \Illuminate\Support\Facades\DB::transaction(function () use ($company, $to, &$meta) {
-            $moved = ['leads' => 0, 'opportunities' => 0, 'followups' => 0];
-            $company->update(['owner_id' => $to->id]);
-            $meta['company'] = true;
-            foreach ($company->leads()->whereNotIn('status', ['unqualified', 'converted'])->get() as $lead) {
-                $lead->update(['owner_id' => $to->id]);
-                $moved['leads']++;
-            }
-            foreach ($company->opportunities()->whereNotIn('stage', ['won', 'lost'])->get() as $opp) {
-                $opp->update(['owner_id' => $to->id]);
-                $moved['opportunities']++;
-            }
-            foreach ($company->followups()->whereNotIn('status', ['done'])->get() as $fup) {
-                $fup->update(['owner_id' => $to->id]);
-                $moved['followups']++;
-            }
-            // Clients ride with their company for day-to-day ownership.
-            foreach ($company->clients()->get() as $client) {
-                $client->update(['owner_id' => $to->id]);
-            }
-            $meta['moved'] = $moved;
-
-            return $moved;
-        });
-        $company->audit('transferred', $request->user()->id, $meta);
+        \App\Services\OwnershipService::moveCompany($company, $to, $request->user()->id, 'transfer', $request->input('reason'));
 
         return $this->ok(new CompanyResource($company->refresh()), "Ownership moved to {$to->name}.");
     }
