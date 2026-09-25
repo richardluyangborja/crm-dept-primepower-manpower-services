@@ -78,6 +78,7 @@ class LeadController extends Controller
     public function show(Lead $lead)
     {
         $this->authorize('view', $lead);
+        $lead->load('owner:id,name');
 
         return $this->ok(new LeadResource($lead));
     }

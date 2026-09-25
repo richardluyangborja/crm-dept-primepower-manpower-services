@@ -9,10 +9,15 @@ import { SectionHead } from '../components/ui/SectionHead';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
 import { ClientJourney, apiErr } from '../components/crm/ClientWidgets';
+import { TransferDialog } from '../components/crm/TransferDialog';
+import { hasRole, useSession } from '../store/session';
 import { Star } from 'lucide-react';
 
 interface ClientFull {
   id: string;
+  company_id: string | null;
+  owner_id: number;
+  owner_name?: string | null;
   name: string;
   industry: string | null;
   address_city: string | null;
@@ -49,6 +54,8 @@ interface HeaderSurvey { id: string; response?: { score: number } | null; }
 
 export function ClientPage() {
   const { id = '' } = useParams();
+  const { user } = useSession();
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const detailQ = useQuery({
     queryKey: ['client', id],
@@ -56,6 +63,11 @@ export function ClientPage() {
     enabled: id !== '',
   });
   const cid = detailQ.data?.id ?? '';
+  // Transfer initiators: the owner, a same-team manager, or admin+.
+  const canTransfer = !!detailQ.data && !!user && (
+    hasRole(user, 'superadmin', 'admin') || detailQ.data.owner_id === user.id ||
+    (user.role === 'manager' && !!user.team_id)
+  );
 
   // Header strip: one number per lifecycle area, each from its owning query.
   const contractsQ = useQuery({
@@ -97,9 +109,17 @@ export function ClientPage() {
       ) : (
         <>
           <div>
-            <h1 className="text-xl font-bold">{detailQ.data.name}</h1>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h1 className="text-xl font-bold">{detailQ.data.name}</h1>
+              {canTransfer && (
+                <button onClick={() => setTransferOpen(true)} className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium">
+                  Transfer ownership…
+                </button>
+              )}
+            </div>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
               <StatusBadge value={detailQ.data.status} /> {detailQ.data.industry ?? '—'} · {[detailQ.data.address_city, detailQ.data.address_province].filter(Boolean).join(', ') || '—'}
+              {detailQ.data.owner_name ? ` · Owner: ${detailQ.data.owner_name}` : ''}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
@@ -151,6 +171,14 @@ export function ClientPage() {
             <SectionHead title="Insights" hint="What the system notices about this relationship — gaps, renewals, risks." />
             <InsightsSection clientId={detailQ.data.id} clientName={detailQ.data.name} />
           </section>
+          {transferOpen && detailQ.data.company_id && (
+            <TransferDialog
+              companyId={detailQ.data.company_id}
+              companyName={detailQ.data.name}
+              onClose={() => setTransferOpen(false)}
+              onDone={() => detailQ.refetch()}
+            />
+          )}
         </>
       )}
     </div>

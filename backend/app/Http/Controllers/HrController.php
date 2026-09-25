@@ -93,7 +93,13 @@ class HrController extends Controller
         $q = User::with('team:id,name')->whereIn('role', ['manager', 'sales_rep'])
             ->where('email', '!=', 'otp.demo@primepower.ph');
         if ($me->role === 'sales_rep') {
-            $q->whereKey($me->id);
+            // Reps see teammates (names for transfer pickers); HR detail stays self-only.
+            $q->where(function ($w) use ($me) {
+                $w->whereKey($me->id);
+                if ($me->team_id) {
+                    $w->orWhere('team_id', $me->team_id);
+                }
+            });
         } elseif ($me->role === 'manager') {
             $q->where(function ($w) use ($me) {
                 $w->whereKey($me->id);

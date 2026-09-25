@@ -39,4 +39,18 @@ class CompanyPolicy
     {
         return $this->view($user, $company);
     }
+
+    /** Ownership transfer: the owner, a same-team manager, or admin+. */
+    public function transfer(User $user, Company $company): bool
+    {
+        if ($this->isElevated($user)) {
+            return true;
+        }
+        if ($company->owner_id === $user->id) {
+            return true;
+        }
+
+        return $user->role === 'manager' && $user->team_id
+            && $company->owner?->team_id === $user->team_id;
+    }
 }

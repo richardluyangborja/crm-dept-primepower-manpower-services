@@ -4,6 +4,16 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Gov Phase 1 — transfer + owner display (branch `feature/gov-transfer`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| POST companies/{id}/transfer + policy | ✅ | Open records move, audit trail |
+| Owner name on lead/client headers | ✅ | Plain text, show endpoints |
+| Client 360 transfer dialog | ✅ | Successor picker + reason |
+| Directory team-visible for reps | ✅ | Picker fuel, HR detail unchanged |
+| GovTransferTest + suite green | ✅ | 104 tests, 620 assertions |
+
 ## Misc batch — MERGED to `main`
 
 | Item | Status | Notes |

@@ -12,6 +12,7 @@ class LeadResource extends JsonResource
         return [
             'id' => $this->opaqueId(),
             'owner_id' => $this->owner_id,
+            'owner_name' => $this->whenLoaded('owner', fn () => $this->owner?->name),
             'company_id' => \App\Models\Company::encodeId($this->company_id),
             'company_name' => $this->whenLoaded('company', fn () => $this->company?->name, $this->company_name),
             'contact_name' => $this->contact_name,

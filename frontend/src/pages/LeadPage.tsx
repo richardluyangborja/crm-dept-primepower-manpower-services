@@ -12,6 +12,8 @@ import { apiErr } from '../components/crm/ClientWidgets';
 interface LeadFull {
   id: string;
   company_id: string | null;
+  owner_id: number;
+  owner_name?: string | null;
   company_name: string;
   contact_name: string;
   contact_email: string | null;
@@ -94,7 +96,7 @@ export function LeadPage() {
               <div>
                 <h1 className="text-xl font-bold">{lead.company_name}</h1>
                 <p className="mt-1 text-sm text-[var(--text-muted)]">
-                  <StatusBadge value={lead.status} /> {lead.contact_name} · {lead.contact_phone ?? lead.contact_email ?? 'no contact detail'} · <span className="capitalize">{lead.source ?? 'unknown source'}</span>{lead.headcount_needed ? ` · ${lead.headcount_needed} heads${lead.positions ? ` (${lead.positions})` : ''}` : ''}
+                  <StatusBadge value={lead.status} /> {lead.contact_name} · {lead.contact_phone ?? lead.contact_email ?? 'no contact detail'} · <span className="capitalize">{lead.source ?? 'unknown source'}</span>{lead.headcount_needed ? ` · ${lead.headcount_needed} heads${lead.positions ? ` (${lead.positions})` : ''}` : ''}{lead.owner_name ? ` · Owner: ${lead.owner_name}` : ''}
                 </p>
               </div>
 

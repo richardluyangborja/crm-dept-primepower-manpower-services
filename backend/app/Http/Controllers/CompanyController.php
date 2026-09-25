@@ -67,6 +67,55 @@ class CompanyController extends Controller
         return $this->ok(new CompanyResource($company->refresh()), 'Company updated.');
     }
 
+    /**
+     * Ownership transfer (specs/02): company + open leads/deals/reminders move
+     * in one audited transaction. Closed history keeps original attribution.
+     */
+    public function transfer(Request $request, Company $company)
+    {
+        $this->authorize('transfer', $company);
+        $data = $request->validate([
+            'to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $to = \App\Models\User::findOrFail($data['to_user_id']);
+        if (! $to->is_active || ! in_array($to->role, ['sales_rep', 'manager'], true)) {
+            return $this->fail('Ownership can only transfer to an active sales rep or manager.', 422);
+        }
+        if ($to->id === $company->owner_id) {
+            return $this->fail('That person already owns this company.', 422);
+        }
+        $from = $company->owner_id;
+        $meta = ['from_owner_id' => $from, 'to_owner_id' => $to->id, 'reason' => $request->input('reason')];
+        \Illuminate\Support\Facades\DB::transaction(function () use ($company, $to, &$meta) {
+            $moved = ['leads' => 0, 'opportunities' => 0, 'followups' => 0];
+            $company->update(['owner_id' => $to->id]);
+            $meta['company'] = true;
+            foreach ($company->leads()->whereNotIn('status', ['unqualified', 'converted'])->get() as $lead) {
+                $lead->update(['owner_id' => $to->id]);
+                $moved['leads']++;
+            }
+            foreach ($company->opportunities()->whereNotIn('stage', ['won', 'lost'])->get() as $opp) {
+                $opp->update(['owner_id' => $to->id]);
+                $moved['opportunities']++;
+            }
+            foreach ($company->followups()->whereNotIn('status', ['done'])->get() as $fup) {
+                $fup->update(['owner_id' => $to->id]);
+                $moved['followups']++;
+            }
+            // Clients ride with their company for day-to-day ownership.
+            foreach ($company->clients()->get() as $client) {
+                $client->update(['owner_id' => $to->id]);
+            }
+            $meta['moved'] = $moved;
+
+            return $moved;
+        });
+        $company->audit('transferred', $request->user()->id, $meta);
+
+        return $this->ok(new CompanyResource($company->refresh()), "Ownership moved to {$to->name}.");
+    }
+
     /** Duplicate-company prompt for lead capture: match by name or phone. */
     public function lookup(Request $request)
     {

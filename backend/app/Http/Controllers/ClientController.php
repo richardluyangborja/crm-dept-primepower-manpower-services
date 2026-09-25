@@ -44,7 +44,7 @@ class ClientController extends Controller
     public function show(Client $client)
     {
         $this->authorize('view', $client);
-        $client->load('contacts');
+        $client->load(['contacts', 'owner:id,name']);
 
         return $this->ok(new ClientResource($client));
     }

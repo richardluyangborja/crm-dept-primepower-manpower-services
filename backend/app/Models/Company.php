@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Traits\Filterable;
+use App\Traits\HasAuditLog;
 use App\Traits\HasOpaqueId;
 use Illuminate\Database\Eloquent\Model;
 
 class Company extends Model
 {
-    use Filterable, HasOpaqueId;
+    use Filterable, HasOpaqueId, HasAuditLog;
 
     protected $fillable = [
         'owner_id', 'name', 'industry', 'address_city', 'address_province',
