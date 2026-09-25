@@ -44,7 +44,16 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
         $this->authorize('create', User::class);
-        $user = User::create($request->validated());
+        $data = $request->validated();
+        // Single-team simplification (specs/02): admins are teamless; sales roles
+        // default into Primepower Sales when no team is given.
+        if (in_array($data['role'], ['superadmin', 'admin'], true)) {
+            $data['team_id'] = null;
+        } elseif (empty($data['team_id'])) {
+            $data['team_id'] = \App\Models\Team::where('name', 'Primepower Sales')->value('id')
+                ?? \App\Models\Team::orderBy('id')->value('id');
+        }
+        $user = User::create($data);
         $user->audit('invited', $request->user()->id, ['email' => $user->email, 'role' => $user->role]);
 
         return $this->created(new UserResource($user->load('team')), 'Account created — share the temporary password securely.');
@@ -78,6 +87,11 @@ class UserController extends Controller
             if ($user->role === 'superadmin' && User::where('role', 'superadmin')->where('is_active', true)->count() <= 1) {
                 return $this->fail('Cannot deactivate the last active superadmin.', 422);
             }
+        }
+        // Promotions out of the salesforce leave the team behind.
+        $newRole = $data['role'] ?? $user->role;
+        if (in_array($newRole, ['superadmin', 'admin'], true)) {
+            $data['team_id'] = null;
         }
         $user->update($data);
         $user->audit('updated', $request->user()->id, ['fields' => array_keys($data)]);

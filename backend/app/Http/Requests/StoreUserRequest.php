@@ -23,7 +23,8 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:10'],
             'role' => ['required', Rule::in(self::creatableRoles($this->user()?->role))],
-            'team_id' => ['required_if:role,manager,sales_rep', 'nullable', 'exists:teams,id'],
+            // Team defaults into Primepower Sales for sales roles (controller); admins are teamless.
+            'team_id' => ['nullable', 'exists:teams,id'],
             'phone' => ['nullable', 'regex:/^\+63\d{10}$/'],
         ];
     }
@@ -32,7 +33,6 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'password.min' => 'Temporary passwords must be at least 10 characters.',
-            'team_id.required_if' => 'Managers and sales reps must belong to a team.',
             'phone.regex' => 'Phone must be PH format: +639XXXXXXXXX.',
         ];
     }

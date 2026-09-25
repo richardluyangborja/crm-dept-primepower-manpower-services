@@ -181,34 +181,17 @@ interface Team {
 }
 
 function OrganizationSection() {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const [name, setName] = useState('');
-  const [region, setRegion] = useState('');
   const [membersOf, setMembersOf] = useState<Team | null>(null);
   const teamsQ = useQuery({
     queryKey: ['teams'],
     queryFn: async () => (await api.get('/teams')).data.data as Team[],
   });
 
-  const create = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    try {
-      await api.post('/teams', { name: name.trim(), region: region.trim() || undefined });
-      toast('success', 'Team created.');
-      setName('');
-      setRegion('');
-      qc.invalidateQueries({ queryKey: ['teams'] });
-    } catch (e) {
-      toast('error', apiErr(e, 'Could not create team.'));
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <div className="card p-6">
         <h2 className="font-semibold">Teams</h2>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">Sales territories. Reps and managers must belong to one.</p>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">One sales team for the whole crew — membership is automatic.</p>
         <DataTable<Team>
           rows={teamsQ.data ?? []}
           columns={[
@@ -220,14 +203,9 @@ function OrganizationSection() {
               </button>
             )},
           ]}
-          empty={teamsQ.isLoading ? <p className="text-sm">Loading…</p> : <EmptyState title="No teams" hint="Create the first sales territory." />}
+          empty={teamsQ.isLoading ? <p className="text-sm">Loading…</p> : <EmptyState title="No teams" hint="Teams are managed by migration." />}
         />
         {membersOf && <TeamMembersModal team={membersOf} onClose={() => setMembersOf(null)} />}
-        <form onSubmit={create} className="mt-3 flex flex-wrap gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Team name (e.g. Davao)" className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
-          <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region" className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
-          <button className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">Add team</button>
-        </form>
       </div>
       <MasterDataSection />
     </div>
@@ -574,13 +552,19 @@ function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => vo
   const [err, setErr] = useState('');
   const teamsQ = useQuery({ queryKey: ['teams'], queryFn: async () => (await api.get('/teams')).data.data as Team[] });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  const salesTeam = teamsQ.data?.find((t) => t.name === 'Primepower Sales') ?? teamsQ.data?.[0];
+  const needsTeam = f.role === 'manager' || f.role === 'sales_rep';
 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     setBusy(true);
     setErr('');
     try {
-      await api.post('/users', { ...f, team_id: f.team_id ? Number(f.team_id) : undefined, phone: f.phone || undefined });
+      await api.post('/users', {
+        ...f,
+        team_id: needsTeam ? (f.team_id ? Number(f.team_id) : salesTeam?.id) : undefined,
+        phone: f.phone || undefined,
+      });
       toast('success', 'Account created — share the temporary password securely.');
       onDone();
       onClose();
@@ -603,10 +587,13 @@ function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => vo
             <label className="flex-1">Role<select value={f.role} onChange={set('role')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
               {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select></label>
-            <label className="flex-1">Team<select value={f.team_id} onChange={set('team_id')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-              <option value="">—</option>
-              {teamsQ.data?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select></label>
+            {needsTeam ? (
+              <label className="flex-1">Team<select value={f.team_id || String(salesTeam?.id ?? '')} onChange={set('team_id')} disabled className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 opacity-70">
+                {salesTeam && <option value={salesTeam.id}>{salesTeam.name} (only team)</option>}
+              </select></label>
+            ) : (
+              <p className="flex-1 self-end pb-2 text-xs text-[var(--text-muted)]">Admins aren't on a team.</p>
+            )}
           </div>
           <label>Mobile (optional)<input value={f.phone} onChange={set('phone')} placeholder="+639XXXXXXXXX" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
         </div>
@@ -631,7 +618,10 @@ function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onD
   const teamsQ = useQuery({ queryKey: ['teams'], queryFn: async () => (await api.get('/teams')).data.data as Team[] });
 
   const save = async (headers?: Record<string, string>) => {
-    await api.put(`/users/${user.id}`, { role, team_id: teamId ? Number(teamId) : null }, { headers });
+    await api.put(`/users/${user.id}`, {
+      role,
+      team_id: role === 'admin' || role === 'superadmin' ? null : (teamId ? Number(teamId) : null),
+    }, { headers });
   };
 
   const submit = async (ev: React.FormEvent) => {
@@ -666,10 +656,14 @@ function RoleForm({ user, onClose, onDone }: { user: U; onClose: () => void; onD
             {roles.includes(role) ? null : <option value={role}>{role} (current)</option>}
             {roles.map((r) => <option key={r} value={r}>{r}</option>)}
           </select></label>
-          <label>Team<select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
-            <option value="">—</option>
-            {teamsQ.data?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select></label>
+          {role === 'admin' || role === 'superadmin' ? (
+            <p className="text-xs text-[var(--text-muted)]">Admins aren't on a team — the field clears on save.</p>
+          ) : (
+            <label>Team<select value={teamId} onChange={(e) => setTeamId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+              <option value="">—</option>
+              {teamsQ.data?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select></label>
+          )}
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>

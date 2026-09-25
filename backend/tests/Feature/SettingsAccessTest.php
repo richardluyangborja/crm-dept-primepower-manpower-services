@@ -159,8 +159,7 @@ class SettingsAccessTest extends TestCase
     }
 
     public function test_reset_password_and_change_password(): void
-    {
-        $o = $this->setupOrg();
+    {        $o = $this->setupOrg();
         $at = $this->token($o['admin']);
         $this->postJson("/api/v1/users/{$o['rep']->id}/reset-password", ['password' => 'ResetPass123!'], ['Authorization' => "Bearer $at"])->assertOk();
         $this->postJson('/api/v1/auth/login', ['email' => $o['rep']->email, 'password' => 'ResetPass123!'])->assertOk();
@@ -237,5 +236,27 @@ class SettingsAccessTest extends TestCase
             ->assertCreated()->json('data.id');
         $this->postJson('/api/v1/teams', ['name' => 'Nope'], ['Authorization' => 'Bearer '.$this->token($o['rep'])])->assertForbidden();
         $this->putJson("/api/v1/teams/$id", ['region' => 'Davao del Sur'], ['Authorization' => 'Bearer '.$this->token($o['admin'])])->assertOk();
+    }
+
+    public function test_admins_are_teamless_and_sales_default_into_sales_team(): void
+    {
+        $o = $this->setupOrg();
+        $st = $this->token($o['super']);
+        $salesTeam = \App\Models\Team::create(['name' => 'Primepower Sales Test', 'region' => 'Nationwide']);
+
+        // Admin invite with a team → team stripped to null.
+        $adminId = $this->postJson('/api/v1/users', [
+            'name' => 'A2', 'email' => 'a2@primepower.ph', 'password' => 'Temporary123!',
+            'role' => 'admin', 'team_id' => $salesTeam->id,
+        ], ['Authorization' => "Bearer $st"])->assertCreated()->json('data.id');
+        $this->assertNull(\App\Models\User::find($adminId)->team_id);
+
+        // Sales invite without a team → defaulted into Primepower Sales (by name, others present).
+        // (The migration already seeds it — firstOrCreate keeps this idempotent.)
+        \App\Models\Team::firstOrCreate(['name' => 'Primepower Sales'], ['region' => 'Nationwide']);
+        $repId = $this->postJson('/api/v1/users', [
+            'name' => 'R2', 'email' => 'r2@primepower.ph', 'password' => 'Temporary123!', 'role' => 'sales_rep',
+        ], ['Authorization' => "Bearer $st"])->assertCreated()->json('data.id');
+        $this->assertSame('Primepower Sales', \App\Models\User::find($repId)->team->name);
     }
 }

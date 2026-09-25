@@ -12,6 +12,8 @@ Future roles (reserve ids/slugs): `viewer` (read-only), `client_contact` (portal
 
 **Top-account rule:** `superadmin` is seeded (never created via UI/API) and hidden from user lists for everyone else. Creation constraints (backend-enforced): superadmin → admin/manager/sales_rep; admin → manager/sales_rep only. Nobody creates another superadmin.
 
+**Single team:** the whole salesforce lives on one “Primepower Sales” team; admins/superadmins are teamless (migration-nulled, validation-enforced, hidden team picker). New managers/sales auto-join it. Team management UI is hidden — membership is automatic.
+
 **Ownership transfer:** company ownership moves via audited `POST /companies/{id}/transfer {to_user_id, reason?}` — initiators are the owner, a same-team manager, or admin+. The company plus its open leads, open deals, open reminders, and client account move together; closed history keeps original attribution. Targets must be active sales reps or managers.
 
 **Deactivation handover:** deactivating a user with open records requires a successor (`GET /users/{id}/owned` previews counts + suggestion); `POST /users/{id}/deactivate {reassign_to}` moves everything open in one transaction, then deactivates. No silent orphans.

@@ -4,6 +4,14 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Gov Phase 3 — team simplification (branch `feature/gov-teams`, on develop)
+
+| Item | Status | Notes |
+|---|---|---|
+| Single-team migration + seeder | ✅ | Admins teamless, sales converge |
+| Invite/role forms lock + hide team | ✅ | Backend defaults + nulls |
+| Teams test + suite green | ✅ | 106 tests, 633 assertions |
+
 ## Gov Phase 2 — deactivation handover (branch `feature/gov-deactivate`, on develop)
 
 | Item | Status | Notes |
