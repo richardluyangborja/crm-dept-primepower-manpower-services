@@ -4,6 +4,17 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Gov Phase 4 — docs + release (branch `feature/gov-docs-release`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Specs 02/03/04/09/12/14 + DEMO | ✅ | Ownership governance documented |
+| Full regression + release to main | 🔄 | Then CI green |
+
+> One feature at a time, in the order below (see `specs/17-*.md`). Move rows
+> left → right as work progresses. Each Done row links its merged PR.
+> Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
+
 ## Gov Phase 3 — team simplification (branch `feature/gov-teams`, on develop)
 
 | Item | Status | Notes |

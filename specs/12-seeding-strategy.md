@@ -20,7 +20,7 @@ Fixtures: job_orders.json, invoices.json, headcount.json, bi_pull.json
 - **Survey comments:** "Mabilis ang deployment, salamat!", "Ok ang guards pero need reliever pag Sunday.", "Paki-follow up ang billing, thanks."
 
 ## 4. Volumes (demo-friendly)
-6 users, 3 teams + 35 companies (15 core + 20 full-data), 30 leads, 11+ clients (+contacts), 30 opps (open stages + won with contracts/JOs/invoices), 30+ activities, 3 templates + 8+ surveys, 12+ followups (incl. overdue/escalated). Dates deterministic across 2025-11 → 2026-09 (`created_at/updated_at` set on seed so aging, trends, and renewals read realistically). Company FKs backfilled for legacy rows; zero nulls. All linked so every section/calendar has content and no screen is empty on first run.
+6 users on one “Primepower Sales” team (manager + sales; admins/superadmin teamless) + 35 companies (15 core + 20 full-data), 30 leads, 11+ clients (+contacts), 30 opps (open stages + won with contracts/JOs/invoices), 30+ activities, 3 templates + 8+ surveys, 12+ followups (incl. overdue/escalated). Dates deterministic across 2025-11 → 2026-09 (`created_at/updated_at` set on seed so aging, trends, and renewals read realistically). Company FKs backfilled for legacy rows; zero nulls. All linked so every section/calendar has content and no screen is empty on first run.
 - AI (`15`): 2 high-risk clients (45d inactive + NPS ≤6 + 2 overdue), 1 low-risk (weekly activity + NPS 9); prefilled `insights_cache` so dashboard renders offline.
 - OTP/session (`16`): `otp.demo@primepower.ph` (mock code `123456`, `OTP_MODE=mock` only); no enforcement in v1 seeds.
 ## 5. Managed-database note

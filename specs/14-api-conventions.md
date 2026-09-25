@@ -33,6 +33,8 @@ POST /auth/otp/send|verify|resend        # 16 (v1 mock, v2 enforced; 5-min expir
 CRUD /leads (company_id|company:{}, one-active-lead 409, converted is system-only), /clients, /contacts, /opportunities (company_id required unless client given; client adopted), /activities, /survey-templates, /surveys, /surveys/{id}/respond, /followups, /notifications
 GET /companies /companies/lookup?name&phone /companies/{id}   # company root + duplicate prompt
 POST /companies/{id}/transfer {to_user_id, reason?}           # audited ownership move
+GET  /users/{id}/owned                                        # handover preview: open counts + suggested successor
+POST /users/{id}/deactivate {reassign_to?}                    # successor required when records are open
 POST /opportunities/{id}/move  POST /opportunities/{id}/win|lose
 GET  /dashboard/summary  GET /reports/* (BI-compatible)
 GET  /insights/clients/{id}  GET /insights/opportunities/{id}   # 15

@@ -33,7 +33,7 @@ Validation: `contact_phone` regex `^\+63\d{10}$`, email RFC, company unique-ish 
 ## 4. UI
 - **Leads page:** 3 KPI cards + quick-chip + *All Inquiries* table (search, status filter); capture/import as header buttons; row click → lead detail.
 - **Clients page:** 3 KPI cards + view switch (directory / People / Recently Won Over); per-row staffing deep link (`/pipeline/staffing?client=`).
-- **Client 360:** header KPI strip + grouped sections (Profile / Deals / Contracts / Operations / Conversations / Billing / Insights) with anchor quick-jump; "New deal" deep-links the pipeline form with the client preselected.
+- **Client 360:** header KPI strip + owner name + Transfer ownership button (owner, same-team manager, admin+) + grouped sections (Profile / Deals / Contracts / Operations / Conversations / Billing / Insights) with anchor quick-jump; "New deal" deep-links the pipeline form with the client preselected.
 - Feedback: score tooltip explains points; duplicate modal; CSV import shows row errors with line numbers (mock parser, 500-row limit).
 
 ## 5. Seeds (static, `12`)

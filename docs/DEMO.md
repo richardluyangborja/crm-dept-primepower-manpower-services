@@ -92,6 +92,11 @@ Open `http://127.0.0.1:5173/`. Log in as sales rep:
 
 ## If asked…
 
+- **Who owns what?** Whoever captures it — shown by name on every lead and
+  client header. Transfer it from the client page (owner, manager, or admin);
+  deactivating someone with open records forces picking a successor first.
+  Admins aren't on any team; the whole salesforce is one team.
+
 - **Lead → client, exactly?** Capture (company + contact + need) → qualify →
   deal → sign → won. Won creates/links the client, converts open leads,
   activates the account. Lost leaves the lead qualified for the next try.
