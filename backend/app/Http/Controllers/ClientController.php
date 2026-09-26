@@ -19,7 +19,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Client::class);
-        $clients = Client::visibleTo($request->user())
+        $clients = Client::visibleToWithCompany($request->user())
             ->filter($request, ['status', 'industry', 'owner_id'])
             ->search($request->query('q'), ['name', 'contact_email', 'address_city'])
             ->latest()->paginate(min(100, (int) $request->query('per_page', 15)));

@@ -29,7 +29,7 @@ class StoreOpportunityRequest extends FormRequest
             'contract_months' => ['nullable', 'integer', 'min:1', 'max:120'],
             'probability' => ['sometimes', 'integer', 'min:0', 'max:100'],
             'expected_close_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'owner_id' => ['sometimes', 'exists:users,id'],
+            'owner_id' => ['sometimes', Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['sales_rep', 'manager'])->where('is_active', true))],
         ];
     }
 }

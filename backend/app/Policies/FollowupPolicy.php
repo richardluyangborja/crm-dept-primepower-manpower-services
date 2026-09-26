@@ -22,12 +22,13 @@ class FollowupPolicy
         if ($this->isElevated($user)) {
             return true;
         }
-        if ($followup->owner_id === $user->id) {
+        if ($followup->owner_id === $user->id || $followup->company?->owner_id === $user->id) {
             return true;
         }
 
         return $user->role === 'manager' && $user->team_id
-            && $followup->owner?->team_id === $user->team_id;
+            && ($followup->owner?->team_id === $user->team_id
+                || $followup->company?->owner?->team_id === $user->team_id);
     }
 
     public function create(User $user): bool

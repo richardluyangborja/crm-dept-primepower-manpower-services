@@ -20,7 +20,7 @@ class FollowupController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Followup::class);
-        $query = Followup::visibleTo($request->user())->with('client:id,name')
+        $query = Followup::visibleToWithCompany($request->user())->with('client:id,name')
             ->filter($request, ['status', 'priority', 'owner_id', 'client_id']);
         if ($request->query('due_from')) {
             $query->where('due_at', '>=', $request->query('due_from'));

@@ -16,6 +16,7 @@ Sidebar parent **Lead & Client Tracking** (collapsible, same pattern as the Pipe
 - As rep I capture a lead in < 60s with guidance → company search-or-create (duplicate prompt), then contact + requirement; required: company, contact name, phone/email, source; inline PH validation; duplicate warning (same phone/email) with "View existing" link; one-active-lead guard (409 links the open lead); toast "Lead created — qualify it next".
 - As rep I qualify → status `new→contacted→qualified|unqualified` (never `converted` by hand); score auto: +20 PH corporate email, +15 complete address, +25 valid +63 phone, +40 manager override note; unqualified requires reason; qualifying opens the first-deal prompt.
 - As rep/manager I open client 360 → header (status badge, owner avatar, industry, city), quick-jump anchors to grouped sections; every section has EmptyState + CTA.
+- **Company-owner assignment:** admin/manager pick a sales rep on capture (reps auto-own); new leads/deals default to the company owner, and an explicit assignment moves the company too (audited `owner_assigned`). Reps see rows they own **or** rows under companies they own; `owner_id` accepts active reps/managers only.
 
 ## 3. API (see `14` for envelopes)
 ```

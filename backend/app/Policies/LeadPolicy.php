@@ -23,12 +23,13 @@ class LeadPolicy
         if ($this->isElevated($user)) {
             return true;
         }
-        if ($lead->owner_id === $user->id) {
+        if ($lead->owner_id === $user->id || $lead->company?->owner_id === $user->id) {
             return true;
         }
 
         return $user->role === 'manager' && $user->team_id
-            && $lead->owner?->team_id === $user->team_id;
+            && ($lead->owner?->team_id === $user->team_id
+                || $lead->company?->owner?->team_id === $user->team_id);
     }
 
     public function create(User $user): bool

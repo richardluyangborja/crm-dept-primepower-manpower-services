@@ -22,12 +22,13 @@ class OpportunityPolicy
         if ($this->isElevated($user)) {
             return true;
         }
-        if ($opp->owner_id === $user->id) {
+        if ($opp->owner_id === $user->id || $opp->company?->owner_id === $user->id) {
             return true;
         }
 
         return $user->role === 'manager' && $user->team_id
-            && $opp->owner?->team_id === $user->team_id;
+            && ($opp->owner?->team_id === $user->team_id
+                || $opp->company?->owner?->team_id === $user->team_id);
     }
 
     public function create(User $user): bool

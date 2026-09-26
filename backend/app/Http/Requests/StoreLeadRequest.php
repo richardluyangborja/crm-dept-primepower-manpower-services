@@ -42,7 +42,7 @@ class StoreLeadRequest extends FormRequest
             'source' => ['nullable', Rule::in(Lead::SOURCES)],
             'status' => ['sometimes', Rule::in(Lead::STATUSES)],
             'notes' => ['nullable', 'string'],
-            'owner_id' => ['sometimes', 'exists:users,id'], // admin/manager assign; rep forced to self
+            'owner_id' => ['sometimes', Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['sales_rep', 'manager'])->where('is_active', true))], // assign to an active rep/manager; rep forced to self
         ];
     }
 

@@ -22,12 +22,13 @@ class ClientPolicy
         if ($this->isElevated($user)) {
             return true;
         }
-        if ($client->owner_id === $user->id) {
+        if ($client->owner_id === $user->id || $client->company?->owner_id === $user->id) {
             return true;
         }
 
         return $user->role === 'manager' && $user->team_id
-            && $client->owner?->team_id === $user->team_id;
+            && ($client->owner?->team_id === $user->team_id
+                || $client->company?->owner?->team_id === $user->team_id);
     }
 
     public function create(User $user): bool

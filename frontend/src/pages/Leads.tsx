@@ -12,6 +12,7 @@ import { LeadTouchPrompt } from '../components/crm/LeadTouchPrompt';
 import { Download, Upload } from 'lucide-react';
 import { useToast } from '../components/ui/Toaster';
 import { useSettingsList } from '../hooks/useSettings';
+import { hasRole, useSession } from '../store/session';
 import { apiErr } from '../components/crm/ClientWidgets';
 
 interface Lead {
@@ -244,11 +245,20 @@ interface LookupCompany { id: string; name: string; address_city: string | null;
 
 function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const { user } = useSession();
+  const canAssign = hasRole(user, 'admin', 'manager');
   const sources = useSettingsList('lead_sources', ['referral', 'walk_in', 'website', 'facebook', 'cold_call', 'event']);
   const industries = useSettingsList('industries', ['BPO', 'Manufacturing', 'Hospitality', 'Retail', 'Healthcare', 'Logistics']);
   const [step, setStep] = useState(0);
   const [companyName, setCompanyName] = useState('');
   const [useExisting, setUseExisting] = useState<LookupCompany | null>(null);
+  const [ownerId, setOwnerId] = useState('');
+  const repsQ = useQuery({
+    queryKey: ['users', 'sales-reps'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'sales_rep', per_page: 100 } })).data.data as { id: number; name: string }[],
+    enabled: canAssign,
+  });
+  const reps = repsQ.data ?? [];
   const [co, setCo] = useState({ industry: '', city: '', province: '', email: '', phone: '' });
   const [f, setF] = useState({ contact_name: '', contact_position: '', contact_email: '', contact_phone: '', headcount: '', positions: '', source: 'facebook' });
   const [busy, setBusy] = useState(false);
@@ -287,6 +297,7 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
         headcount_needed: f.headcount ? Number(f.headcount) : undefined,
         positions: f.positions || undefined,
         source: f.source,
+        ...(canAssign && ownerId ? { owner_id: Number(ownerId) } : {}),
       });
       const dup = r.data.meta?.duplicate_warning;
       toast('success', dup ? `Lead created — heads up: possible duplicate ${dup.type} #${dup.id}.` : 'Lead created — qualify it next.');
@@ -355,6 +366,13 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
                 </div>
                 <label>Company email<input type="email" value={co.email} onChange={setC('email')} placeholder="info@company.ph" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
               </>
+            )}
+            {canAssign && (
+              <label>Assign to sales rep<select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+                <option value="">Me ({user?.name ?? 'default'}) — or company owner</option>
+                {reps.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+              <span className="mt-1 block text-xs text-[var(--text-muted)]">The company, lead, and its future deals all belong to this rep.</span></label>
             )}
           </div>
         )}

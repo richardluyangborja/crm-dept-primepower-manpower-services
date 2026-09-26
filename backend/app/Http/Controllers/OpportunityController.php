@@ -20,7 +20,7 @@ class OpportunityController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Opportunity::class);
-        $opps = Opportunity::visibleTo($request->user())->with('client:id,name')
+        $opps = Opportunity::visibleToWithCompany($request->user())->with('client:id,name')
             ->filter($request, ['stage', 'client_id', 'company_id', 'owner_id'])
             ->search($request->query('q'), ['title'])
             ->orderBy('expected_close_date')->paginate(min(100, (int) $request->query('per_page', 50)));
@@ -53,8 +53,15 @@ class OpportunityController extends Controller
         if (! $company) {
             return $this->fail('An opportunity needs a company.', 422);
         }
-        if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
-            $data['owner_id'] = $user->id;
+        // Ownership follows the company: new deals default to the company owner so the
+        // rep who owns the company automatically manages its deals. An explicit
+        // assignment by admin/manager moves the company too (audited, like a transfer).
+        $assigned = $user->role !== 'sales_rep' && ! empty($data['owner_id']);
+        if ($assigned && (int) $data['owner_id'] !== (int) $company->owner_id) {
+            $company->update(['owner_id' => $data['owner_id']]);
+            $company->audit('owner_assigned', $user->id, ['to_owner_id' => $data['owner_id'], 'via' => 'deal_open']);
+        } else {
+            $data['owner_id'] = $assigned ? $data['owner_id'] : $company->owner_id;
         }
         $data['stage'] ??= 'new';
         $data['probability'] ??= Opportunity::STAGE_PROBABILITY[$data['stage']];

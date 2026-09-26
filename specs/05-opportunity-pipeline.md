@@ -20,7 +20,7 @@ GET|PUT|DELETE /opportunities/{id}
 POST /opportunities/{id}/move {stage, lost_reason?}  POST /opportunities/{id}/win|lose
 GET /dashboard/summary → {open_value, weighted, win_rate, by_stage[], closes_by_month[]}
 ```
-Rules: `move` validates transition (can't Won→New without manager note); probability defaults per stage (New 10 … Negotiation 80, **Contract 90**, Won 100); `value_centavos` integer ≥1 (required at create); manpower terms required when entering Qualified; active contract required when entering Won; financing fields optional on create/update otherwise, required (with `start_date`) when entering Contract.
+Rules: `move` validates transition (can't Won→New without manager note); probability defaults per stage (New 10 … Negotiation 80, **Contract 90**, Won 100); `value_centavos` integer ≥1 (required at create); manpower terms required when entering Qualified; active contract required when entering Won; financing fields optional on create/update otherwise, required (with `start_date`) when entering Contract. **Ownership:** new deals default to the company owner (the rep who owns the company automatically manages its deals); explicit assignment moves the company too (audited); deal lists/detail are visible to the row owner or the company owner.
 - **Stage rituals:** every non-terminal move opens a `StageUpModal` (deal header + live money strip + optional touchpoint log + follow-up + stage block). Contacted logs first touch; Qualified locks terms; Quotation records value/date + auto follow-up; Approval adjusts probability + terms; backward moves confirm with a note (reopen note when leaving Won/Lost).
 
 ## 4. UI

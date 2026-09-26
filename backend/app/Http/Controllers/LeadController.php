@@ -18,7 +18,7 @@ class LeadController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Lead::class);
-        $leads = Lead::visibleTo($request->user())
+        $leads = Lead::visibleToWithCompany($request->user())
             ->filter($request, ['status', 'source', 'owner_id', 'company_id'])
             ->search($request->query('q'), ['company_name', 'contact_name', 'contact_email'])
             ->latest()->paginate(min(100, (int) $request->query('per_page', 15)));
@@ -31,14 +31,14 @@ class LeadController extends Controller
         $this->authorize('create', Lead::class);
         $data = $request->validated();
         $user = $request->user();
-        // Reps own what they capture; managers/admins may assign.
-        if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
-            $data['owner_id'] = $user->id;
-        }
-        // Resolve or create the company; it owns the lead from here on.
+        // Resolve or create the company first — it determines default ownership.
         if (! empty($data['company_id'])) {
             $company = \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
         } else {
+            // Reps own what they capture; managers/admins may assign to any active rep/manager.
+            if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
+                $data['owner_id'] = $user->id;
+            }
             $c = $data['company'] ?? [];
             $company = \App\Models\Company::create([
                 'owner_id' => $data['owner_id'],
@@ -51,7 +51,7 @@ class LeadController extends Controller
                 'source' => $data['source'] ?? null,
             ]);
         }
-        // One active lead per company — point at the open one instead.
+        // One active lead per company — point at the open one instead (before moving anything).
         $open = $company->leads()->whereNotIn('status', ['unqualified', 'converted'])->first();
         if ($open) {
             return response()->json([
@@ -59,6 +59,16 @@ class LeadController extends Controller
                 'errors' => ['company_id' => ['Company already has an open lead.']],
                 'meta' => ['existing_lead_id' => $open->opaqueId()],
             ], 409);
+        }
+        // Ownership follows the company: new leads default to the company owner.
+        // An explicit assignment by admin/manager moves the company too, so the
+        // company owner always owns its pipeline (audited, like a transfer).
+        $assigned = $user->role !== 'sales_rep' && ! empty($data['owner_id']);
+        if ($assigned && (int) $data['owner_id'] !== (int) $company->owner_id) {
+            $company->update(['owner_id' => $data['owner_id']]);
+            $company->audit('owner_assigned', $user->id, ['to_owner_id' => $data['owner_id'], 'via' => 'lead_capture']);
+        } elseif (! $assigned) {
+            $data['owner_id'] = $company->owner_id;
         }
         $data['company_id'] = $company->id;
         $data['company_name'] = $data['company_name'] ?? $company->name;

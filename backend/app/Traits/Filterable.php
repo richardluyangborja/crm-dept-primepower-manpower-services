@@ -71,4 +71,38 @@ trait Filterable
 
         return $query->where($query->getModel()->getTable().'.'.$ownerColumn, $user->id);
     }
+
+    /**
+     * Company-owner visibility (overhaul Phase 2): a rep sees rows they own OR rows
+     * under companies they own, so owning the company unlocks its leads/deals.
+     * Managers see teammates' rows plus rows under teammates' companies.
+     */
+    public function scopeVisibleToWithCompany(Builder $query, mixed $user, string $ownerColumn = 'owner_id'): Builder
+    {
+        if (! $user || in_array($user->role, ['superadmin', 'admin'], true)) {
+            return $query;
+        }
+        $table = $query->getModel()->getTable();
+        $teamMateIds = function ($q) use ($user) {
+            $q->select('id')->from('users')->where('team_id', $user->team_id);
+        };
+        $teamCompanyIds = function ($q) use ($user) {
+            $q->select('id')->from('companies')->whereIn('owner_id', function ($qq) use ($user) {
+                $qq->select('id')->from('users')->where('team_id', $user->team_id);
+            });
+        };
+        if ($user->role === 'manager' && $user->team_id) {
+            return $query->where(function (Builder $q) use ($table, $ownerColumn, $teamMateIds, $teamCompanyIds) {
+                $q->whereIn($table.'.'.$ownerColumn, $teamMateIds)
+                    ->orWhereIn($table.'.company_id', $teamCompanyIds);
+            });
+        }
+
+        return $query->where(function (Builder $q) use ($table, $ownerColumn, $user) {
+            $q->where($table.'.'.$ownerColumn, $user->id)
+                ->orWhereIn($table.'.company_id', function ($qq) use ($user) {
+                    $qq->select('id')->from('companies')->where('owner_id', $user->id);
+                });
+        });
+    }
 }
