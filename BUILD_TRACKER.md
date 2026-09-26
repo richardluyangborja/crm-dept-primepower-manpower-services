@@ -4,7 +4,7 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Overhaul Phase 2 — company-owner assignment (branch `feature/company-owner-assignment`)
+## Overhaul Phase 2 — company-owner assignment — MERGED to `main`
 
 | Item | Status | Notes |
 |---|---|---|
