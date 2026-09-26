@@ -165,24 +165,31 @@ class CrmActivitySeeder extends Seeder
             $row->update(['created_at' => $ca, 'updated_at' => $ca]);
         }
 
+        // Curated lifecycle set (specs/08 + 12): one owner per row (the client's owner),
+        // company linked at create, dates relative to now so statuses stay truthful on reseed.
         $fups = [
-            ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'Follow up quotation — SM Cebu headcount', 'due_at' => now()->addHours(3), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
-            ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => 'Confirm reliever for Sunday shift', 'due_at' => now()->subHours(26), 'priority' => 'high', 'status' => 'overdue', 'ca' => 3],
-            ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'Send billing statement copy', 'due_at' => now()->addDay(), 'priority' => 'medium', 'status' => 'snoozed', 'snoozed_until' => now()->addDay(), 'ca' => 2],
-            ['client_id' => $bdo->id, 'owner_id' => $bdo->owner_id, 'title' => 'Call back — BDO teller headcount', 'due_at' => now()->addHours(5), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
-            ['client_id' => $calamba->id, 'owner_id' => $calamba->owner_id, 'title' => 'Send rate card — Calamba', 'due_at' => now()->subHours(50), 'priority' => 'medium', 'status' => 'overdue', 'ca' => 4],
-            ['client_id' => $qc->id, 'owner_id' => $qc->owner_id, 'title' => 'Visit QC Retail office', 'due_at' => now()->addDays(2), 'priority' => 'low', 'status' => 'open', 'ca' => 1],
-            ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => 'Contract signing — housekeepers', 'due_at' => now()->subDays(3), 'priority' => 'high', 'status' => 'done', 'ca' => 9],
-            ['client_id' => $catering->id, 'owner_id' => $catering->owner_id, 'title' => 'Re-engage Cebu Catering', 'due_at' => now()->subDays(4), 'priority' => 'medium', 'status' => 'escalated', 'escalated_to' => $salesMgr->id, 'ca' => 12],
-            ['client_id' => $med->id, 'owner_id' => $med->owner_id, 'title' => 'Send SOA copy — Makati Med', 'due_at' => now()->addHours(8), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
-            ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'December seasonal crew proposal', 'due_at' => now()->addDays(4), 'priority' => 'medium', 'status' => 'open', 'ca' => 2],
+            ['client' => $sm, 'title' => 'Follow up quotation — SM Cebu headcount', 'due_at' => now()->addHours(3), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
+            ['client' => $hotel, 'title' => 'Confirm reliever for Sunday shift', 'due_at' => now()->subHours(26), 'priority' => 'high', 'status' => 'overdue', 'ca' => 3],
+            ['client' => $sm, 'title' => 'Send billing statement copy', 'due_at' => now()->addDay(), 'priority' => 'medium', 'status' => 'snoozed', 'snoozed_until' => now()->addDay(), 'ca' => 2],
+            ['client' => $bdo, 'title' => 'Call back — BDO teller headcount', 'due_at' => now()->addHours(5), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
+            ['client' => $calamba, 'title' => 'Send rate card — Calamba', 'due_at' => now()->subHours(50), 'priority' => 'medium', 'status' => 'overdue', 'ca' => 4],
+            ['client' => $qc, 'title' => 'Visit QC Retail office', 'due_at' => now()->addDays(2), 'priority' => 'low', 'status' => 'open', 'ca' => 1],
+            ['client' => $hotel, 'title' => 'Contract signing — housekeepers', 'due_at' => now()->subDays(3), 'priority' => 'high', 'status' => 'done', 'ca' => 9],
+            ['client' => $catering, 'title' => 'Re-engage Cebu Catering', 'due_at' => now()->subDays(4), 'priority' => 'medium', 'status' => 'escalated', 'escalated_to' => $salesMgr->id, 'ca' => 12],
+            ['client' => $med, 'title' => 'Send SOA copy — Makati Med', 'due_at' => now()->addHours(8), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
+            ['client' => $sm, 'title' => 'December seasonal crew proposal', 'due_at' => now()->addDays(4), 'priority' => 'medium', 'status' => 'open', 'ca' => 2],
         ];
         foreach ($fups as $f) {
             $ca = now()->subDays($f['ca']);
             unset($f['ca']);
-            $row = Followup::firstOrCreate(['title' => $f['title']], $f + ['created_at' => $ca, 'updated_at' => $ca]);
-            $client = Client::find($row->client_id);
-            $row->update(['company_id' => $client?->company_id, 'created_at' => $ca, 'updated_at' => $ca]);
+            $client = $f['client'];
+            unset($f['client']);
+            $row = Followup::firstOrCreate(
+                ['title' => $f['title'], 'company_id' => $client->company_id],
+                $f + ['client_id' => $client->id, 'company_id' => $client->company_id,
+                    'owner_id' => $client->owner_id, 'created_at' => $ca, 'updated_at' => $ca]
+            );
+            $row->update(['created_at' => $ca, 'updated_at' => $ca]);
         }
     }
 }

@@ -152,7 +152,7 @@ class CrmCompanySeeder extends Seeder
             );
             if ($i % 2 === 0) {
                 Followup::firstOrCreate(
-                    ['title' => "Follow up — $name"],
+                    ['title' => "Follow up — $name", 'company_id' => $company->id],
                     ['company_id' => $company->id, 'owner_id' => $company->owner_id,
                         'due_at' => now()->addDays(2 + ($i % 9)), 'priority' => 'medium', 'status' => 'open',
                         'created_at' => $at, 'updated_at' => $at]
