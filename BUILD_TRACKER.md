@@ -4,13 +4,13 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Overhaul Phase 6 — seed consistency + release (branch `feature/seed-consistency-release`)
+## Overhaul Phase 6 — seed consistency + release — MERGED to `main`
 
 | Item | Status | Notes |
 |---|---|---|
-| Followup seeds company-linked at create, unique title+company keys | 🔄 | Activity seeder curated set; company seeder per-company open items |
-| Escalated example → manager; fresh reseed verified (20 followups, 0 null company, idempotent) | 🔄 | Dev DB reseeded clean |
-| Spec 12 volumes + final release | 🔄 | Suite green (688 assertions), build green |
+| Followup seeds company-linked at create, unique title+company keys | ✅ | Activity seeder curated set; company seeder per-company open items |
+| Escalated example → manager; fresh reseed verified (20 followups, 0 null company, idempotent) | ✅ | Dev DB reseeded clean |
+| Spec 12 volumes + final release | ✅ | Suite green (688 assertions), build green, CI green |
 
 ## Overhaul Phase 5 — ritual reminder fix — MERGED to `main`
 
