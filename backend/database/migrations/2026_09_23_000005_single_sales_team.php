@@ -25,7 +25,7 @@ return new class extends Migration
         $id = DB::table('teams')->where('name', 'Primepower Sales')->value('id');
         if ($id) {
             DB::table('users')->where('team_id', $id)->update(['team_id' => null]);
-            DB::table('teams')->whereKey($id)->delete();
+            DB::table('teams')->where('id', $id)->delete();
         }
     }
 };

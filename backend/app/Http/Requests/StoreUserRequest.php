@@ -23,7 +23,7 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:10'],
             'role' => ['required', Rule::in(self::creatableRoles($this->user()?->role))],
-            // Team defaults into Primepower Sales for sales roles (controller); admins are teamless.
+            // Team defaults into Primepower Team for sales roles (controller); admins are teamless.
             'team_id' => ['nullable', 'exists:teams,id'],
             'phone' => ['nullable', 'regex:/^\+63\d{10}$/'],
         ];

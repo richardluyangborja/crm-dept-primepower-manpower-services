@@ -10,11 +10,8 @@ class TeamUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $manila = Team::firstOrCreate(['name' => 'Manila'], ['region' => 'NCR']);
-        $cebu = Team::firstOrCreate(['name' => 'Cebu'], ['region' => 'Central Visayas']);
-        Team::firstOrCreate(['name' => 'Davao'], ['region' => 'Davao Region']);
-        // Single-team simplification (specs/02): the whole salesforce lives here.
-        $sales = Team::firstOrCreate(['name' => 'Primepower Sales'], ['region' => 'Nationwide']);
+        // Single team (specs/02 + follow-up overhaul Phase 1): the whole salesforce lives here.
+        $sales = Team::firstOrCreate(['name' => 'Primepower Team'], ['region' => 'Nationwide']);
 
         $users = [
             ['name' => 'Super Admin', 'email' => 'superadmin@primepower.ph', 'role' => 'superadmin', 'team_id' => null],

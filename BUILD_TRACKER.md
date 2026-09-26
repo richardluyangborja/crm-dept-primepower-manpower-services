@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Overhaul Phase 1 — team cleanup + sidebar rebrand (branch `feature/team-cleanup-rebrand`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Rename to Primepower Team, retire Manila/Cebu/Davao | 🔄 | Migration re-homes stragglers, deletes legacy teams |
+| Seeder creates only Primepower Team | 🔄 | `TeamUserSeeder` single-team |
+| Sidebar header → CRM, tab title → Primepower CRM | 🔄 | `AppShell`, `index.html` |
+| Specs 02/09/12 + team tests renamed | 🔄 | `SettingsAccessTest` convergence test |
+
 ## Gov Phase 4 — docs + release — MERGED to `main` (governance released)
 
 | Item | Status | Notes |

@@ -46,11 +46,11 @@ class UserController extends Controller
         $this->authorize('create', User::class);
         $data = $request->validated();
         // Single-team simplification (specs/02): admins are teamless; sales roles
-        // default into Primepower Sales when no team is given.
+        // default into Primepower Team when no team is given.
         if (in_array($data['role'], ['superadmin', 'admin'], true)) {
             $data['team_id'] = null;
         } elseif (empty($data['team_id'])) {
-            $data['team_id'] = \App\Models\Team::where('name', 'Primepower Sales')->value('id')
+            $data['team_id'] = \App\Models\Team::where('name', 'Primepower Team')->value('id')
                 ?? \App\Models\Team::orderBy('id')->value('id');
         }
         $user = User::create($data);

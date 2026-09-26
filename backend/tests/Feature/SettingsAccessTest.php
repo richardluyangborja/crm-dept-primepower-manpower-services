@@ -238,11 +238,11 @@ class SettingsAccessTest extends TestCase
         $this->putJson("/api/v1/teams/$id", ['region' => 'Davao del Sur'], ['Authorization' => 'Bearer '.$this->token($o['admin'])])->assertOk();
     }
 
-    public function test_admins_are_teamless_and_sales_default_into_sales_team(): void
+    public function test_admins_are_teamless_and_sales_default_into_primepower_team(): void
     {
         $o = $this->setupOrg();
         $st = $this->token($o['super']);
-        $salesTeam = \App\Models\Team::create(['name' => 'Primepower Sales Test', 'region' => 'Nationwide']);
+        $salesTeam = \App\Models\Team::create(['name' => 'Primepower Team Test', 'region' => 'Nationwide']);
 
         // Admin invite with a team → team stripped to null.
         $adminId = $this->postJson('/api/v1/users', [
@@ -251,12 +251,26 @@ class SettingsAccessTest extends TestCase
         ], ['Authorization' => "Bearer $st"])->assertCreated()->json('data.id');
         $this->assertNull(\App\Models\User::find($adminId)->team_id);
 
-        // Sales invite without a team → defaulted into Primepower Sales (by name, others present).
+        // Sales invite without a team → defaulted into Primepower Team (by name, others present).
         // (The migration already seeds it — firstOrCreate keeps this idempotent.)
-        \App\Models\Team::firstOrCreate(['name' => 'Primepower Sales'], ['region' => 'Nationwide']);
+        \App\Models\Team::firstOrCreate(['name' => 'Primepower Team'], ['region' => 'Nationwide']);
         $repId = $this->postJson('/api/v1/users', [
             'name' => 'R2', 'email' => 'r2@primepower.ph', 'password' => 'Temporary123!', 'role' => 'sales_rep',
         ], ['Authorization' => "Bearer $st"])->assertCreated()->json('data.id');
-        $this->assertSame('Primepower Sales', \App\Models\User::find($repId)->team->name);
+        $this->assertSame('Primepower Team', \App\Models\User::find($repId)->team->name);
+    }
+
+    public function test_teams_index_lists_only_the_primepower_team(): void
+    {
+        $o = $this->setupOrg();
+        $st = $this->token($o['super']);
+        // Run the Phase 1 convergence directly (migrations already ran at setup).
+        $migration = require base_path('database/migrations/2026_09_26_000006_primepower_team.php');
+        $migration->up();
+        $names = $this->getJson('/api/v1/teams', ['Authorization' => "Bearer $st"])
+            ->assertOk()->json('data.*.name');
+        $this->assertSame(['Primepower Team'], $names);
+        // Stragglers were re-homed, not orphaned.
+        $this->assertSame(0, \App\Models\User::whereNull('team_id')->whereNotIn('role', ['superadmin', 'admin'])->count());
     }
 }

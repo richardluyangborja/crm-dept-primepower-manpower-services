@@ -552,7 +552,7 @@ function InviteForm({ onClose, onDone }: { onClose: () => void; onDone: () => vo
   const [err, setErr] = useState('');
   const teamsQ = useQuery({ queryKey: ['teams'], queryFn: async () => (await api.get('/teams')).data.data as Team[] });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
-  const salesTeam = teamsQ.data?.find((t) => t.name === 'Primepower Sales') ?? teamsQ.data?.[0];
+  const salesTeam = teamsQ.data?.find((t) => t.name === 'Primepower Team') ?? teamsQ.data?.[0];
   const needsTeam = f.role === 'manager' || f.role === 'sales_rep';
 
   const submit = async (ev: React.FormEvent) => {

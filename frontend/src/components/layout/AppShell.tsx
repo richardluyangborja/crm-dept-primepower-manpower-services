@@ -156,7 +156,7 @@ export function AppShell() {
           <img src={logo} alt="Primepower" className="h-10 w-auto" />
           <div>
             <p className="text-sm font-bold leading-tight">Primepower</p>
-            <p className="text-[11px] text-[var(--text-muted)]">CRM — Client Management</p>
+            <p className="text-[11px] text-[var(--text-muted)]">CRM</p>
           </div>
         </div>
         {groups.map((g, i) => (
