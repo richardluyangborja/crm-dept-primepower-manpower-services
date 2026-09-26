@@ -4,12 +4,12 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
-## Overhaul Phase 5 — ritual reminder fix (branch `feature/ritual-reminder-fix`)
+## Overhaul Phase 5 — ritual reminder fix — MERGED to `main`
 
 | Item | Status | Notes |
 |---|---|---|
-| Due-today allowed (`after_or_equal:today`), real errors, cache invalidation | 🔄 | Store/Update requests; `fireRitual` catch via `apiErr`; board settles `followups` |
-| Ritual-path test (deal owner + queue visibility) + spec 08 | 🔄 | Suite green (688 assertions), build green, live smoke on dev DB |
+| Due-today allowed (`after_or_equal:today`), real errors, cache invalidation | ✅ | Store/Update requests; `fireRitual` catch via `apiErr`; board settles `followups` |
+| Ritual-path test (deal owner + queue visibility) + spec 08 | ✅ | Suite green (688 assertions), build green, CI green, live smoke on dev DB |
 
 ## Overhaul Phase 4 — escalation rebuild — MERGED to `main`
 
