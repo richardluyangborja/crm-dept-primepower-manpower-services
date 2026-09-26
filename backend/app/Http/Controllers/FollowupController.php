@@ -20,7 +20,7 @@ class FollowupController extends Controller
     public function index(Request $request)
     {
         $this->authorize('viewAny', Followup::class);
-        $query = Followup::visibleToWithCompany($request->user())->with('client:id,name')
+        $query = Followup::visibleToWithCompany($request->user())->with(['client:id,name', 'escalatedTo:id,name'])
             ->filter($request, ['status', 'priority', 'owner_id', 'client_id']);
         if ($request->query('due_from')) {
             $query->where('due_at', '>=', $request->query('due_from'));
@@ -116,12 +116,16 @@ class FollowupController extends Controller
 
     public function escalate(Request $request, Followup $followup, FollowupService $service)
     {
-        $this->authorize('update', $followup);
-        $request->validate(['to_user_id' => ['sometimes', 'exists:users,id']]);
+        // Reps only, on their own reminders — escalation always goes to the team manager.
+        $this->authorize('escalate', $followup);
+        $manager = $service->teamManager($followup->owner);
+        if (! $manager) {
+            return $this->fail('No manager on your team to escalate to.', 422);
+        }
 
         return $this->ok(
-            new FollowupResource($service->escalate($followup, $request->input('to_user_id'), auth('api')->id())),
-            'Escalated.'
+            new FollowupResource($service->escalate($followup, $manager->id, auth('api')->id())->load('escalatedTo:id,name')),
+            "Escalated to {$manager->name}."
         );
     }
 }

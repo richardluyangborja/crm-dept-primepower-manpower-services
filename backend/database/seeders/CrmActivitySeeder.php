@@ -25,6 +25,7 @@ class CrmActivitySeeder extends Seeder
         $calamba = Client::where('name', 'Calamba Electronics Corp.')->firstOrFail();
         $qc = Client::where('name', 'Quezon City Retail Group')->firstOrFail();
         $rep2 = User::where('email', 'rep.mariasantos@primepower.ph')->firstOrFail();
+        $salesMgr = User::where('role', 'manager')->firstOrFail();
 
         $opps = [
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => '120 janitors — SM Cebu', 'stage' => 'negotiation', 'value_centavos' => 480000000, 'probability' => 80, 'expected_close_date' => now()->addDays(20)->toDateString(), 'ca' => 40, 'ua' => 3],
@@ -172,7 +173,7 @@ class CrmActivitySeeder extends Seeder
             ['client_id' => $calamba->id, 'owner_id' => $calamba->owner_id, 'title' => 'Send rate card — Calamba', 'due_at' => now()->subHours(50), 'priority' => 'medium', 'status' => 'overdue', 'ca' => 4],
             ['client_id' => $qc->id, 'owner_id' => $qc->owner_id, 'title' => 'Visit QC Retail office', 'due_at' => now()->addDays(2), 'priority' => 'low', 'status' => 'open', 'ca' => 1],
             ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => 'Contract signing — housekeepers', 'due_at' => now()->subDays(3), 'priority' => 'high', 'status' => 'done', 'ca' => 9],
-            ['client_id' => $catering->id, 'owner_id' => $catering->owner_id, 'title' => 'Re-engage Cebu Catering', 'due_at' => now()->subDays(4), 'priority' => 'medium', 'status' => 'escalated', 'escalated_to' => $rep2->id, 'ca' => 12],
+            ['client_id' => $catering->id, 'owner_id' => $catering->owner_id, 'title' => 'Re-engage Cebu Catering', 'due_at' => now()->subDays(4), 'priority' => 'medium', 'status' => 'escalated', 'escalated_to' => $salesMgr->id, 'ca' => 12],
             ['client_id' => $med->id, 'owner_id' => $med->owner_id, 'title' => 'Send SOA copy — Makati Med', 'due_at' => now()->addHours(8), 'priority' => 'high', 'status' => 'open', 'ca' => 1],
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => 'December seasonal crew proposal', 'due_at' => now()->addDays(4), 'priority' => 'medium', 'status' => 'open', 'ca' => 2],
         ];

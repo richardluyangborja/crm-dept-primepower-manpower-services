@@ -112,11 +112,17 @@ class FollowupService
 
     protected function teamManagerId(?User $owner): ?int
     {
+        return $this->teamManager($owner)?->id;
+    }
+
+    /** The owner's team manager (escalation target, manual + auto). */
+    public function teamManager(?User $owner): ?User
+    {
         if (! $owner?->team_id) {
             return null;
         }
 
-        return User::where('team_id', $owner->team_id)->where('role', 'manager')->value('id');
+        return User::where('team_id', $owner->team_id)->where('role', 'manager')->first();
     }
 
     /** Dedupe repeat notices: any audit row with meta.kind in the last $minutes. */

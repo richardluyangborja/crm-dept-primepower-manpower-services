@@ -55,6 +55,12 @@ class FollowupPolicy
             && $followup->owner?->team_id === $user->team_id;
     }
 
+    /** Escalation: sales reps only, on their own reminders (overhaul Phase 4). */
+    public function escalate(User $user, Followup $followup): bool
+    {
+        return $user->role === 'sales_rep' && $followup->owner_id === $user->id;
+    }
+
     public function delete(User $user, Followup $followup): bool
     {
         return $this->isElevated($user);

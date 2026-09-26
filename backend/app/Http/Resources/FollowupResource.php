@@ -22,6 +22,7 @@ class FollowupResource extends JsonResource
             'status' => $this->status,
             'snoozed_until' => $this->snoozed_until,
             'escalated_to' => $this->escalated_to,
+            'escalated_to_name' => $this->whenLoaded('escalatedTo', fn () => $this->escalatedTo?->name),
             'is_overdue' => in_array($this->status, ['overdue', 'escalated'], true)
                 || ($this->due_at && $this->due_at->isPast() && ! in_array($this->status, ['done'], true)),
             'created_at' => $this->created_at,

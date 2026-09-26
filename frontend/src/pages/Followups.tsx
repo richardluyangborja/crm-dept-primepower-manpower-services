@@ -20,15 +20,18 @@ interface Fup {
   priority: 'low' | 'medium' | 'high';
   status: string;
   snoozed_until: string | null;
+  escalated_to: number | null;
+  escalated_to_name?: string | null;
   is_overdue: boolean;
 }
 
 const fmtDT = (iso: string) =>
   new Date(iso).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
-/** One hierarchy for all reminder actions: Done (primary) · Snooze · Escalate (danger, when relevant). */
-function FupActions({ r, onDone, onSnooze, onEscalate }: {
+/** One hierarchy for all reminder actions: Done (primary) · Snooze · Escalate (danger, when relevant). Escalate is rep-only, on own reminders. */
+function FupActions({ r, canEscalate, onDone, onSnooze, onEscalate }: {
   r: Fup;
+  canEscalate: boolean;
   onDone: (id: string) => void;
   onSnooze: (id: string) => void;
   onEscalate: (id: string) => void;
@@ -44,7 +47,7 @@ function FupActions({ r, onDone, onSnooze, onEscalate }: {
         className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
         <Clock size={12} /> Snooze
       </button>
-      {(r.status === 'overdue' || r.status === 'escalated') && (
+      {(r.status === 'overdue' || r.status === 'escalated') && canEscalate && (
         <button onClick={() => onEscalate(r.id)} title="Escalate to your manager"
           className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
           <ArrowUpRight size={12} /> Escalate
@@ -56,7 +59,8 @@ function FupActions({ r, onDone, onSnooze, onEscalate }: {
 
 export function FollowupsPage() {
   const [view, setView] = useState<'queue' | 'calendar'>('queue');
-  const [status, setStatus] = useState('');
+  // Deep-linkable: notification links land here with ?status=escalated.
+  const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get('status') ?? '');
   const [showNew, setShowNew] = useState(false);
   const [snoozeTarget, setSnoozeTarget] = useState<string | null>(null);
   const [day, setDay] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -64,6 +68,8 @@ export function FollowupsPage() {
   const PER_PAGE = 15;
   const toast = useToast();
   const qc = useQueryClient();
+  const { user } = useSession();
+  const canEscalate = (r: Fup) => user?.role === 'sales_rep' && r.owner_id === user.id;
 
   const fupsQ = useQuery({
     queryKey: ['followups', status, page],
@@ -98,7 +104,14 @@ export function FollowupsPage() {
       onError: (e) => toast('error', apiErr(e, 'Action failed.')),
     });
   const doneMut = mutateAction((id) => api.post(`/followups/${id}/done`), 'Done — nice.');
-  const escMut = mutateAction((id) => api.post(`/followups/${id}/escalate`), 'Escalated to your manager.');
+  const escMut = useMutation({
+    mutationFn: async (id: string) => (await api.post(`/followups/${id}/escalate`)).data,
+    onSuccess: (d) => {
+      toast('success', d?.message ?? 'Escalated to your manager.');
+      invalidate();
+    },
+    onError: (e) => toast('error', apiErr(e, 'Only sales reps can escalate their own reminders.')),
+  });
   const snoozeMut = useMutation({
     mutationFn: async ({ id, until }: { id: string; until: string }) => api.post(`/followups/${id}/snooze`, { snoozed_until: until }),
     onSuccess: () => {
@@ -139,10 +152,10 @@ export function FollowupsPage() {
           <p className="font-semibold text-red-700 dark:text-red-400">{overdue.length} overdue — clear them to keep the pipeline healthy</p>
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {overdue.slice(0, 5).map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-2">
-                <span className="truncate">{r.title} <span className="text-xs text-[var(--text-muted)]">· due {fmtDT(r.due_at)}</span></span>
-                <FupActions r={r} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} />
-              </li>
+                <li key={r.id} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{r.title} <span className="text-xs text-[var(--text-muted)]">· due {fmtDT(r.due_at)}</span></span>
+                  <FupActions r={r} canEscalate={canEscalate(r)} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} />
+                </li>
             ))}
           </ul>
         </div>
@@ -172,8 +185,15 @@ export function FollowupsPage() {
                 { key: 't', header: 'Reminder', render: (r) => <span className="font-medium">{r.title}<br /><span className="text-xs font-normal text-[var(--text-muted)]">{r.client_name ?? ''}</span></span> },
                 { key: 'd', header: 'Due', render: (r) => <span className={r.is_overdue ? 'font-semibold text-red-600' : ''}>{fmtDT(r.due_at)}</span> },
                 { key: 'p', header: 'Priority', render: (r) => <StatusBadge value={r.priority} /> },
-                { key: 's', header: 'Status', render: (r) => <StatusBadge value={r.status} /> },
-                { key: 'a', header: 'Actions', render: (r) => <FupActions r={r} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} /> },
+                { key: 's', header: 'Status', render: (r) => (
+                  <span className="flex flex-col items-start gap-1">
+                    <StatusBadge value={r.status} />
+                    {r.status === 'escalated' && r.escalated_to_name ? (
+                      <span className="text-[11px] font-medium text-[var(--text-muted)]">→ {r.escalated_to_name}</span>
+                    ) : null}
+                  </span>
+                ) },
+                { key: 'a', header: 'Actions', render: (r) => <FupActions r={r} canEscalate={canEscalate(r)} onDone={(id) => doneMut.mutate(id)} onSnooze={snooze} onEscalate={(id) => escMut.mutate(id)} /> },
               ]}
               empty={<EmptyState title="Nothing here" hint="Try a different status filter." />}
             />

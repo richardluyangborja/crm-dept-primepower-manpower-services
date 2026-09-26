@@ -4,6 +4,15 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Overhaul Phase 4 — escalation rebuild (branch `feature/escalation-rebuild`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Rep-only gate, manager-only target, loud 422 without manager | 🔄 | `FollowupPolicy::escalate`; `teamManager()` on service |
+| Visible escalation: `→ manager` chip, deep-linked notifications | 🔄 | `escalated_to_name` on resource; `?status=` init; server message in toast |
+| Seed escalated example → manager; scheduler requirement in spec 08 | 🔄 | Auto 24h/72h path unchanged (already tested) |
+| `EscalationTest` (3 tests) | 🔄 | Suite green (682 assertions), build green, live smoke on dev DB |
+
 ## Overhaul Phase 3 — reminder ownership + reassignment — MERGED to `main`
 
 | Item | Status | Notes |

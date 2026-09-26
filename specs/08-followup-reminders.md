@@ -3,7 +3,7 @@
 ## 1. Submodules
 1. **Reminders CRUD** — title, linked client/opp, due datetime (Asia/Manila), priority, assignee.
 2. **Snooze / done / overdue** — lifecycle `open→done|snoozed→open|overdue→escalated`.
-3. **Escalation** — overdue >24h notifies owner + manager; >72h auto-escalates (`escalated_to=manager`, bell + in-app).
+3. **Escalation (overhaul Phase 4)** — sales reps only, on their own reminders; the target is always the team manager (no arbitrary picks; 422 if the rep has no manager). Escalated rows show `→ {manager}` and the manager gets an in-app notification deep-linking `?status=escalated`. Auto path: overdue >24h nudges owner + manager; >72h auto-escalates. The scheduler (`reminders:dispatch` every minute) requires prod cron running `schedule:run`; without it only manual escalation fires.
 4. **Calendar & tasks** — month (prev/next/today, past + future) /week/day + "My tasks" list, drag to reschedule (manager/owner only). Month view is full-width with the selected day's reminders as a section below. Actions share one hierarchy everywhere: Done (primary green) · Snooze · Escalate (danger, overdue only).
 
 ## 2. User stories & acceptance
