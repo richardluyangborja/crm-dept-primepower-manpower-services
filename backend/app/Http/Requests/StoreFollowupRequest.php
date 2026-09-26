@@ -22,7 +22,7 @@ class StoreFollowupRequest extends FormRequest
             'company_id' => ['nullable', 'required_without:client_id', 'exists:companies,id'],
             'opportunity_id' => ['nullable', 'exists:opportunities,id'],
             'title' => ['required', 'string', 'max:255'],
-            'due_at' => ['required', 'date', 'after:now'],
+            'due_at' => ['required', 'date', 'after_or_equal:today'],
             'priority' => ['sometimes', 'in:low,medium,high'],
             'owner_id' => ['sometimes', \Illuminate\Validation\Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['sales_rep', 'manager'])->where('is_active', true))], // assign to an active rep/manager
         ];
@@ -30,6 +30,6 @@ class StoreFollowupRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['due_at.after' => 'Reminders must be set in the future — pick a date and time ahead of now (Asia/Manila).'];
+        return ['due_at.after_or_equal' => 'Reminders can be due today or later — pick a date from today on (Asia/Manila).'];
     }
 }

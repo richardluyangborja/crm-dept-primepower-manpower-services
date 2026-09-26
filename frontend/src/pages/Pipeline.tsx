@@ -120,6 +120,8 @@ export function PipelinePage() {
       qc.invalidateQueries({ queryKey: ['lead'] });
       qc.invalidateQueries({ queryKey: ['clients'] });
       qc.invalidateQueries({ queryKey: ['client'] });
+      // Ritual side-effects land here too — the reminder must appear at once.
+      qc.invalidateQueries({ queryKey: ['followups'] });
     },
   });
 
@@ -354,8 +356,8 @@ export function PipelinePage() {
               }
               try {
                 await fireRitual(opp, payload);
-              } catch {
-                toast('error', 'Move saved, but the log/follow-up failed — add it manually.');
+              } catch (e) {
+                toast('error', apiErr(e, 'Move saved, but the log/follow-up failed — add it manually.'));
               }
               if (extra.put) {
                 try {

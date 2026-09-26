@@ -33,9 +33,13 @@ class FollowupReminderTest extends TestCase
         $t = auth('api')->login($rep);
         $cid = $this->clientFor($rep)->id;
 
+        // Yesterday is rejected; today is allowed (due-today, overhaul Phase 5).
         $this->postJson('/api/v1/followups', [
-            'client_id' => $cid, 'title' => 'Past one', 'due_at' => now()->subHour()->toIso8601String(),
+            'client_id' => $cid, 'title' => 'Past one', 'due_at' => now()->subDay()->toIso8601String(),
         ], ['Authorization' => "Bearer $t"])->assertStatus(422);
+        $this->postJson('/api/v1/followups', [
+            'client_id' => $cid, 'title' => 'Due today', 'due_at' => now()->addHours(2)->toIso8601String(),
+        ], ['Authorization' => "Bearer $t"])->assertCreated();
 
         $id = $this->postJson('/api/v1/followups', [
             'client_id' => $cid, 'title' => 'Call back', 'due_at' => now()->addDay()->toIso8601String(), 'priority' => 'high',

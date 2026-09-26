@@ -12,6 +12,7 @@
 - As rep I work my day → "Due today" queue sorted by priority+time, one-click Done/Snooze (1d/3d/1w/custom); overdue section red with "Escalate now" if >72h.
 - As manager I see team calendar → filter by member, overdue badge counts, reassign via dropdown (audit logged).
 - Scheduler `reminders:dispatch` (every minute): due in 60m → notify; overdue transitions + notifications (DB; mail mocked). Timezone-safe (store UTC, display Manila).
+- **Ritual reliability (overhaul Phase 5):** stage-move reminders default to the deal/company owner (never the mover), surface the real server error when they fail, and the board invalidates the `followups` cache on settle so the reminder appears at once.
 
 ## 3. API
 ```
@@ -20,7 +21,7 @@ POST /followups  GET|PUT|DELETE /followups/{id}
 POST /followups/{id}/done|snooze {snoozed_until}|escalate {to_user_id}
 GET /notifications  POST /notifications/{id}/read
 ```
-Rules: `due_at` > now on create; only owner/manager/admin can complete others' (policy); delete = soft + audit. `owner_id` accepts active reps/managers only; reps are forced to self on create.
+Rules: `due_at` is today-or-later on create/update (overhaul Phase 5 — due-today allowed; yesterday+ rejected); only owner/manager/admin can complete others' (policy); delete = soft + audit. `owner_id` accepts active reps/managers only; reps are forced to self on create.
 
 ## 4. UI
 - `ReminderCalendar` (month grid with priority dots + month nav, click day → full-width details section below) + "My tasks" `DataTable`; bell badge = unread count; browser Notification API opt-in (fallback in-app).

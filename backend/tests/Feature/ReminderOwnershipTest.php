@@ -116,4 +116,30 @@ class ReminderOwnershipTest extends TestCase
         $this->putJson($url, ['owner_id' => $o['admin']->id], ['Authorization' => "Bearer $t"])->assertStatus(422);
         $this->putJson($url, ['owner_id' => $off->id], ['Authorization' => "Bearer $t"])->assertStatus(422);
     }
+
+    /** Overhaul Phase 5: the stage-ritual path (deal move → reminder, no owner sent). */
+    public function test_ritual_reminder_lands_on_deal_owner_and_appears_in_queue(): void
+    {
+        $o = $this->org();
+        $client = $this->accountFor($o['repA']);
+        $tM = auth('api')->login($o['mgr']);
+
+        // Manager opens the deal; it inherits the company owner.
+        $oppId = $this->postJson('/api/v1/opportunities', [
+            'company_id' => $client->company->opaqueId(), 'title' => 'Ritual deal', 'value_centavos' => 500000,
+        ], ['Authorization' => "Bearer $tM"])->assertCreated()->json('data.id');
+
+        // Ritual fires without an owner — the reminder follows the deal owner, due today allowed.
+        $this->postJson('/api/v1/followups', [
+            'company_id' => $client->company->opaqueId(), 'opportunity_id' => $oppId,
+            'title' => 'Follow up on proposal', 'due_at' => now()->addHours(5)->toIso8601String(),
+        ], ['Authorization' => "Bearer $tM"])->assertCreated();
+        $fup = Followup::latest('id')->first();
+        $this->assertSame($o['repA']->id, $fup->owner_id);
+
+        // It appears in the owner's queue.
+        $tA = auth('api')->login($o['repA']);
+        $list = $this->getJson('/api/v1/followups', ['Authorization' => "Bearer $tA"])->assertOk()->json('data');
+        $this->assertContains($fup->opaqueId(), array_column($list, 'id'));
+    }
 }
