@@ -6,6 +6,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
+import { hasRole, useSession } from '../store/session';
 import { Check, Clock, ArrowUpRight } from 'lucide-react';
 
 interface Fup {
@@ -391,11 +392,18 @@ function MonthCalendar({ rows, day, onDay, onDropDay }: { rows: Fup[]; day: stri
 
 function NewReminderForm({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const { user } = useSession();
+  const canAssign = hasRole(user, 'admin', 'manager');
   const clientsQ = useQuery({
     queryKey: ['clients-mini'],
     queryFn: async () => (await api.get('/clients', { params: { per_page: 100 } })).data.data as { id: string; name: string }[],
   });
-  const [f, setF] = useState({ client_id: '', title: '', due: '', priority: 'medium' });
+  const repsQ = useQuery({
+    queryKey: ['users', 'sales-reps'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'sales_rep', per_page: 100 } })).data.data as { id: number; name: string }[],
+    enabled: canAssign,
+  });
+  const [f, setF] = useState({ client_id: '', title: '', due: '', priority: 'medium', owner_id: '' });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
@@ -405,7 +413,10 @@ function NewReminderForm({ onClose, onDone }: { onClose: () => void; onDone: () 
     setBusy(true);
     setErr('');
     try {
-      await api.post('/followups', { client_id: f.client_id, title: f.title, due_at: new Date(f.due).toISOString(), priority: f.priority });
+      await api.post('/followups', {
+        client_id: f.client_id, title: f.title, due_at: new Date(f.due).toISOString(), priority: f.priority,
+        ...(canAssign && f.owner_id ? { owner_id: Number(f.owner_id) } : {}),
+      });
       toast('success', "Reminder set — we'll notify you.");
       onDone();
       onClose();
@@ -431,6 +442,12 @@ function NewReminderForm({ onClose, onDone }: { onClose: () => void; onDone: () 
           <label>Priority<select value={f.priority} onChange={set('priority')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
           </select></label>
+          {canAssign && (
+            <label>Assign to<select value={f.owner_id} onChange={set('owner_id')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+              <option value="">Account owner (default)</option>
+              {(repsQ.data ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select></label>
+          )}
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-end gap-2">

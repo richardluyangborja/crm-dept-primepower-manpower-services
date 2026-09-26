@@ -41,6 +41,20 @@ class FollowupPolicy
         return $this->view($user, $followup);
     }
 
+    /** Reassignment: the owner, the owner's team manager, or admin+ (overhaul Phase 3). */
+    public function reassign(User $user, Followup $followup): bool
+    {
+        if ($this->isElevated($user)) {
+            return true;
+        }
+        if ($followup->owner_id === $user->id) {
+            return true;
+        }
+
+        return $user->role === 'manager' && $user->team_id
+            && $followup->owner?->team_id === $user->team_id;
+    }
+
     public function delete(User $user, Followup $followup): bool
     {
         return $this->isElevated($user);

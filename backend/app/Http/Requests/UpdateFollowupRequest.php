@@ -12,7 +12,7 @@ class UpdateFollowupRequest extends FormRequest
             'title' => ['sometimes', 'string', 'max:255'],
             'due_at' => ['sometimes', 'date', 'after:now'],
             'priority' => ['sometimes', 'in:low,medium,high'],
-            'owner_id' => ['sometimes', 'exists:users,id'],
+            'owner_id' => ['sometimes', \Illuminate\Validation\Rule::exists('users', 'id')->where(fn ($q) => $q->whereIn('role', ['sales_rep', 'manager'])->where('is_active', true))],
         ];
     }
 }

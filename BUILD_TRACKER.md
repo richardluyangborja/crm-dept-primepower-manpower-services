@@ -4,14 +4,22 @@
 > left → right as work progresses. Each Done row links its merged PR.
 > Legend: ✅ done · 🔄 in progress · ⬜ todo · 🚫 blocked
 
+## Overhaul Phase 3 — reminder ownership + reassignment (branch `feature/reminder-ownership`)
+
+| Item | Status | Notes |
+|---|---|---|
+| Assign on create (New Reminder, Client 360, stage ritual) | 🔄 | Rep select for admin/manager; default = company/account owner; reps locked to self |
+| Reassign policy (owner / team manager / admin+, audited) | 🔄 | `FollowupPolicy::reassign`; `owner_id` = active rep/manager |
+| `ReminderOwnershipTest` (5 tests) + spec 08 | 🔄 | Suite green (671 assertions), build green, live smoke on dev DB |
+
 ## Overhaul Phase 2 — company-owner assignment — MERGED to `main`
 
 | Item | Status | Notes |
 |---|---|---|
-| Lead capture rep-picker (admin/manager, company-wide) | 🔄 | `NewLeadForm` select → `owner_id`; reps auto-own |
-| Leads/deals default to company owner; assignment moves company (audited) | 🔄 | `LeadController`/`OpportunityController` store; `owner_id` = active rep/manager |
-| Company-owner visibility on leads/deals/clients/reminders | 🔄 | `visibleToWithCompany` + 4 policy `view()` updates |
-| `CompanyOwnershipTest` (7 tests) + specs 04/05 | 🔄 | Suite green, build green, live smoke on dev DB |
+| Lead capture rep-picker (admin/manager, company-wide) | ✅ | `NewLeadForm` select → `owner_id`; reps auto-own |
+| Leads/deals default to company owner; assignment moves company (audited) | ✅ | `LeadController`/`OpportunityController` store; `owner_id` = active rep/manager |
+| Company-owner visibility on leads/deals/clients/reminders | ✅ | `visibleToWithCompany` + 4 policy `view()` updates |
+| `CompanyOwnershipTest` (7 tests) + specs 04/05 | ✅ | Suite green, build green, live smoke on dev DB |
 
 ## Overhaul Phase 1 — team cleanup + sidebar rebrand — MERGED to `main`
 

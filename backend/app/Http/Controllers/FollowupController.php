@@ -42,13 +42,22 @@ class FollowupController extends Controller
         $user = $request->user();
         $client = ! empty($data['client_id']) ? Client::visibleTo($user)->findOrFail($data['client_id']) : null;
         if (! empty($data['company_id'])) {
-            \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
+            $company = \App\Models\Company::visibleTo($user)->findOrFail($data['company_id']);
         } elseif ($client?->company_id) {
             $data['company_id'] = $client->company_id;
+            $company = $client->company;
+        } else {
+            $company = null;
         }
-        if ($user->role === 'sales_rep' || empty($data['owner_id'])) {
-            $data['owner_id'] = $user->id;
-        }
+        // Reps own what they set; admin/manager may assign, defaulting to the company owner
+        // so the reminder lands on the rep who owns the account (overhaul Phase 3).
+        $assigned = $user->role !== 'sales_rep' && ! empty($data['owner_id']);
+        $data['owner_id'] = match (true) {
+            $user->role === 'sales_rep' => $user->id,
+            $assigned => $data['owner_id'],
+            $company !== null => $company->owner_id,
+            default => $user->id,
+        };
         $data['priority'] ??= 'medium';
         $followup = Followup::create($data);
         $followup->audit('created', $user->id, ['client_id' => $client?->id]);
@@ -68,6 +77,11 @@ class FollowupController extends Controller
     {
         $this->authorize('update', $followup);
         $data = $request->validated();
+        // Moving a reminder to another rep is a reassignment: owner, team manager, or admin only.
+        if (array_key_exists('owner_id', $data) && (int) $data['owner_id'] !== (int) $followup->owner_id) {
+            $this->authorize('reassign', $followup);
+            $followup->audit('reassigned', $request->user()->id, ['from_owner_id' => $followup->owner_id, 'to_owner_id' => $data['owner_id']]);
+        }
         $followup->update($data);
         $followup->audit('updated', $request->user()->id, ['fields' => array_keys($data)]);
 

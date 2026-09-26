@@ -144,6 +144,7 @@ export function PipelinePage() {
         opportunity_id: opp.id,
         title: payload.followup.title,
         due_at: new Date(payload.followup.due).toISOString(),
+        ...(payload.followup.owner_id ? { owner_id: payload.followup.owner_id } : {}),
       });
     }
   };

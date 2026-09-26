@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../lib/apiClient';
 import { formatPHP } from '../../lib/format';
+import { hasRole, useSession } from '../../store/session';
 
 export interface RitualOpp {
   id: string;
@@ -17,7 +20,7 @@ export interface RitualOpp {
 }
 
 export interface TouchPayload { type: string; outcome: string; notes: string }
-export interface FollowupPayload { title: string; due: string }
+export interface FollowupPayload { title: string; due: string; owner_id?: number }
 export interface RitualPayload { touch?: TouchPayload; followup?: FollowupPayload }
 
 const TOUCH_TYPES = ['call', 'meeting', 'email', 'site_visit', 'note'];
@@ -75,7 +78,15 @@ export function StageUpModal({
   const [addFollowup, setAddFollowup] = useState(!!followupDefault);
   const [fTitle, setFTitle] = useState(followupDefault?.title ?? '');
   const [fDue, setFDue] = useState(followupDefault?.due ?? '');
+  const [fOwner, setFOwner] = useState('');
   const [err, setErr] = useState('');
+  const { user } = useSession();
+  const canAssign = hasRole(user, 'admin', 'manager');
+  const repsQ = useQuery({
+    queryKey: ['users', 'sales-reps'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'sales_rep', per_page: 100 } })).data.data as { id: number; name: string }[],
+    enabled: canAssign && addFollowup,
+  });
 
   const confirm = () => {
     if (logTouch && !notes.trim()) {
@@ -89,7 +100,9 @@ export function StageUpModal({
     if (!extraValid) return;
     onConfirm({
       touch: logTouch ? { type, outcome, notes: notes.trim() } : undefined,
-      followup: addFollowup ? { title: fTitle.trim(), due: fDue } : undefined,
+      followup: addFollowup
+        ? { title: fTitle.trim(), due: fDue, ...(canAssign && fOwner ? { owner_id: Number(fOwner) } : {}) }
+        : undefined,
     });
   };
 
@@ -128,6 +141,12 @@ export function StageUpModal({
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <label>Title *<input value={fTitle} onChange={(e) => setFTitle(e.target.value)} placeholder="e.g. Send the quotation" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Due *<input type="datetime-local" value={fDue} onChange={(e) => setFDue(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            {canAssign && (
+              <label className="col-span-2">Assign to<select value={fOwner} onChange={(e) => setFOwner(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+                <option value="">Deal owner (default)</option>
+                {(repsQ.data ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select></label>
+            )}
           </div>
         )}
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}

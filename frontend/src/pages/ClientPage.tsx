@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { DataTable } from '../components/ui/DataTable';
@@ -331,13 +331,56 @@ function SurveysTab({ clientId }: { clientId: string }) {
 }
 
 function FollowupsTab({ clientId }: { clientId: string }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const { user } = useSession();
+  const canAssign = hasRole(user, 'admin', 'manager');
   const q = useQuery({
     queryKey: ['followups', `client-${clientId}`],
     queryFn: async () => (await api.get('/followups', { params: { client_id: clientId, per_page: 50 } })).data.data as { id: string; title: string; status: string; due_at: string }[],
   });
+  const repsQ = useQuery({
+    queryKey: ['users', 'sales-reps'],
+    queryFn: async () => (await api.get('/users', { params: { role: 'sales_rep', per_page: 100 } })).data.data as { id: number; name: string }[],
+    enabled: canAssign,
+  });
+  const [title, setTitle] = useState('');
+  const [due, setDue] = useState('');
+  const [ownerId, setOwnerId] = useState('');
+  const addMut = useMutation({
+    mutationFn: async () => api.post('/followups', {
+      client_id: clientId, title: title.trim(), due_at: new Date(due).toISOString(),
+      ...(canAssign && ownerId ? { owner_id: Number(ownerId) } : {}),
+    }),
+    onSuccess: () => {
+      toast('success', 'Reminder set for this client.');
+      setTitle(''); setDue(''); setOwnerId('');
+      qc.invalidateQueries({ queryKey: ['followups', `client-${clientId}`] });
+      qc.invalidateQueries({ queryKey: ['followups'] });
+    },
+    onError: (e) => toast('error', apiErr(e, 'Could not set reminder (must be in the future).')),
+  });
   if (q.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading follow-ups…</p>;
   return (
     <>
+      <form
+        className="mb-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4"
+        onSubmit={(ev) => { ev.preventDefault(); if (title.trim() && due) addMut.mutate(); }}
+      >
+        <label>New reminder<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Call back about quotation" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+        <label>Due<input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+        {canAssign && (
+          <label>Assign to<select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
+            <option value="">Account owner (default)</option>
+            {(repsQ.data ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select></label>
+        )}
+        <div className="flex items-end">
+          <button disabled={addMut.isPending || !title.trim() || !due} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">
+            {addMut.isPending ? 'Saving…' : '+ Add'}
+          </button>
+        </div>
+      </form>
       <DataTable
         rows={q.data ?? []}
         columns={[
