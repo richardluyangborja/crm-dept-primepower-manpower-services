@@ -30,26 +30,14 @@ class OtpCodeMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: <<<HTML
-                <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#0f172a">
-                  <h2 style="margin-bottom:4px">Hi {$this->e($this->name)},</h2>
-                  <p style="color:#475569">Your Primepower {$this->e($this->purposeLabel())} is:</p>
-                  <p style="font-size:32px;font-weight:bold;letter-spacing:8px;margin:16px 0">{$this->e($this->code)}</p>
-                  <p style="color:#475569">It expires in {$this->ttlMinutes} minutes and works once. If you didn't ask for this, just ignore it — your account stays safe.</p>
-                  <p style="color:#94a3b8;font-size:12px">Primepower Manpower · CRM</p>
-                </div>
-                HTML,
-            textString: "Hi {$this->name},\n\nYour Primepower {$this->purposeLabel()} is: {$this->code}\n\nIt expires in {$this->ttlMinutes} minutes and works once. If you didn't ask for this, just ignore it.\n\nPrimepower Manpower · CRM",
+            html: 'emails.otp-code',
+            text: 'emails.otp-code-text',
+            with: [
+                'name' => $this->name,
+                'code' => $this->code,
+                'purposeLabel' => $this->purpose === 'step_up' ? 'verification code' : 'login code',
+                'ttlMinutes' => $this->ttlMinutes,
+            ],
         );
-    }
-
-    protected function purposeLabel(): string
-    {
-        return $this->purpose === 'step_up' ? 'verification code' : 'login code';
-    }
-
-    protected function e(string $v): string
-    {
-        return htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
     }
 }
