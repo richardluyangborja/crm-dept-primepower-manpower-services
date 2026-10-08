@@ -64,6 +64,7 @@ Route::prefix('v1')->group(function () {
         Route::post('invoices/{invoice}/collect', [\App\Http\Controllers\InvoiceController::class, 'collect']);
         // Step 2 — Opportunity Pipeline (specs/05).
         Route::apiResource('opportunities', OpportunityController::class);
+        Route::get('opportunities/{opportunity}/history', [OpportunityController::class, 'history']);
         Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);
         Route::post('opportunities/{opportunity}/win', [OpportunityController::class, 'win']);
         Route::post('opportunities/{opportunity}/lose', [OpportunityController::class, 'lose']);

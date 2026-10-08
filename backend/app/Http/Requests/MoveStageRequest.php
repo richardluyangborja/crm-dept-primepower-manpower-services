@@ -23,6 +23,9 @@ class MoveStageRequest extends FormRequest
             'rate_per_head_centavos' => ['sometimes', 'integer', 'min:0'],
             'contract_months' => ['sometimes', 'integer', 'min:1', 'max:120'],
             'start_date' => ['sometimes', 'date'],
+            // Required when the move bypasses flow stages (enforced in
+            // OpportunityService, which knows the current stage).
+            'skip_reason' => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -30,6 +33,7 @@ class MoveStageRequest extends FormRequest
     {
         return [
             'lost_reason.required_if' => 'Tell us why this was lost — it powers win/loss analytics.',
+            'skip_reason.required' => 'This jump skips stages — say why so the history timeline stays truthful.',
         ];
     }
 }

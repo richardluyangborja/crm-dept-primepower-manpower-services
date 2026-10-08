@@ -56,7 +56,18 @@ class OpportunityPipelineTest extends TestCase
         $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'lost'], ['Authorization' => "Bearer $t"])
             ->assertStatus(422);
         $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'lost', 'lost_reason' => 'Budget frozen'], ['Authorization' => "Bearer $t"])
+            ->assertStatus(422); // early loss skips stages — needs the skip reason too
+        $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'lost', 'lost_reason' => 'Budget frozen', 'skip_reason' => 'Client froze hiring before we could quote'], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.lost_reason', 'Budget frozen');
+
+        // History timeline records the jump with its reason.
+        $history = $this->getJson("/api/v1/opportunities/$id/history", ['Authorization' => "Bearer $t"])->assertOk()->json('data');
+        $last = end($history);
+        $this->assertSame('stage_moved', $last['action']);
+        $this->assertSame('proposal', $last['from']);
+        $this->assertSame('lost', $last['to']);
+        $this->assertContains('negotiation', $last['skipped']);
+        $this->assertSame('Client froze hiring before we could quote', $last['skip_reason']);
     }
 
     public function test_qualifying_requires_value_and_terms(): void
@@ -91,6 +102,11 @@ class OpportunityPipelineTest extends TestCase
         $this->postJson("/api/v1/opportunities/$id/move", [
             'stage' => 'contract', 'headcount' => 40, 'rate_per_head_centavos' => 1500000,
             'contract_months' => 12, 'start_date' => now()->toDateString(),
+        ], ['Authorization' => "Bearer $t"])->assertStatus(422); // signing from new skips stages
+        $this->postJson("/api/v1/opportunities/$id/move", [
+            'stage' => 'contract', 'headcount' => 40, 'rate_per_head_centavos' => 1500000,
+            'contract_months' => 12, 'start_date' => now()->toDateString(),
+            'skip_reason' => 'Client signed right after first meeting — fast-tracked',
         ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/$id/win", [], ['Authorization' => "Bearer $t"])
             ->assertOk()->assertJsonPath('data.stage', 'won');
@@ -109,7 +125,7 @@ class OpportunityPipelineTest extends TestCase
         $id = $this->postJson('/api/v1/opportunities', [
             'client_id' => ($c = $this->clientFor($rep))->id, 'company_id' => $c->company->opaqueId(), 'title' => 'Closed deal', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
-        $this->postJson("/api/v1/opportunities/$id/lose", ['lost_reason' => 'Timing'], ['Authorization' => "Bearer $t"])->assertOk();
+        $this->postJson("/api/v1/opportunities/$id/lose", ['lost_reason' => 'Timing', 'skip_reason' => 'No budget to run the process'], ['Authorization' => "Bearer $t"])->assertOk();
 
         // Rep cannot reopen…
         $this->postJson("/api/v1/opportunities/$id/move", ['stage' => 'negotiation', 'reopen_note' => 'Back on'], ['Authorization' => "Bearer $t"])
