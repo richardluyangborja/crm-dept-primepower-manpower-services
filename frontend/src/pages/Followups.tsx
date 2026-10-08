@@ -58,7 +58,7 @@ function FupActions({ r, canEscalate, onDone, onSnooze, onEscalate }: {
 }
 
 export function FollowupsPage() {
-  const [view, setView] = useState<'queue' | 'calendar'>('queue');
+  const [view, setView] = useState<'queue' | 'calendar'>('calendar');
   // Deep-linkable: notification links land here with ?status=escalated.
   const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get('status') ?? '');
   const [showNew, setShowNew] = useState(false);
@@ -164,7 +164,7 @@ export function FollowupsPage() {
       <div className="flex gap-2">
         {(['queue', 'calendar'] as const).map((v) => (
           <button key={v} onClick={() => setView(v)} className={`rounded-lg px-4 py-1.5 text-sm font-medium ${view === v ? 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100' : 'border border-[var(--border)]'}`}>
-            {v === 'queue' ? 'My tasks' : 'Calendar'}
+            {v === 'queue' ? 'List view' : 'Calendar'}
           </button>
         ))}
         <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="card px-3 py-1.5 text-sm" aria-label="Filter by status">

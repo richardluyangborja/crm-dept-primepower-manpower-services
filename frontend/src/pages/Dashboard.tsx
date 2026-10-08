@@ -158,7 +158,7 @@ function TeamPulse() {
   return (
     <div className="card p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">via HR</span></h2>
+        <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">live attendance + sales</span></h2>
         <Link to="/workforce/performance" className="text-xs text-sky-700 hover:underline dark:text-sky-300">Open Workforce →</Link>
       </div>
       {dirQ.isLoading || perfQ.some((r) => r.isLoading) ? (
@@ -220,7 +220,7 @@ function LifecycleStrip() {  const contractsQ = useQuery({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Active contracts" value={loading ? '…' : String(contracts.length)} sub="commercial relationships live now" href="/pipeline/contracts" />
         <KpiCard label="Monthly recurring" value={loading ? '…' : formatPHP(monthly)} sub="contracted billing per month" href="/pipeline/finance" />
-        <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="via Client Management" href="/pipeline/staffing" />
+        <KpiCard label="Deployed staff" value={loading ? '…' : String(staffingQ.data?.meta.total_deployed ?? '—')} sub="working on client sites" href="/pipeline/staffing" />
         <KpiCard label="Outstanding AR" value={loading ? '…' : formatPHP(financeQ.data?.outstanding_total_centavos ?? 0)} sub="open balances" href="/pipeline/finance" />
       </div>
       {renewals.length > 0 && (

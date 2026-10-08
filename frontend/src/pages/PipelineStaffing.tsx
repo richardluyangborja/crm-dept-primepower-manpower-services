@@ -33,7 +33,7 @@ interface JobOrder {
 
 const JO_FLOW = ['draft', 'staffed', 'deployed', 'billed'] as const;
 
-/** Pipeline hub child: per-client staffing detail + full board (via Client Management). Read-only. */
+/** Pipeline hub child: per-client staffing detail + full board. Staffing updates it — shown here. */
 export function PipelineStaffingPage() {
   const { clientId, setClientId } = useClientParam();
   const staffingQ = useQuery({
@@ -61,7 +61,7 @@ export function PipelineStaffingPage() {
         <h1 className="text-xl font-bold">Pipeline · Deployed Staff</h1>
       </div>
       <InfoCallout lead="Staffing, one client or all of them.">
-        Deployed headcount, read-only via Client Management — progression happens on their side.
+        Live deployed headcount — when staffing moves a job order forward, this board updates.
       </InfoCallout>
 
       <section aria-label="Per client" className="flex flex-col gap-3">

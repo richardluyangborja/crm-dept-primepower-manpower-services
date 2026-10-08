@@ -256,7 +256,7 @@ function PayModal({ invoice, onClose, onDone }: { invoice: Invoice | null; onClo
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-sm p-6">
         <h2 className="text-lg font-semibold">Record payment — {invoice.ref}</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Simulated: updates the balance ledger + audit trail. Balance due {formatPHP(invoice.balance_centavos)} of {formatPHP(invoice.amount_centavos)}.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">Posts to the balance ledger and audit trail. Balance due {formatPHP(invoice.balance_centavos)} of {formatPHP(invoice.amount_centavos)}.</p>
         <label className="text-sm">Partial amount (₱)<input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="e.g. 50000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-end gap-2">
