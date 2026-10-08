@@ -109,7 +109,14 @@ export function useTour() {
     nav(STEPS[i].route);
   };
 
+  const next = () => {
+    if (step >= STEPS.length - 1) finish();
+    else go(step + 1);
+  };
+
   const act = (route: string) => {
+    // Actions move the story forward: follow the jump with the next step.
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
     nav(route);
   };
 
@@ -117,7 +124,7 @@ export function useTour() {
   const current = STEPS[step];
   const onRoute = location.pathname === current.route;
 
-  return { active, step, current, onRoute, go, act, finish, replay, setActive };
+  return { active, step, total: STEPS.length, current, onRoute, go, next, act, finish, replay, setActive };
 }
 
 export function TourCard({
