@@ -17,7 +17,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [otp, setOtp] = useState<{ challenge: number; expires: number } | null>(null);
+  const [otp, setOtp] = useState<{ challenge: number; expires: number; sentTo: string | null } | null>(null);
   const { setUser, setTheme } = useSession();
   const toast = useToast();
   const nav = useNavigate();
@@ -45,7 +45,7 @@ export function LoginPage() {
       const r = await api.post('/auth/login', { email, password });
       if (r.data.data.otp_required) {
         // Second factor (specs/16): admins, superadmins, and opted-in users.
-        setOtp({ challenge: r.data.data.challenge_id, expires: r.data.data.expires_in ?? 300 });
+        setOtp({ challenge: r.data.data.challenge_id, expires: r.data.data.expires_in ?? 300, sentTo: r.data.data.sent_to ?? null });
         return;
       }
       await completeLogin(r.data.data);
@@ -99,6 +99,15 @@ export function LoginPage() {
           email={email}
           purpose="login"
           expiresIn={otp.expires}
+          sentTo={otp.sentTo}
+          onResend={async () => {
+            // Resend = fresh sign-in (mints a new challenge server-side).
+            const r = await api.post('/auth/login', { email, password });
+            const expires = r.data.data.expires_in ?? 300;
+            const sentTo = r.data.data.sent_to ?? null;
+            setOtp({ challenge: r.data.data.challenge_id, expires, sentTo });
+            return { expiresIn: expires, sentTo };
+          }}
           onVerified={(tokens) => completeLogin(tokens as LoginTokens)}
           onClose={() => setOtp(null)}
         />

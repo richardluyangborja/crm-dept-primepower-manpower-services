@@ -32,13 +32,18 @@ class AuthController extends Controller
                 $challenge = $otp->send($user->id, 'login');
             } catch (\App\Exceptions\OtpLockedException $e) {
                 return $this->fail($e->getMessage(), 429);
+            } catch (\App\Exceptions\OtpCooldownException $e) {
+                return response()->json(['message' => $e->getMessage(), 'meta' => ['retry_after' => $e->retryAfter]], 429);
+            } catch (\RuntimeException $e) {
+                return $this->fail($e->getMessage(), 502);
             }
 
             return $this->ok([
                 'otp_required' => true,
                 'challenge_id' => $challenge['challenge_id'],
                 'expires_in' => $challenge['expires_in'],
-            ], 'Verification code sent — enter the 6-digit code.');
+                'sent_to' => $challenge['sent_to'],
+            ], "Verification code sent to {$challenge['sent_to']} — enter the 6-digit code.");
         }
 
         return $this->ok($this->issueTokens($user, $request), 'Logged in.');
