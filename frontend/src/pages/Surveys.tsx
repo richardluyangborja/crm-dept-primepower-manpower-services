@@ -88,17 +88,19 @@ export function SurveysPage() {
 
 function SurveysInbox() {
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 7;
   const [showSend, setShowSend] = useState(false);
   const [confirmClient, setConfirmClient] = useState<{ name: string; run: () => void } | null>(null);
   const toast = useToast();
   const qc = useQueryClient();
 
   const surveysQ = useQuery({
-    queryKey: ['surveys', status],
+    queryKey: ['surveys', status, page],
     queryFn: async () =>
-      (await api.get('/surveys', { params: { status: status || undefined, per_page: 50 } })).data.data as Survey[],
+      (await api.get('/surveys', { params: { status: status || undefined, page, per_page: PER_PAGE } })).data as { data: Survey[]; meta?: { total?: number } },
   });
-  const rows = surveysQ.data ?? [];
+  const rows = surveysQ.data?.data ?? [];
 
   const copyLink = async (s: Survey) => {
     const url = `${window.location.origin}/s/${s.token}`;
@@ -123,7 +125,7 @@ function SurveysInbox() {
   return (
     <>
       <div className="flex gap-2">
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+        <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
           <option value="">All statuses</option>
           {['sent', 'responded', 'expired', 'draft'].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -135,6 +137,7 @@ function SurveysInbox() {
         : (
           <DataTable<Survey>
             rows={rows}
+            pagination={{ page, perPage: PER_PAGE, total: surveysQ.data?.meta?.total ?? rows.length, onPage: setPage }}
             columns={[
               { key: 'c', header: 'Client', render: (r) => r.client_name ?? `#${r.client_id}` },
               { key: 't', header: 'Template', render: (r) => <span>{r.template_name} <span className="text-xs text-[var(--text-muted)]">({r.template_type})</span></span> },
@@ -437,6 +440,8 @@ interface Analytics {
 
 function AnalyticsTab() {
   const nav = useNavigate();
+  const [wallPage, setWallPage] = useState(1);
+  const WALL_PER_PAGE = 15;
   const analyticsQ = useQuery({
     queryKey: ['surveys-analytics'],
     queryFn: async () => (await api.get('/surveys-analytics')).data.data as Analytics,
@@ -503,14 +508,25 @@ function AnalyticsTab() {
       <div className="card p-4">
         <h2 className="font-semibold">Comment wall</h2>
         {a.comments.length === 0 ? <p className="mt-1 text-sm text-[var(--text-muted)]">No comments yet.</p> : (
-          <ul className="mt-2 flex flex-col gap-2">
-            {a.comments.map((c, i) => (
-              <li key={i} className="flex gap-2 text-sm">
-                <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${c.score >= 9 ? 'bg-green-500' : c.score >= 7 ? 'bg-amber-400' : 'bg-red-500'}`} title={`Score ${c.score}`} />
-                <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · <Star size={11} className="mr-0.5 inline" />{c.score}</span></span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="mt-2 flex flex-col gap-2">
+              {a.comments.slice((wallPage - 1) * WALL_PER_PAGE, wallPage * WALL_PER_PAGE).map((c, i) => (
+                <li key={(wallPage - 1) * WALL_PER_PAGE + i} className="flex gap-2 text-sm">
+                  <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${c.score >= 9 ? 'bg-green-500' : c.score >= 7 ? 'bg-amber-400' : 'bg-red-500'}`} title={`Score ${c.score}`} />
+                  <span>“{c.comment}” <span className="text-xs text-[var(--text-muted)]">— {c.client_name} · <Star size={11} className="mr-0.5 inline" />{c.score}</span></span>
+                </li>
+              ))}
+            </ul>
+            {a.comments.length > WALL_PER_PAGE && (
+              <div className="mt-3 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                <span className="tabular-nums">Page {wallPage} of {Math.ceil(a.comments.length / WALL_PER_PAGE)} · {a.comments.length} comments</span>
+                <span className="flex gap-1.5">
+                  <button disabled={wallPage <= 1} onClick={() => setWallPage(wallPage - 1)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 font-medium text-inherit disabled:opacity-40">← Prev</button>
+                  <button disabled={wallPage >= Math.ceil(a.comments.length / WALL_PER_PAGE)} onClick={() => setWallPage(wallPage + 1)} className="rounded-lg border border-[var(--border)] px-2.5 py-1 font-medium text-inherit disabled:opacity-40">Next →</button>
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
