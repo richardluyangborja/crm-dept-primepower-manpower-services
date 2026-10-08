@@ -10,6 +10,8 @@ import { DataTable } from '../components/ui/DataTable';
 import { useToast } from '../components/ui/Toaster';
 import { TrendsCard, type MonthPoint } from '../components/crm/TrendCharts';
 import { AiBadge, FeedbackThumbs } from '../components/crm/InsightBits';
+import { ManagementReport } from '../components/crm/ManagementReport';
+import { useSession } from '../store/session';
 import { Download, Printer, Star } from 'lucide-react';
 
 interface Pack {
@@ -23,6 +25,9 @@ interface Pack {
     followup_compliance: { open: number; done: number; overdue: number };
     risks: { client_id: string; client_name: string; owner_name?: string; level: string; drivers: string[]; nba: { kind: string; title: string; link: string }[] }[];
     comment_sentiment: { client_name?: string; score: number; comment: string; sentiment: { label: string; score: number } }[];
+    deal_trend_12m: { month: string; won: number; lost: number; win_rate: number | null; new_opps: number }[];
+    satisfaction_trend_12m: { month: string; avg: number | null; nps: number | null; responses: number }[];
+    satisfaction_by_client: { client_name: string | null; surveys: number; responded: number; avg_score: number | null; low: boolean }[];
   };
   meta: { ai_preview: boolean; generated_at: string; period: { from: string; to: string } };
 }
@@ -58,6 +63,7 @@ export function ReportsPage() {
   const [type, setType] = useState<'weekly' | 'monthly'>('weekly');
   const toast = useToast();
   const qc = useQueryClient();
+  const { user } = useSession();
 
   const packQ = useQuery({
     queryKey: ['report', type],
@@ -66,6 +72,11 @@ export function ReportsPage() {
   const savedQ = useQuery({
     queryKey: ['reports-saved'],
     queryFn: async () => (await api.get('/reports')).data.data as SavedPack[],
+  });
+  const settingsQ = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+    staleTime: 60000,
   });
 
   const genMut = useMutation({
@@ -81,7 +92,7 @@ export function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         <div>
           <h1 className="text-xl font-bold">Management reports</h1>
           <p className="text-sm text-[var(--text-muted)]">One-click weekly/monthly packs for decision support. <AiBadge /></p>
@@ -99,14 +110,16 @@ export function ReportsPage() {
             className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
             {genMut.isPending ? 'Generating…' : 'Generate pack'}
           </button>
-          <button onClick={() => window.print()} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm"><span className="inline-flex items-center gap-1.5"><Printer size={14} /> Print / PDF</span></button>
+          <button onClick={() => window.print()} disabled={!pack} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm disabled:opacity-50"><span className="inline-flex items-center gap-1.5"><Printer size={14} /> Print / PDF</span></button>
         </div>
       </div>
 
-      <ReportTrends />
-      {packQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Building your {type} pack…</p>
+      <div className="print:hidden">
+        <ReportTrends />
+      </div>
+      {packQ.isLoading ? <p className="text-sm text-[var(--text-muted)] print:hidden">Building your {type} pack…</p>
         : packQ.isError ? (
-          <div className="card p-6 text-sm">
+          <div className="card p-6 text-sm print:hidden">
             {(() => {
               const err = packQ.error as { response?: { status?: number } };
               return err?.response?.status === 403
@@ -114,10 +127,10 @@ export function ReportsPage() {
                 : <>Couldn't build the pack. <button className="text-sky-600 underline" onClick={() => packQ.refetch()}>Retry</button></>;
             })()}
           </div>
-        ) : pack ? <PackView pack={pack} type={type} /> : null}
+        ) : pack ? <div className="flex flex-col gap-4 print:hidden"><PackView pack={pack} type={type} /></div> : null}
 
       {(savedQ.data ?? []).length > 0 && (
-        <div className="card p-4">
+        <div className="card p-4 print:hidden">
           <h2 className="mb-2 font-semibold">Generated packs</h2>
           <ul className="flex flex-col gap-1 text-sm">
             {savedQ.data!.map((r) => (
@@ -128,6 +141,15 @@ export function ReportsPage() {
             ))}
           </ul>
         </div>
+      )}
+
+      {pack && (
+        <ManagementReport
+          pack={pack}
+          type={type}
+          orgName={typeof settingsQ.data?.org_name === 'string' ? settingsQ.data.org_name : 'Primepower'}
+          preparedBy={user?.name ?? 'Management'}
+        />
       )}
     </div>
   );

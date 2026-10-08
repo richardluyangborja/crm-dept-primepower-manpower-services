@@ -35,7 +35,7 @@ export function Toaster({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={push}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2" aria-live="polite">
+      <div className="fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2 print:hidden" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className={`card flex gap-2.5 border-l-4 px-4 py-3 shadow-md ${color(t.kind)}`}>
             {ICONS[t.kind]}
