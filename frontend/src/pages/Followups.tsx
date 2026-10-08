@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toaster';
 import { hasRole, useSession } from '../store/session';
-import { Check, Clock, ArrowUpRight } from 'lucide-react';
+import { Check, Clock, ArrowUpRight, TriangleAlert } from 'lucide-react';
 
 interface Fup {
   id: string;
@@ -59,6 +59,7 @@ function FupActions({ r, canEscalate, onDone, onSnooze, onEscalate }: {
 
 export function FollowupsPage() {
   const [view, setView] = useState<'queue' | 'calendar'>('calendar');
+  const [escInfo, setEscInfo] = useState(false);
   // Deep-linkable: notification links land here with ?status=escalated.
   const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get('status') ?? '');
   const [showNew, setShowNew] = useState(false);
@@ -141,7 +142,32 @@ export function FollowupsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Follow-ups</h1>
+          <h1 className="flex items-center gap-2 text-xl font-bold">
+            Follow-ups
+            <span className="relative">
+              <button
+                aria-label="What does escalation mean?"
+                title="What does escalation mean?"
+                onClick={() => setEscInfo((v) => !v)}
+                className="rounded-lg border border-[var(--border)] p-1.5 text-[var(--text-muted)] hover:text-inherit"
+              >
+                <TriangleAlert size={16} />
+              </button>
+              {escInfo && (
+                <div className="card absolute left-0 z-30 mt-2 w-72 p-4 text-sm font-normal" role="dialog" aria-label="About escalation">
+                  <p className="font-semibold">What “escalated” means</p>
+                  <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+                    A reminder left overdue for 72 hours is automatically flagged to your manager so nothing
+                    slips. Sales reps can also escalate their own overdue reminders early.
+                  </p>
+                  <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+                    Snoozing pauses the countdown. Clearing or completing the reminder resolves it.
+                  </p>
+                  <button onClick={() => setEscInfo(false)} className="mt-2 text-xs text-sky-700 underline dark:text-sky-300">Got it</button>
+                </div>
+              )}
+            </span>
+          </h1>
           <p className="text-sm text-[var(--text-muted)]">Clear overdue first — they auto-escalate after 72 hours.</p>
         </div>
         <button onClick={() => setShowNew(true)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white">+ Reminder</button>
