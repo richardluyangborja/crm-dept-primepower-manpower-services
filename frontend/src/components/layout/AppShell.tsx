@@ -152,7 +152,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 self-start border-r border-[var(--border)] p-4 md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto`}>
+      <aside className={`${open ? 'block' : 'hidden'} w-64 shrink-0 self-start border-r border-[var(--border)] p-4 print:hidden md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto`}>
         <div className="mb-4 flex items-center gap-2 px-2">
           <img src={logo} alt="Primepower" className="h-10 w-auto" />
           <div>
@@ -249,7 +249,7 @@ export function AppShell() {
         onConfirm={() => void runLogout()}
       />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-app)]/90 px-4 py-3 backdrop-blur">
+        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-app)]/90 px-4 py-3 backdrop-blur print:hidden">
           <button className="md:hidden" aria-label="Menu" onClick={() => setOpen((v) => !v)}>
             <Menu size={20} />
           </button>
