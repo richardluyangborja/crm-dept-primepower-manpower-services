@@ -165,7 +165,7 @@ export function PipelinePage() {
       qc.invalidateQueries({ queryKey: ['lead'] });
       qc.invalidateQueries({ queryKey: ['clients'] });
       qc.invalidateQueries({ queryKey: ['client'] });
-      // Narrate the handoff: fetch the freshly persisted mock job order + terms.
+      // Narrate the handoff: fetch the freshly persisted job order + terms.
       try {
         const opp = rows.find((o) => o.id === vars.id);
         if (opp) {

@@ -871,7 +871,7 @@ function IntegrationsSection() {
   const test = async (key: string) => {
     try {
       const r = await api.get(`/integrations/${key}/test`);
-      toast('success', `Mock OK: ${JSON.stringify(r.data.data.result).slice(0, 120)}`);
+      toast('success', `Connection OK: ${JSON.stringify(r.data.data.result).slice(0, 120)}`);
     } catch (e) {
       toast('error', apiErr(e, 'Test connection failed.'));
     }
@@ -880,8 +880,8 @@ function IntegrationsSection() {
   if (statusQ.isLoading) return <p className="text-sm text-[var(--text-muted)]">Loading…</p>;
   return (
     <div className="card p-6">
-      <h2 className="font-semibold">Connected systems <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">simulated responses</span></h2>
-      <p className="mb-3 text-xs text-[var(--text-muted)]">Department systems currently answer with simulated data. Live connections unlock in a later release.</p>
+      <h2 className="font-semibold">Connected systems</h2>
+      <p className="mb-3 text-xs text-[var(--text-muted)]">Each row is a department system this CRM talks to (HR, Finance, Client Management…). “Test connection” sends a sample request and shows what comes back — use it to confirm the link is alive.</p>
       <DataTable<Integration & { id: string }>
         rows={(statusQ.data?.services ?? []).map((s) => ({ ...s, id: s.key }))}
         columns={[

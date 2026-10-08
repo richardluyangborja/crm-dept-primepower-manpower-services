@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Briefcase, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, LogOut, Menu, Search, Users, KanbanSquare, MessagesSquare, Star, BellRing, BarChart3, Settings, CircleHelp, Briefcase, ChevronDown, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/apiClient';
@@ -104,6 +104,7 @@ export function AppShell() {
     idle.stay();
   };
   const tour = useTour();
+  const [escInfo, setEscInfo] = useState(false);
   const unreadQ = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: async () => (await api.get('/notifications', { params: { unread: 1, per_page: 1 } })).data.meta.total as number,
@@ -257,6 +258,29 @@ export function AppShell() {
             <input placeholder="Quick search clients, leads, opps…  ( / )" className="w-full bg-transparent outline-none" />
           </div>
           <NotificationPanel unread={unread} />
+          <div className="relative">
+            <button
+              aria-label="What does escalation mean?"
+              title="What does escalation mean?"
+              onClick={() => setEscInfo((v) => !v)}
+              className="rounded-lg border border-[var(--border)] p-2"
+            >
+              <TriangleAlert size={18} />
+            </button>
+            {escInfo && (
+              <div className="card absolute right-0 z-30 mt-2 w-72 p-4 text-sm" role="dialog" aria-label="About escalation">
+                <p className="font-semibold">What “escalated” means</p>
+                <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+                  A reminder left overdue for 72 hours is automatically flagged to your manager so nothing
+                  slips. Sales reps can also escalate their own overdue reminders early.
+                </p>
+                <p className="mt-1 text-[13px] text-[var(--text-muted)]">
+                  Snoozing pauses the countdown. Clearing or completing the reminder resolves it.
+                </p>
+                <button onClick={() => setEscInfo(false)} className="mt-2 text-xs text-sky-700 underline dark:text-sky-300">Got it</button>
+              </div>
+            )}
+          </div>
           <button aria-label="Replay product tour" title="Take the 5-step tour again" onClick={() => tour.replay()} className="rounded-lg border border-[var(--border)] p-2">
             <CircleHelp size={18} />
           </button>

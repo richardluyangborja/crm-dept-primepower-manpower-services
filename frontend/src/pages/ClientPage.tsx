@@ -151,7 +151,7 @@ export function ClientPage() {
             <ContractsSection clientId={detailQ.data.id} />
           </section>
           <section id="operations" aria-label="Operations" className="flex scroll-mt-24 flex-col gap-3">
-            <SectionHead title="Operations" tag="via Client Management" hint="Fulfillment status from the back office — the CRM shows it, they run it." />
+            <SectionHead title="Operations" tag="back office" hint="Fulfillment status from the back office — the CRM shows it, they run it." />
             <OperationsSection clientId={detailQ.data.id} />
           </section>
           <section id="conversations" aria-label="Conversations" className="flex scroll-mt-24 flex-col gap-3">
@@ -462,7 +462,7 @@ function InsightsSection({ clientId, clientName }: { clientId: string; clientNam
       <div className="flex items-center gap-2 text-sm">
         <span className="text-[var(--text-muted)]">Relationship health:</span>
         <StatusBadge value={q.data.level} />
-        {q.data.ai_preview && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">AI preview</span>}
+        {q.data.ai_preview && <span title="Suggested by the insights engine from live CRM data — verify before acting" className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">AI</span>}
       </div>
       <ul className="list-disc pl-5 text-sm">
         {q.data.drivers.map((d, i) => <li key={i}>{d}</li>)}
