@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
@@ -403,6 +404,7 @@ interface U {
   team_name?: string;
   phone: string | null;
   is_active: boolean;
+  otp_enabled?: boolean;
   last_login_at: string | null;
 }
 
@@ -452,8 +454,28 @@ function UsersSection() {
             { key: 't', header: 'Team', render: (r) => r.team_name ?? '—' },
             { key: 'a', header: 'Active', render: (r) => (r.is_active ? 'Yes' : 'No') },
             {
+              key: 'o', header: 'OTP', render: (r) => readonly ? (r.otp_enabled ? 'On' : 'Off') : (
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.post(`/users/${r.id}/otp`, { otp_enabled: !r.otp_enabled });
+                      toast('success', r.otp_enabled ? `OTP off for ${r.name}.` : `OTP on for ${r.name} — their next login asks for a code.`);
+                      invalidate();
+                    } catch (e) {
+                      toast('error', apiErr(e, 'Could not change OTP setting.'));
+                    }
+                  }}
+                  title={r.otp_enabled ? 'Turn OTP off' : 'Turn OTP on — next login asks for a code'}
+                  aria-label={`Toggle OTP for ${r.name}`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${r.otp_enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                >
+                  {r.otp_enabled ? 'On' : 'Off'}
+                </button>
+              ),
+            },
+            {
               key: 'x', header: 'Actions', render: (r) => r.role === 'superadmin'
-                ? <span className="text-xs text-[var(--text-muted)]" title="Seed-managed top account">locked</span>
+                ? <span className="text-xs text-[var(--text-muted)]" title="Seed-managed top account — role and password are fixed, OTP can still be toggled">locked</span>
                 : readonly ? <span className="text-xs text-[var(--text-muted)]">—</span> : (
                 <span className="flex flex-wrap gap-1">
                   <button onClick={() => setRoleEdit(r)} className="rounded border border-[var(--border)] px-2 py-0.5 text-xs">Role/team</button>
@@ -831,10 +853,7 @@ function SecuritySection() {
         />
       </div>
 
-      <div className="card p-6">
-        <h2 className="font-semibold">Two-factor (OTP)</h2>
-        <p className="text-xs text-[var(--text-muted)]">One-time codes (6 digits, 5-minute expiry) plus a 5-minute idle timeout protect logins. Nothing to configure yet.</p>
-      </div>
+      <TwoFactorCard />
 
       <div className="card p-6">
         <h2 className="font-semibold">Login history</h2>
@@ -847,6 +866,59 @@ function SecuritySection() {
           empty={<p className="text-sm text-[var(--text-muted)]">No logins recorded yet.</p>}
         />
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------ Two-factor (OTP) ----------------------------- */
+
+function TwoFactorCard() {
+  const { user } = useSession();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const meQ = useQuery({
+    queryKey: ['users', 'me-otp'],
+    queryFn: async () => (await api.get(`/users/${user?.id}`)).data.data as U,
+    enabled: !!user?.id,
+  });
+  const on = meQ.data?.otp_enabled ?? false;
+  const [busy, setBusy] = useState(false);
+
+  const toggle = async () => {
+    if (!user?.id) return;
+    setBusy(true);
+    try {
+      await api.post(`/users/${user.id}/otp`, { otp_enabled: !on });
+      toast('success', on ? 'OTP turned off for your account.' : 'OTP turned on — your next login asks for a code.');
+      qc.invalidateQueries({ queryKey: ['users', 'me-otp'] });
+      qc.invalidateQueries({ queryKey: ['users'] });
+    } catch (e) {
+      toast('error', apiErr(e, 'Could not change OTP setting.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card p-6">
+      <h2 className="font-semibold">Two-factor (OTP)</h2>
+      <p className="text-xs text-[var(--text-muted)]">
+        When on, login sends a 6-digit code to your email — it expires in 5 minutes and locks for 15 minutes
+        after 5 wrong tries. Codes are delivered by email, so keep your address current. Admins can also
+        switch OTP on/off per account in Users & Access.
+      </p>
+      <label className="mt-3 flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium">OTP for my account <span className="font-normal text-[var(--text-muted)]">({meQ.isLoading ? '…' : on ? 'on' : 'off'})</span></span>
+        <button
+          onClick={toggle}
+          disabled={busy || meQ.isLoading}
+          role="switch"
+          aria-checked={on}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+        >
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
+        </button>
+      </label>
     </div>
   );
 }
@@ -902,6 +974,13 @@ const ENTITIES = ['users', 'clients', 'leads', 'opportunities', 'activities', 's
 
 function DataSection() {
   const toast = useToast();
+  const qc = useQueryClient();
+  const settingsQ = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+  });
+  const [retention, setRetention] = useState('');
+  const current = settingsQ.data?.retention_days;
   const download = async (entity: string) => {
     try {
       const r = await api.get(`/exports/${entity}.csv`, { responseType: 'blob' });
@@ -914,6 +993,35 @@ function DataSection() {
       toast('success', `${entity}.csv downloaded.`);
     } catch {
       toast('error', 'Export failed.');
+    }
+  };
+  const snapshot = async () => {
+    try {
+      const r = await api.get('/exports/snapshot.json', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([r.data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `crm-snapshot-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('success', 'Snapshot downloaded — store it somewhere safe.');
+    } catch {
+      toast('error', 'Snapshot failed.');
+    }
+  };
+  const saveRetention = async () => {
+    const days = Number(retention);
+    if (!Number.isInteger(days) || days < 7 || days > 3650) {
+      toast('error', 'Retention must be 7–3650 days.');
+      return;
+    }
+    try {
+      await api.put('/settings', { settings: { retention_days: days } });
+      toast('success', `Retention set to ${days} days.`);
+      setRetention('');
+      qc.invalidateQueries({ queryKey: ['settings'] });
+    } catch (e) {
+      toast('error', apiErr(e, 'Could not save retention.'));
     }
   };
 
@@ -930,19 +1038,74 @@ function DataSection() {
       </div>
       <div className="card p-6">
         <h2 className="font-semibold">Backup & retention</h2>
-        <p className="text-xs text-[var(--text-muted)]">The deployment snapshots the database automatically — no action needed. Local Postgres: <code>docker compose exec db pg_dump -U crm crm_primepower &gt; backup.sql</code>. Soft-deleted records are retained 90 days (see <code>retention_days</code> in General).</p>
+        <p className="text-xs text-[var(--text-muted)]">
+          Download a full JSON snapshot any time (everything the CSVs cover, in one file — no passwords inside).
+          Server-level database snapshots stay on the deployment runbook. Soft-deleted records are kept{' '}
+          {typeof current === 'number' ? <strong>{current} days</strong> : 'per retention'} before hard cleanup.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <button onClick={snapshot} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white"><span className="inline-flex items-center gap-1.5"><Download size={14} /> Download snapshot (JSON)</span></button>
+          <label className="text-sm">Retention (days)
+            <input value={retention} onChange={(e) => setRetention(e.target.value)} inputMode="numeric" placeholder={typeof current === 'number' ? String(current) : '90'} className="ml-2 w-24 rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+          </label>
+          <button onClick={saveRetention} disabled={!retention} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm disabled:opacity-50">Save</button>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ------------------------------ AI & Reports stub ---------------------------- */
+/* ------------------------------ AI & Reports ------------------------------- */
 
 function ReportsPlaceholder() {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const { user } = useSession();
+  const canEdit = hasRole(user, 'superadmin');
+  const settingsQ = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data.data as Record<string, unknown>,
+  });
+  const [schedule, setSchedule] = useState('');
+  const current = typeof settingsQ.data?.report_schedule === 'string' ? settingsQ.data.report_schedule : 'monthly';
+
+  const save = async () => {
+    if (!schedule) return;
+    try {
+      await api.put('/settings', { settings: { report_schedule: schedule } });
+      toast('success', `Report pack cadence set to ${schedule}.`);
+      setSchedule('');
+      qc.invalidateQueries({ queryKey: ['settings'] });
+    } catch (e) {
+      toast('error', apiErr(e, 'Could not save cadence.'));
+    }
+  };
+
   return (
-    <div className="card p-6">
-      <h2 className="font-semibold">AI & Reports</h2>
-      <p className="text-xs text-[var(--text-muted)]">Insight visibility, report scheduling, and feedback review live in the Reports section.</p>
+    <div className="flex flex-col gap-4">
+      <div className="card p-6">
+        <h2 className="font-semibold">Report packs</h2>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">
+          The Monday-morning pack (churn risks, forecast, follow-up load) is generated from live CRM data on the{' '}
+          <Link to="/reports" className="text-sky-700 underline dark:text-sky-300">Reports page</Link>. Set how often the team expects a fresh one.
+        </p>
+        <label className="flex max-w-sm flex-wrap items-end gap-2 text-sm">Cadence
+          <select value={schedule || current} onChange={(e) => setSchedule(e.target.value)} disabled={!canEdit} className="rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 disabled:opacity-60">
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          {canEdit && <button onClick={save} disabled={!schedule || schedule === current} className="rounded-lg border border-[var(--border)] px-4 py-2 disabled:opacity-50">Save</button>}
+        </label>
+        {!canEdit && <p className="mt-1 text-xs text-[var(--text-muted)]">Read-only — superadmin only.</p>}
+      </div>
+      <div className="card p-6">
+        <h2 className="font-semibold">AI insights</h2>
+        <p className="text-xs text-[var(--text-muted)]">
+          Churn flags, next-best-actions, and the forecast adjustment are computed from live CRM data by a rules
+          engine today (labeled <strong>AI</strong> wherever they appear). Rate them with 👍/👎 where shown —
+          feedback is reviewed on the <Link to="/reports" className="text-sky-700 underline dark:text-sky-300">Reports page</Link> and trains the next model.
+        </p>
+      </div>
     </div>
   );
 }
