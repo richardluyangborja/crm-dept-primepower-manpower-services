@@ -529,7 +529,7 @@ function DealModal({ detail, labels, onClose, onSign, onWin, onLose }: {
           <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? detail.client_id ?? 'Pre-client deal'}</p></div>
           <div><p className="text-xs text-[var(--text-muted)]">Value</p><p className="tabular-nums">{formatPHP(detail.value_centavos)} × {detail.probability}%</p></div>
           <div><p className="text-xs text-[var(--text-muted)]">Billing</p><p className="tabular-nums">{detail.monthly_billing_centavos ? `${formatPHP(detail.monthly_billing_centavos)}/mo × ${detail.contract_months ?? '?'} mo` : 'Terms not set'}</p></div>
-          <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ?? '—'}</p></div>
+          <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ? new Date(`${detail.expected_close_date.slice(0, 10)}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</p></div>
         </div>
         {(detail.headcount !== null || detail.stage === 'contract') && (
           <p className="mt-1 text-xs text-[var(--text-muted)]">
