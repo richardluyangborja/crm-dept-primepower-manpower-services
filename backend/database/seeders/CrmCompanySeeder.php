@@ -70,21 +70,29 @@ class CrmCompanySeeder extends Seeder
                     'source' => $source, 'created_at' => $at, 'updated_at' => $at]
             );
 
+            $leadStatus = $statuses[$i % count($statuses)];
             $lead = Lead::firstOrCreate(
                 ['company_id' => $company->id, 'contact_name' => $contact],
                 ['owner_id' => $company->owner_id, 'company_name' => $name,
                     'contact_position' => $position, 'contact_email' => $email, 'contact_phone' => $phone,
                     'headcount_needed' => $heads, 'positions' => $positions, 'source' => $source,
-                    'status' => $statuses[$i % count($statuses)], 'notes' => "Needs $heads $positions.",
+                    'status' => $leadStatus, 'notes' => "Needs $heads $positions.",
                     'score' => \App\Services\Insights\LeadScorer::score(new Lead(['contact_email' => $email, 'contact_phone' => $phone, 'headcount_needed' => $heads])),
                     'created_at' => $at, 'updated_at' => $at]
             );
 
-            // Open stages get a deal; every 5th company already won and has a client.
+            // Disqualified leads never get a deal; everyone else gets one open
+            // deal, and every 5th company already won and has a full client
+            // (client + won deal + active contract + job order + invoice).
             $st = $stages[$i % count($stages)];
+            if ($leadStatus === 'unqualified') {
+                $st = null;
+            }
             $value = $heads * 15000 * 100;
             $dealAt = now()->subDays(max(1, $ago - 5));
-            if ($st['stage'] === 'won') {
+            if ($st === null) {
+                // Unqualified lead: no deal, no client — correctly empty.
+            } elseif ($st['stage'] === 'won') {
                 $client = Client::firstOrCreate(
                     ['company_id' => $company->id],
                     ['owner_id' => $company->owner_id, 'name' => $name, 'industry' => $industry,

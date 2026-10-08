@@ -38,7 +38,7 @@ class StoreLeadRequest extends FormRequest
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'regex:/^\+63\d{10}$/'],
             'headcount_needed' => ['nullable', 'integer', 'min:1', 'max:100000'],
-            'positions' => ['nullable', 'string', 'max:500'],
+            'positions' => ['nullable', 'string', 'max:500', new \App\Rules\LowLevelPositions],
             'source' => ['nullable', Rule::in(Lead::SOURCES)],
             'status' => ['sometimes', Rule::in(Lead::STATUSES)],
             'notes' => ['nullable', 'string'],
