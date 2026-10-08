@@ -20,6 +20,7 @@ class PreferencesRequest extends FormRequest
             'quiet_hours_start' => ['sometimes', 'nullable', 'date_format:H:i'],
             'quiet_hours_end' => ['sometimes', 'nullable', 'date_format:H:i'],
             'tour_seen' => ['sometimes', 'boolean'],
+            'tour_seen_v2' => ['sometimes', 'boolean'],
         ];
     }
 }
