@@ -70,6 +70,41 @@ class OtpSessionTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['user_id' => $admin->id, 'action' => 'otp_locked']);
     }
 
+    public function test_wrong_code_reports_attempts_left_and_resend_cooldown(): void
+    {
+        $admin = $this->mk('admin.left8@primepower.ph', 'admin');
+        $this->postJson('/api/v1/auth/login', ['email' => $admin->email, 'password' => 'password'])->assertOk();
+        $this->postJson('/api/v1/auth/otp/verify', ['email' => $admin->email, 'code' => '000000'])
+            ->assertStatus(410)->assertJsonPath('meta.attempts_left', 4);
+
+        // Immediate re-login (resend) hits the 60s cooldown with a retry hint.
+        $this->postJson('/api/v1/auth/login', ['email' => $admin->email, 'password' => 'password'])
+            ->assertStatus(429)->assertJsonStructure(['meta' => ['retry_after']]);
+    }
+
+    public function test_smtp_mode_emails_random_code(): void
+    {
+        config(['otp.mode' => 'smtp']);
+        \Illuminate\Support\Facades\Mail::fake();
+        $admin = $this->mk('admin.smtp8@primepower.ph', 'admin');
+        $res = $this->postJson('/api/v1/auth/login', ['email' => $admin->email, 'password' => 'password'])
+            ->assertOk()->assertJsonPath('data.otp_required', true);
+        $this->assertSame('a•••@primepower.ph', $res->json('data.sent_to'));
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OtpCodeMail::class);
+
+        // The emailed code verifies (grab it from the fake).
+        $code = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OtpCodeMail::class, function ($mail) use (&$code) {
+            $code = $mail->code;
+
+            return true;
+        });
+        $this->assertMatchesRegularExpression('/^\d{6}$/', (string) $code);
+        $this->assertNotSame('123456', (string) $code);
+        $this->postJson('/api/v1/auth/otp/verify', ['email' => $admin->email, 'code' => $code])
+            ->assertOk()->assertJsonStructure(['data' => ['access_token']]);
+    }
+
     public function test_idle_timeout_rejects_and_active_use_survives(): void
     {
         $rep = $this->mk('rep.idle8@primepower.ph', 'sales_rep');
