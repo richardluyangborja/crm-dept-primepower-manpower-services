@@ -97,6 +97,26 @@ class OpportunityService
         if ($reopening && $actorRole === 'sales_rep') {
             abort(403, 'Only managers can reopen a closed opportunity.');
         }
+        // Stage awareness (timeline honesty): the three closing actions —
+        // sign contract, won, lost — must say why when they bypass flow
+        // stages, recorded on the history. Reopens already carry a note;
+        // late losses (negotiation/contract) are covered by lost_reason.
+        // Ordinary board moves only record what was bypassed.
+        $skipped = Opportunity::skippedStages($from, $to);
+        $skipRequired = ! $reopening && (
+            ($to === 'contract' && $skipped !== [])
+            || ($to === 'lost' && in_array($from, ['new', 'contacted', 'qualified', 'proposal'], true))
+        );
+        // A win with a signed contract on file never needs a skip reason —
+        // the contract stage was satisfied in substance, whatever the board says.
+        if ($to === 'won' && \App\Models\Contract::where('opportunity_id', $opp->id)->where('status', 'active')->exists()) {
+            $skipRequired = false;
+            $skipped = [];
+        }
+        if ($skipRequired && trim((string) ($input['skip_reason'] ?? '')) === '') {
+            $names = implode(', ', $skipped);
+            abort(422, "This move skips {$names} — tell us why so the history stays truthful.");
+        }
         // Money gates (specs/05): a deal can never be worth ₱0 past qualified,
         // and winning requires a signed contract — no contract-less wins.
         if ($to === 'qualified' && (int) $opp->value_centavos <= 0) {
@@ -112,7 +132,7 @@ class OpportunityService
             abort(422, 'Reopening a closed opportunity needs a note.');
         }
 
-        return DB::transaction(function () use ($opp, $input, $from, $to, $actorId, $reopening) {
+        return DB::transaction(function () use ($opp, $input, $from, $to, $actorId, $reopening, $skipped) {
             $opp->stage = $to;
             $opp->probability = $input['probability'] ?? Opportunity::STAGE_PROBABILITY[$to];
             $effective = isset($input['effective_date']) ? \Carbon\Carbon::parse($input['effective_date']) : now();
@@ -132,6 +152,12 @@ class OpportunityService
             $opp->save();
 
             $meta = ['from' => $from, 'to' => $to];
+            if ($skipped !== []) {
+                $meta['skipped'] = $skipped;
+            }
+            if (trim((string) ($input['skip_reason'] ?? '')) !== '') {
+                $meta['skip_reason'] = trim((string) $input['skip_reason']);
+            }
             if ($to === 'contract') {
                 // Commercial records need the company client — created here on first signing.
                 [$client] = $this->ensureClientForOpp($opp->refresh(), $actorId, $meta);

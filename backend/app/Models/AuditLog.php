@@ -14,4 +14,9 @@ class AuditLog extends Model
     {
         return ['meta' => 'array', 'created_at' => 'datetime'];
     }
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

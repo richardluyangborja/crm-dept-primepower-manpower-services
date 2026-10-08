@@ -13,10 +13,39 @@ class Opportunity extends Model
     use Filterable, HasOpaqueId, HasAuditLog, SoftDeletes;
 
     public const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract', 'won', 'lost'];
+    /** The happy-path flow. `won` follows `contract`; `lost` can close from anywhere. */
+    public const FLOW = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract'];
     public const STAGE_PROBABILITY = [
         'new' => 10, 'contacted' => 20, 'qualified' => 40,
         'proposal' => 60, 'negotiation' => 80, 'contract' => 90, 'won' => 100, 'lost' => 0,
     ];
+
+    /**
+     * Flow stages bypassed by a move (for the history timeline).
+     * Backward/reopen moves bypass nothing. A loss bypasses whatever
+     * remained between its stage and the contract.
+     *
+     * @return list<string>
+     */
+    public static function skippedStages(string $from, string $to): array
+    {
+        $flow = self::FLOW;
+        if ($to === 'lost') {
+            $idx = array_search($from, $flow, true);
+            if ($idx === false) {
+                return [];
+            }
+
+            return array_values(array_slice($flow, $idx + 1));
+        }
+        $fromIdx = array_search($from, $flow, true);
+        $toIdx = array_search($to, $flow, true);
+        if ($fromIdx === false || $toIdx === false || $toIdx <= $fromIdx + 1) {
+            return [];
+        }
+
+        return array_values(array_slice($flow, $fromIdx + 1, $toIdx - $fromIdx - 1));
+    }
 
     protected $fillable = [
         'client_id', 'company_id', 'owner_id', 'title', 'stage', 'value_centavos',

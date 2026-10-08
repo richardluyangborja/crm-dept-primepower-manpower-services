@@ -89,12 +89,12 @@ export function PipelinePage() {
   const [contractId, setContractId] = useState<string | null>(null);
   const [ritual, setRitual] = useState<{ id: string; stage: string } | null>(null);
   const moveMut = useMutation({
-    mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability }: {
+    mutationFn: async ({ id, stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability, skip_reason }: {
       id: string; stage: string; lost_reason?: string; effective_date?: string;
       headcount?: number; rate_per_head_centavos?: number; contract_months?: number; start_date?: string;
-      reopen_note?: string; probability?: number;
+      reopen_note?: string; probability?: number; skip_reason?: string;
     }) =>
-      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability })).data,
+      (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability, skip_reason })).data,
     onMutate: async ({ id, stage }) => {
       await qc.cancelQueries({ queryKey: ['opportunities'] });
       const prev = qc.getQueryData<Opp[]>(['opportunities', q]);
@@ -153,9 +153,10 @@ export function PipelinePage() {
 
   const [wonInfo, setWonInfo] = useState<{ ref: string; clientId: string; monthly: number | null; total: number | null } | null>(null);
   const [wonId, setWonId] = useState<string | null>(null);
+  const [wonContract, setWonContract] = useState<SignedContract | null | undefined>(undefined);
   const winMut = useMutation({
-    mutationFn: async ({ id, effective_date }: { id: string; effective_date?: string }) =>
-      (await api.post(`/opportunities/${id}/win`, effective_date ? { effective_date } : {})).data,
+    mutationFn: async ({ id, effective_date, skip_reason }: { id: string; effective_date?: string; skip_reason?: string }) =>
+      (await api.post(`/opportunities/${id}/win`, effective_date || skip_reason ? { effective_date, skip_reason } : {})).data,
     onSuccess: async (d, vars) => {
       toast('success', d.message ?? 'Won!');
       qc.invalidateQueries({ queryKey: ['opportunities'] });
@@ -182,25 +183,18 @@ export function PipelinePage() {
 
   const detail = rows.find((r) => r.id === detailId) ?? null;
 
-  /** P6 · contract-first: winning without a signed contract reroutes to signing. */
+  /** P6 · contract-first: winning without a signed contract signs inside the win modal. */
   const beginWin = async (oppId: string) => {
     const opp = rows.find((r) => r.id === oppId);
     if (!opp) return;
+    setWonContract(undefined);
     try {
       const contracts = (await api.get('/contracts', { params: { client_id: opp.client_id, per_page: 100 } })).data.data as
-        { opportunity_id: string | null; status: string }[];
-      const signed = contracts.some((c) => c.opportunity_id === oppId && c.status === 'active');
-      if (!signed) {
-        toast('info', {
-          title: 'Sign the contract first.',
-          body: 'Winning needs agreed terms on record — signing takes seconds, then mark won.',
-        });
-        setDetailId(null);
-        setContractId(oppId);
-        return;
-      }
+        { opportunity_id: string | null; status: string; ref: string; headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }[];
+      setWonContract(contracts.find((c) => c.opportunity_id === oppId && c.status === 'active') ?? null);
     } catch {
       // Contract check failed — let the server guard decide on win.
+      setWonContract(null);
     }
     setWonId(oppId);
   };
@@ -279,34 +273,15 @@ export function PipelinePage() {
         )}
 
       {detail && (
-        <div className="card p-4">
-          <div className="flex items-center justify-between gap-2">
-            <DealTitleEditor key={detail.id} detail={detail} />
-            <button onClick={() => setDetailId(null)} className="shrink-0 text-sm text-[var(--text-muted)]"aria-label="Close">Close</button>
-          </div>
-          <StageStepper stage={detail.stage} />
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-            <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? detail.client_id ?? 'Pre-client deal'}</p></div>
-            <div><p className="text-xs text-[var(--text-muted)]">Value</p><p className="tabular-nums">{formatPHP(detail.value_centavos)} × {detail.probability}%</p></div>
-            <div><p className="text-xs text-[var(--text-muted)]">Billing</p><p className="tabular-nums">{detail.monthly_billing_centavos ? `${formatPHP(detail.monthly_billing_centavos)}/mo × ${detail.contract_months ?? '?'} mo` : 'Terms not set'}</p></div>
-            <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ?? '—'}</p></div>
-          </div>
-          {(detail.headcount !== null || detail.stage === 'contract') && (
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Terms: {detail.headcount ?? '?'} heads
-              {detail.rate_per_head_centavos !== null ? ` × ${formatPHP(detail.rate_per_head_centavos)}/mo` : ''}
-              {detail.contract_months ? ` × ${detail.contract_months} mo` : ''}
-              {detail.contract_total_centavos ? ` = ${formatPHP(detail.contract_total_centavos)} total` : ''}
-            </p>
-          )}
-          <div className="mt-3 flex gap-2">
-            {detail.stage !== 'contract' && detail.stage !== 'won' && detail.stage !== 'lost' && (
-              <button onClick={() => { setDetailId(null); setContractId(detail.id); }} className="rounded-lg border border-sky-600 px-4 py-1.5 text-sm text-sky-700 dark:text-sky-300">Sign contract…</button>
-            )}
-            {detail.stage !== 'won' && <button onClick={() => { beginWin(detail.id); }} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
-            {detail.stage !== 'lost' && <button onClick={() => { setDetailId(null); setLostId(detail.id); }} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">Mark lost…</button>}
-          </div>
-        </div>
+        <DealModal
+          key={detail.id}
+          detail={detail}
+          labels={labels}
+          onClose={() => setDetailId(null)}
+          onSign={() => setContractId(detail.id)}
+          onWin={() => void beginWin(detail.id)}
+          onLose={() => setLostId(detail.id)}
+        />
       )}
 
       {lostId !== null && (() => {
@@ -314,12 +289,37 @@ export function PipelinePage() {
         return (
           <LostModal
             lostValue={lost ? formatPHP(lost.value_centavos) : null}
+            fromStage={lost?.stage ?? 'new'}
+            fromLabel={labels[lost?.stage ?? ''] ?? lost?.stage ?? ''}
             onClose={() => setLostId(null)}
-            onDone={(reason, effectiveDate) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate }); setLostId(null); }}
+            onDone={(reason, effectiveDate, skipReason) => { moveMut.mutate({ id: lostId, stage: 'lost', lost_reason: reason, effective_date: effectiveDate, skip_reason: skipReason }); setLostId(null); }}
           />
         );
       })()}
-      {wonId !== null && <WinModal onClose={() => setWonId(null)} onDone={(effectiveDate) => { winMut.mutate({ id: wonId, effective_date: effectiveDate }); setWonId(null); }} />}
+      {wonId !== null && (() => {
+        const opp = rows.find((r) => r.id === wonId) ?? null;
+        if (!opp) return null;
+        return (
+          <WinModal
+            opp={opp}
+            signed={wonContract}
+            labels={labels}
+            onClose={() => { setWonId(null); setWonContract(undefined); }}
+            onDone={(effectiveDate, terms, skipReason) => {
+              if (terms) {
+                // No signed contract yet: sign inside the win, then mark won.
+                moveMut.mutate({ id: wonId, stage: 'contract', ...terms, skip_reason: skipReason }, {
+                  onSuccess: () => winMut.mutate({ id: wonId, effective_date: effectiveDate }),
+                });
+              } else {
+                winMut.mutate({ id: wonId, effective_date: effectiveDate, skip_reason: skipReason });
+              }
+              setWonId(null);
+              setWonContract(undefined);
+            }}
+          />
+        );
+      })()}
       {ritual !== null && (() => {
         const opp = rows.find((r) => r.id === ritual.id) ?? null;
         if (!opp) return null;
@@ -331,7 +331,7 @@ export function PipelinePage() {
             onClose={() => setRitual(null)}
             onDone={async (extra, payload) => {
               const runMove = () => {
-                moveMut.mutate({ id: opp.id, stage: ritual.stage, probability: extra.probability, reopen_note: extra.reopen_note });
+                moveMut.mutate({ id: opp.id, stage: ritual.stage, probability: extra.probability, reopen_note: extra.reopen_note, skip_reason: extra.skip_reason });
                 setRitual(null);
               };
               // P3 · quotation always logs the proposal as history.
@@ -372,7 +372,17 @@ export function PipelinePage() {
           />
         );
       })()}
-      {contractId !== null && <ContractModal dealId={contractId} onClose={() => setContractId(null)} onDone={(terms) => { moveMut.mutate({ id: contractId, stage: 'contract', ...terms }); setContractId(null); }} />}
+      {contractId !== null && (() => {
+        const deal = rows.find((r) => r.id === contractId) ?? null;
+        return (
+          <ContractModal
+            dealId={contractId}
+            fromStage={deal?.stage ?? 'new'}
+            onClose={() => setContractId(null)}
+            onDone={(terms, skipReason) => { moveMut.mutate({ id: contractId, stage: 'contract', ...terms, skip_reason: skipReason }); setContractId(null); }}
+          />
+        );
+      })()}
       {showNew && <NewOppForm initialClientId={preselectClient} onClose={() => setShowNew(false)} onDone={() => { qc.invalidateQueries({ queryKey: ['opportunities'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
     </div>
   );
@@ -469,11 +479,141 @@ function StageStepper({ stage }: { stage: string }) {  const labels = useStageLa
 
 const OPEN_FLOW = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract'];
 
+/** Signed contract snapshot for the win modal (contract stage sits before won). */
+interface SignedContract {
+  opportunity_id: string | null;
+  status: string;
+  ref: string;
+  headcount: number;
+  rate_per_head_centavos: number;
+  contract_months: number;
+  start_date: string;
+}
+
+/** Flow stages bypassed moving from → to (mirrors backend Opportunity::skippedStages). */
+function skippedStages(from: string, to: string): string[] {
+  if (to === 'lost') {
+    const idx = OPEN_FLOW.indexOf(from);
+    return idx < 0 ? [] : OPEN_FLOW.slice(idx + 1);
+  }
+  const fi = OPEN_FLOW.indexOf(from);
+  const ti = OPEN_FLOW.indexOf(to);
+  return fi < 0 || ti < 0 || ti <= fi + 1 ? [] : OPEN_FLOW.slice(fi + 1, ti);
+}
+
+/** Early-stage losses and early signings must explain the jump (server enforces). */
+function skipRequired(from: string, to: string): boolean {
+  return skippedStages(from, to).length > 0 && (
+    to === 'contract' || (to === 'lost' && ['new', 'contacted', 'qualified', 'proposal'].includes(from))
+  );
+}
+
+/** Same deal detail as before, now in a popup modal with its stage-history timeline. */
+function DealModal({ detail, labels, onClose, onSign, onWin, onLose }: {
+  detail: Opp;
+  labels: Record<string, string>;
+  onClose: () => void;
+  onSign: () => void;
+  onWin: () => void;
+  onLose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="card my-8 w-full max-w-2xl p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-2">
+          <DealTitleEditor key={detail.id} detail={detail} />
+          <button onClick={onClose} className="shrink-0 text-sm text-[var(--text-muted)]" aria-label="Close">Close</button>
+        </div>
+        <StageStepper stage={detail.stage} />
+        <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+          <div><p className="text-xs text-[var(--text-muted)]">Client</p><p>{detail.client_name ?? detail.client_id ?? 'Pre-client deal'}</p></div>
+          <div><p className="text-xs text-[var(--text-muted)]">Value</p><p className="tabular-nums">{formatPHP(detail.value_centavos)} × {detail.probability}%</p></div>
+          <div><p className="text-xs text-[var(--text-muted)]">Billing</p><p className="tabular-nums">{detail.monthly_billing_centavos ? `${formatPHP(detail.monthly_billing_centavos)}/mo × ${detail.contract_months ?? '?'} mo` : 'Terms not set'}</p></div>
+          <div><p className="text-xs text-[var(--text-muted)]">Expected close</p><p>{detail.expected_close_date ?? '—'}</p></div>
+        </div>
+        {(detail.headcount !== null || detail.stage === 'contract') && (
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            Terms: {detail.headcount ?? '?'} heads
+            {detail.rate_per_head_centavos !== null ? ` × ${formatPHP(detail.rate_per_head_centavos)}/mo` : ''}
+            {detail.contract_months ? ` × ${detail.contract_months} mo` : ''}
+            {detail.contract_total_centavos ? ` = ${formatPHP(detail.contract_total_centavos)} total` : ''}
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {detail.stage !== 'contract' && detail.stage !== 'won' && detail.stage !== 'lost' && (
+            <button onClick={onSign} className="rounded-lg border border-sky-600 px-4 py-1.5 text-sm text-sky-700 dark:text-sky-300">Sign contract…</button>
+          )}
+          {detail.stage !== 'won' && <button onClick={onWin} className="rounded-lg bg-green-600 px-4 py-1.5 text-sm text-white">Mark won…</button>}
+          {detail.stage !== 'lost' && <button onClick={onLose} className="rounded-lg border border-[var(--border)] px-4 py-1.5 text-sm">Mark lost…</button>}
+        </div>
+        <StageHistory oppId={detail.id} labels={labels} />
+      </div>
+    </div>
+  );
+}
+
+interface HistoryRow {
+  id: number;
+  action: string;
+  actor: string | null;
+  at: string;
+  from: string | null;
+  to: string | null;
+  skipped: string[];
+  skip_reason: string | null;
+  lost_reason: string | null;
+  reopen_note: string | null;
+  contract_ref: string | null;
+}
+
+/** Full audit timeline: every stage move with actor, timestamps, and skip reasons. */
+function StageHistory({ oppId, labels }: { oppId: string; labels: Record<string, string> }) {
+  const q = useQuery({
+    queryKey: ['opportunity-history', oppId],
+    queryFn: async () => (await api.get(`/opportunities/${oppId}/history`)).data.data as HistoryRow[],
+    staleTime: 15000,
+  });
+  return (
+    <div className="mt-4 border-t border-[var(--border)] pt-3">
+      <h3 className="text-sm font-semibold">Stage history</h3>
+      {q.isLoading ? <p className="mt-1 text-xs text-[var(--text-muted)]">Loading history…</p>
+        : q.isError ? <p className="mt-1 text-xs text-[var(--text-muted)]">Couldn't load history. <button className="text-sky-600 underline" onClick={() => q.refetch()}>Retry</button></p>
+        : (q.data ?? []).length === 0 ? <p className="mt-1 text-xs text-[var(--text-muted)]">No moves yet — every stage change lands here.</p>
+        : (
+          <ol className="mt-2 flex flex-col gap-0">
+            {(q.data ?? []).map((h, i, arr) => (
+              <li key={h.id} className="relative flex gap-3 pb-4 last:pb-0">
+                {i < arr.length - 1 && <span className="absolute left-[5px] top-4 h-full w-px bg-[var(--border)]" aria-hidden="true" />}
+                <span className={`mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full ${h.to === 'won' ? 'bg-green-500' : h.to === 'lost' ? 'bg-slate-400' : h.to === 'contract' ? 'bg-sky-600' : 'bg-sky-300'}`} aria-hidden="true" />
+                <div className="min-w-0 text-sm">
+                  <p>
+                    {h.action === 'created'
+                      ? <span>Deal opened{h.actor ? <> by <strong>{h.actor}</strong></> : ''}</span>
+                      : <span><strong>{labels[h.from ?? ''] ?? h.from}</strong> → <strong>{labels[h.to ?? ''] ?? h.to}</strong>{h.actor ? <> by {h.actor}</> : ''}</span>}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">{new Date(h.at).toLocaleString()}</p>
+                  {h.skipped.length > 0 && (
+                    <p className="mt-0.5 text-xs">Skipped: {h.skipped.map((s) => labels[s] ?? s).join(', ')}</p>
+                  )}
+                  {h.skip_reason && <p className="mt-0.5 text-xs italic">“{h.skip_reason}”</p>}
+                  {h.lost_reason && <p className="mt-0.5 text-xs">Lost: {h.lost_reason}</p>}
+                  {h.reopen_note && <p className="mt-0.5 text-xs">Reopened: {h.reopen_note}</p>}
+                  {h.contract_ref && <p className="mt-0.5 text-xs tabular-nums">Contract {h.contract_ref} signed</p>}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+    </div>
+  );
+}
+
 /** Per-stage level-up dialog (specs/05 rituals). Stage extras plug in per phase. */
 interface RitualExtra {
   put?: { headcount?: number; rate_per_head_centavos?: number; contract_months?: number; value_centavos?: number; expected_close_date?: string; probability?: number };
   probability?: number;
   reopen_note?: string;
+  skip_reason?: string;
   proposal?: { value_centavos: number; sent_date: string };
   negNote?: string;
 }
@@ -491,6 +631,10 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
   const fromTerminal = opp.stage === 'won' || opp.stage === 'lost';
   const [reopenNote, setReopenNote] = useState('');
   const [reopenErr, setReopenErr] = useState('');
+  // Forward jumps record what was bypassed on the history (advisory here —
+  // only the closing actions require a reason).
+  const jumped = fromTerminal ? [] as string[] : skippedStages(opp.stage, to);
+  const [skipReason, setSkipReason] = useState('');
 
   // Fresh detail (Phase B): prefill from the server record, not the possibly
   // stale board row (optimistic updates only patch `stage`).
@@ -530,6 +674,7 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
     }
     if (!termsValid) return;
     const extra: RitualExtra = fromTerminal ? { reopen_note: reopenNote.trim() } : {};
+    if (skipReason.trim()) extra.skip_reason = skipReason.trim();
     if (to === 'qualified') {
       extra.put = {
         headcount: Number(heads),
@@ -632,21 +777,36 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
           <textarea value={reopenNote} onChange={(e) => setReopenNote(e.target.value)} rows={2} placeholder="Why is this deal back in play?" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
         </label>
       )}
+      {jumped.length > 0 && (
+        <label className="mb-2 block text-sm">Why skip {jumped.join(', ')}? (optional — lands on the history)
+          <textarea value={skipReason} onChange={(e) => setSkipReason(e.target.value)} rows={2} placeholder="e.g. Client already approved the terms verbally" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+        </label>
+      )}
       {reopenErr && <p className="mb-2 text-sm text-red-600">{reopenErr}</p>}
     </StageUpModal>
   );
 }
 
-function LostModal({ lostValue, onClose, onDone }: { lostValue: string | null; onClose: () => void; onDone: (reason: string, effectiveDate?: string) => void }) {
+function LostModal({ lostValue, fromStage, fromLabel, onClose, onDone }: {
+  lostValue: string | null;
+  fromStage: string;
+  fromLabel: string;
+  onClose: () => void;
+  onDone: (reason: string, effectiveDate?: string, skipReason?: string) => void;
+}) {
   const [reason, setReason] = useState('');
   const [date, setDate] = useState('');
+  const [skip, setSkip] = useState('');
   const suggestions = useLostReasons();
+  const skipped = skippedStages(fromStage, 'lost');
+  const needSkip = skipRequired(fromStage, 'lost');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Why was this lost?</h2>
         <p className="mb-2 text-xs text-[var(--text-muted)]">
-          {lostValue ? <>Walking away from <strong className="tabular-nums">{lostValue}</strong>. </> : ''}Required — the reason powers win/loss analytics. Pick a suggestion or write your own.
+          {lostValue ? <>Walking away from <strong className="tabular-nums">{lostValue}</strong>. </> : ''}
+          Closing from <strong>{fromLabel}</strong> — required, the reason powers win/loss analytics. Pick a suggestion or write your own.
         </p>
         {suggestions.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
@@ -658,22 +818,28 @@ function LostModal({ lostValue, onClose, onDone }: { lostValue: string | null; o
           </div>
         )}
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="e.g. Chose competitor pricing" className="w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm" />
+        {skipped.length > 0 && (
+          <label className="mt-2 block text-sm">Why skip {skipped.join(', ')}? {needSkip ? '*' : '(optional)'}
+            <textarea value={skip} onChange={(e) => setSkip(e.target.value)} rows={2} placeholder="e.g. Client pulled the plug before we could quote" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+          </label>
+        )}
         <label className="mt-2 block text-sm">Effective date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
           <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
         </label>
         <div className="mt-3 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button disabled={!reason.trim()} onClick={() => onDone(reason.trim(), date || undefined)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Mark lost</button>
+          <button disabled={!reason.trim() || (needSkip && !skip.trim())} onClick={() => onDone(reason.trim(), date || undefined, skip.trim() || undefined)} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Mark lost</button>
         </div>
       </div>
     </div>
   );
 }
 
-function ContractModal({ dealId, onClose, onDone }: {
+function ContractModal({ dealId, fromStage, onClose, onDone }: {
   dealId: string;
+  fromStage: string;
   onClose: () => void;
-  onDone: (terms: { headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }) => void;
+  onDone: (terms: { headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }, skipReason?: string) => void;
 }) {
   const qc = useQueryClient();
   const dealQ = useQuery({
@@ -684,7 +850,10 @@ function ContractModal({ dealId, onClose, onDone }: {
   const [rate, setRate] = useState('');
   const [months, setMonths] = useState('12');
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  const [skip, setSkip] = useState('');
   const [err, setErr] = useState('');
+  const skipped = skippedStages(fromStage, 'contract');
+  const needSkip = skipRequired(fromStage, 'contract');
   const d = dealQ.data;
   useEffect(() => {
     if (d) {
@@ -709,6 +878,11 @@ function ContractModal({ dealId, onClose, onDone }: {
             <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
           </div>
           <label>Start date *<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+          {skipped.length > 0 && (
+            <label>Why skip {skipped.join(', ')}? {needSkip ? '*' : '(optional)'}
+              <textarea value={skip} onChange={(e) => setSkip(e.target.value)} rows={2} placeholder="e.g. Client signed right after the first meeting" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+            </label>
+          )}
           <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
             {formatPHP(monthly)}/mo{Number(months) > 0 ? ` × ${months} mo = ${formatPHP(monthly * Number(months))}` : ''} total
           </p>
@@ -716,12 +890,12 @@ function ContractModal({ dealId, onClose, onDone }: {
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button disabled={!valid} onClick={() => {
+          <button disabled={!valid || (needSkip && !skip.trim())} onClick={() => {
             const h = Number(headcount);
             const r = pesoToCentavos(rate);
             const m = Number(months);
             if (!(h > 0 && r > 0 && m > 0 && start)) { setErr('Heads, rate, months, and start date are all required.'); return; }
-            onDone({ headcount: h, rate_per_head_centavos: r, contract_months: m, start_date: start });
+            onDone({ headcount: h, rate_per_head_centavos: r, contract_months: m, start_date: start }, skip.trim() || undefined);
             qc.invalidateQueries({ queryKey: ['opportunities'] });
           }} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white disabled:opacity-50">Sign contract</button>
         </div>
@@ -730,19 +904,79 @@ function ContractModal({ dealId, onClose, onDone }: {
   );
 }
 
-function WinModal({ onClose, onDone }: { onClose: () => void; onDone: (effectiveDate?: string) => void }) {
+function WinModal({ opp, signed, labels, onClose, onDone }: {
+  opp: Opp;
+  /** undefined = still checking; null = no signed contract → sign inside this modal. */
+  signed: SignedContract | null | undefined;
+  labels: Record<string, string>;
+  onClose: () => void;
+  onDone: (effectiveDate?: string, terms?: { headcount: number; rate_per_head_centavos: number; contract_months: number; start_date: string }, skipReason?: string) => void;
+}) {
   const [date, setDate] = useState('');
+  const [headcount, setHeadcount] = useState('');
+  const [rate, setRate] = useState('');
+  const [months, setMonths] = useState('12');
+  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  const [skip, setSkip] = useState('');
+  useEffect(() => {
+    if (opp.headcount) setHeadcount(String(opp.headcount));
+    if (opp.rate_per_head_centavos) setRate(String(opp.rate_per_head_centavos / 100));
+    if (opp.contract_months) setMonths(String(opp.contract_months));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opp.id]);
+  const skipped = skippedStages(opp.stage, 'contract');
+  const needSkip = signed === null && skipRequired(opp.stage, 'contract');
+  const monthly = (Number(headcount) || 0) * pesoToCentavos(rate || '0');
+  const termsValid = signed !== null || (Number(headcount) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0 && !!start);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-      <div className="card w-full max-w-md p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="card my-8 w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Mark as won?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">This creates the job order and draft invoice, and starts staffing.</p>
-        <label className="block text-sm">Effective close date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">
+          Closing from <strong>{labels[opp.stage] ?? opp.stage}</strong>. This creates the job order and draft invoice, and starts staffing.
+        </p>
+        {signed === undefined ? (
+          <p className="text-sm text-[var(--text-muted)]">Checking the contract…</p>
+        ) : signed ? (
+          <p className="rounded-lg bg-green-50 px-3 py-2 text-sm tabular-nums dark:bg-green-900/20">
+            Signed {signed.ref}: {signed.headcount} heads × {formatPHP(signed.rate_per_head_centavos)}/mo × {signed.contract_months} mo.
+            <span className="block text-xs text-[var(--text-muted)]">Contract stage came right before this win — terms carry over.</span>
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2 text-sm">
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs dark:bg-amber-900/20">
+              No signed contract on this deal yet — the contract stage comes before won, so sign it here first. Both land on the history.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <label>Heads *<input value={headcount} onChange={(e) => setHeadcount(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Months *<input value={months} onChange={(e) => setMonths(e.target.value)} inputMode="numeric" placeholder="12" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            </div>
+            <label>Start date *<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+            {skipped.length > 0 && (
+              <label>Why skip {skipped.join(', ')}? {needSkip ? '*' : '(optional)'}
+                <textarea value={skip} onChange={(e) => setSkip(e.target.value)} rows={2} placeholder="e.g. Client signed right after the first meeting" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+              </label>
+            )}
+            <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm tabular-nums dark:bg-slate-800">
+              {formatPHP(monthly)}/mo{Number(months) > 0 ? ` × ${months} mo = ${formatPHP(monthly * Number(months))}` : ''} total
+            </p>
+          </div>
+        )}
+        <label className="mt-2 block text-sm">Effective close date <span className="text-xs text-[var(--text-muted)]">(defaults to today)</span>
           <input type="date" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
         </label>
         <div className="mt-3 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm">Cancel</button>
-          <button onClick={() => onDone(date || undefined)} className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white">Confirm win</button>
+          <button
+            disabled={signed === undefined || !termsValid || (needSkip && !skip.trim())}
+            onClick={() => signed
+              ? onDone(date || undefined, undefined, undefined)
+              : onDone(date || undefined, { headcount: Number(headcount), rate_per_head_centavos: pesoToCentavos(rate), contract_months: Number(months), start_date: start }, skip.trim() || undefined)}
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            Confirm win
+          </button>
         </div>
       </div>
     </div>
