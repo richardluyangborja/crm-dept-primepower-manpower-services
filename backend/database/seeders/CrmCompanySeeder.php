@@ -142,11 +142,14 @@ class CrmCompanySeeder extends Seeder
                         'payload' => ['mock' => true, 'seeded' => true], 'created_at' => $dealAt, 'updated_at' => $dealAt]
                 );
             } else {
+                // Open deal: terms travel with the deal from creation so every
+                // board dialog opens prefilled (rate = standard ₱15k/head/mo).
                 Opportunity::firstOrCreate(
                     ['title' => "$heads $positions — $name"],
                     ['company_id' => $company->id, 'owner_id' => $company->owner_id,
                         'stage' => $st['stage'], 'value_centavos' => $value, 'probability' => $st['probability'],
-                        'headcount' => $heads, 'expected_close_date' => now()->addDays(30)->toDateString(),
+                        'headcount' => $heads, 'rate_per_head_centavos' => 1500000, 'contract_months' => 12,
+                        'expected_close_date' => now()->addDays(30)->toDateString(),
                         'created_at' => $dealAt, 'updated_at' => now()->subDays($st['days'] % 45)]
                 );
             }
