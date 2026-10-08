@@ -26,3 +26,43 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
 }
+
+/* ------------------------- Management report print ------------------------ */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    background: #fff;
+    color: #0f172a;
+    font-size: 11pt;
+  }
+  .mgmt-report h1 { font-size: 20pt; }
+  .mgmt-report h2 {
+    font-size: 13pt;
+    border-bottom: 2px solid #0ea5e9;
+    padding-bottom: 2mm;
+    margin-top: 6mm;
+  }
+  .mgmt-report table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .mgmt-report th, .mgmt-report td { border: 1px solid #cbd5e1; padding: 1.5mm 2mm; text-align: left; }
+  .mgmt-report th { background: #f1f5f9 !important; font-weight: 700; }
+  .mgmt-report tr { break-inside: avoid; }
+  .mgmt-report section { break-inside: avoid-page; }
+  .mgmt-page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 8pt;
+    color: #64748b;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 2mm;
+  }
+  .mgmt-page-footer .pagenum::after { content: counter(page); }
+}

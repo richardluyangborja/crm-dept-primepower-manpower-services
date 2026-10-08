@@ -114,9 +114,93 @@ class ReportService
                 'followup_compliance' => $compliance,
                 'risks' => $risks,
                 'comment_sentiment' => $comments,
+                'deal_trend_12m' => $this->dealTrend($user),
+                'satisfaction_trend_12m' => $this->satisfactionTrend($user),
+                'satisfaction_by_client' => $this->satisfactionByClient($user, $from, $to),
             ],
             'meta' => ['ai_preview' => true, 'rules_based' => true, 'generated_at' => now()->toIso8601String(), 'period' => ['from' => $from, 'to' => $to], 'team_id' => $teamId],
         ];
+    }
+
+    /**
+     * Trailing 12 months of closes + win rate + new pipeline, in viewer scope.
+     * Feeds the management-report sales performance chart.
+     *
+     * @return list<array{month: string, won: int, lost: int, win_rate: float|null, new_opps: int}>
+     */
+    protected function dealTrend(mixed $user): array
+    {
+        $trend = [];
+        foreach (range(11, 0) as $i) {
+            $start = now()->subMonths($i)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $won = Opportunity::visibleTo($user)->where('stage', 'won')
+                ->whereBetween('won_at', [$start, $end])->count();
+            $lost = Opportunity::visibleTo($user)->where('stage', 'lost')
+                ->whereBetween('lost_at', [$start, $end])->count();
+            $closed = $won + $lost;
+            $trend[] = [
+                'month' => $start->format('Y-m'),
+                'won' => $won,
+                'lost' => $lost,
+                'win_rate' => $closed ? round($won / $closed * 100, 1) : null,
+                'new_opps' => Opportunity::visibleTo($user)->whereBetween('created_at', [$start, $end])->count(),
+            ];
+        }
+
+        return $trend;
+    }
+
+    /**
+     * Trailing 12 months of satisfaction: response average + true NPS,
+     * in viewer scope. Feeds the management-report satisfaction chart.
+     *
+     * @return list<array{month: string, avg: float|null, nps: int|null, responses: int}>
+     */
+    protected function satisfactionTrend(mixed $user): array
+    {
+        $trend = [];
+        foreach (range(11, 0) as $i) {
+            $start = now()->subMonths($i)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $scores = SurveyResponse::query()
+                ->whereHas('survey', fn ($q) => $q->visibleTo($user))
+                ->whereBetween('responded_at', [$start, $end])->pluck('score');
+            $npsScores = $scores->filter(fn ($s) => $s !== null && $s >= 0 && $s <= 10);
+            $promoters = $npsScores->filter(fn ($s) => $s >= 9)->count();
+            $detractors = $npsScores->filter(fn ($s) => $s <= 6)->count();
+            $trend[] = [
+                'month' => $start->format('Y-m'),
+                'avg' => $scores->isNotEmpty() ? round($scores->avg(), 2) : null,
+                'nps' => $npsScores->isNotEmpty() ? (int) round(($promoters - $detractors) / $npsScores->count() * 100) : null,
+                'responses' => $scores->count(),
+            ];
+        }
+
+        return $trend;
+    }
+
+    /**
+     * Per-client satisfaction for the period, best first.
+     *
+     * @return list<array{client_name: string|null, surveys: int, responded: int, avg_score: float|null, low: bool}>
+     */
+    protected function satisfactionByClient(mixed $user, string $from, string $to): array
+    {
+        $surveys = \App\Models\Survey::query()->visibleTo($user)
+            ->whereBetween('created_at', [$from, $to])->with('client:id,name')->get();
+        $rows = $surveys->groupBy('client_id')->map(function ($group) {
+            $scores = SurveyResponse::whereIn('survey_id', $group->pluck('id'))->pluck('score');
+            return [
+                'client_name' => $group->first()->client?->name,
+                'surveys' => $group->count(),
+                'responded' => $group->where('status', 'responded')->count(),
+                'avg_score' => $scores->isNotEmpty() ? round($scores->avg(), 2) : null,
+                'low' => $scores->contains(fn ($s) => $s !== null && $s < 7),
+            ];
+        })->values()->sortByDesc('responded')->values()->all();
+
+        return $rows;
     }
 
     protected function narrate(string $type, string $from, string $to, array $n): string
