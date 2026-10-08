@@ -2,47 +2,67 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../lib/apiClient';
 
-const STORAGE_KEY = 'crm.tour_seen';
+const STORAGE_KEY = 'crm.tour_seen_v2';
+const PREF_KEY = 'tour_seen_v2';
 
 interface Step {
   route: string;
   title: string;
   body: string;
+  /** Optional in-context action, e.g. jumping straight to the board. */
+  action?: { label: string; route: string };
 }
 
-// The 5-step main-process journey (specs/18 §2): where work comes from,
-// who it's for, how it closes, and how it gets followed up and measured.
+// The main-flow journey: where work comes from, who it's for, how it
+// closes, and how it gets followed up, measured, and reported. Each step
+// explains the why and offers the next move.
 const STEPS: Step[] = [
   {
     route: '/',
-    title: '1/5 · Start on the Dashboard',
-    body: 'This is the morning view: weighted forecast, at-risk clients, and your next best actions. Everything here links somewhere — follow one now.',
+    title: 'Start on the Dashboard',
+    body: 'Your morning view: weighted forecast, at-risk clients, and next best actions. Every number links somewhere — open a lead or deal to work it. When you are done looking around, capture the next inquiry.',
+    action: { label: 'Capture a lead →', route: '/leads' },
   },
   {
     route: '/leads',
-    title: '2/5 · Capture and convert',
-    body: 'Leads live here: work the Needs-a-response queue, then browse all inquiries. Converted clients move to Clients — open one for the full profile: deals, contracts, operations, billing, and insights.',
+    title: 'Leads become clients',
+    body: 'Work the Needs-a-response queue first. Scores compute themselves — any valid email counts. Positions are rank-and-file only (this agency deploys no managers). Qualify a lead, open a deal, and winning converts it into a client with its history carried over.',
+    action: { label: 'See clients →', route: '/clients' },
   },
   {
     route: '/pipeline',
-    title: '3/5 · Win the deal',
-    body: 'Drag deals across the board. Marking one won creates the job order automatically — staffing starts, and the client timeline tells the story.',
+    title: 'Win the deal on the board',
+    body: 'Drag cards between stages, or click one for the detail popup: terms, billing math, and the full stage-history timeline. Sign the contract when terms are agreed — winning creates the job order and first invoice automatically. Skipped stages ask for a reason so history stays honest.',
+    action: { label: 'Check follow-ups →', route: '/followups' },
   },
   {
     route: '/followups',
-    title: '4/5 · Never drop the ball',
-    body: 'Every promise becomes a reminder. Overdue items escalate after 72 hours, and the calendar shows the whole book.',
+    title: 'Never drop the ball',
+    body: 'The calendar is the default view; switch to List view for the queue. Clear overdue first — anything overdue 72 hours is flagged to your manager (see the ⓘ alert up top). Snoozing pauses the countdown; finishing resolves it.',
+    action: { label: 'Send a survey →', route: '/surveys' },
+  },
+  {
+    route: '/surveys',
+    title: 'Measure satisfaction',
+    body: 'Monthly pulses and deployment check-ins feed the satisfaction chart on the Dashboard and the management report. Low scores flag the client automatically — re-engage before renewal comes up.',
+    action: { label: 'Check the workforce →', route: '/workforce' },
+  },
+  {
+    route: '/workforce',
+    title: 'Know who delivers',
+    body: "The directory lists everyone on the team. Click Leave, Attendance, or Performance on any row to open that person's record — deployment quality starts with the crew.",
+    action: { label: 'Prove it with reports →', route: '/reports' },
   },
   {
     route: '/reports',
-    title: '5/5 · Prove it with reports',
-    body: 'Weekly and monthly packs with the executive narrative, CSV exports, and print-to-PDF. Proof of the work, ready for management.',
+    title: 'Report to management',
+    body: 'Weekly and monthly packs: executive narrative, 12-month sales and satisfaction charts, risks, and CSV exports. Print / PDF produces a clean board-ready report — no buttons, just the story. Everything else (users, OTP, backups, schedules) lives in Settings.',
   },
 ];
 
 async function persistSeen() {
   try {
-    await api.put('/me/preferences', { tour_seen: true });
+    await api.put('/me/preferences', { [PREF_KEY]: true });
   } catch {
     // Backend persistence is best-effort; local flag still stops the tour.
   }
@@ -60,8 +80,8 @@ export function useTour() {
     let cancelled = false;
     api
       .get('/me/preferences')
-      .then((r: { data?: { data?: { tour_seen?: boolean } } }) => {
-        if (!cancelled && !r.data?.data?.tour_seen) setActive(true);
+      .then((r: { data?: { data?: Record<string, boolean> } }) => {
+        if (!cancelled && !r.data?.data?.[PREF_KEY]) setActive(true);
         else localStorage.setItem(STORAGE_KEY, '1');
       })
       .catch(() => {
@@ -89,11 +109,15 @@ export function useTour() {
     nav(STEPS[i].route);
   };
 
+  const act = (route: string) => {
+    nav(route);
+  };
+
   // If the user navigates away mid-tour, keep the card but don't force routes.
   const current = STEPS[step];
   const onRoute = location.pathname === current.route;
 
-  return { active, step, current, onRoute, go, finish, replay, setActive };
+  return { active, step, current, onRoute, go, act, finish, replay, setActive };
 }
 
 export function TourCard({
@@ -104,6 +128,7 @@ export function TourCard({
   onBack,
   onSkip,
   onGoRoute,
+  onAction,
 }: {
   step: number;
   current: Step;
@@ -112,16 +137,24 @@ export function TourCard({
   onBack: () => void;
   onSkip: () => void;
   onGoRoute: () => void;
+  onAction: (route: string) => void;
 }) {
   return (
     <div className="fixed bottom-4 left-4 z-50 w-80 max-w-[calc(100vw-2rem)] card border-l-4 border-l-sky-500 p-4 shadow-lg" role="dialog" aria-label="Product tour">
       <p className="font-semibold">{current.title}</p>
       <p className="mt-1 text-sm text-[var(--text-muted)]">{current.body}</p>
-      {!onRoute && (
-        <button onClick={onGoRoute} className="mt-2 rounded-lg bg-sky-600 px-3 py-1.5 text-xs text-white">
-          Take me there →
-        </button>
-      )}
+      <div className="mt-2 flex flex-wrap gap-2">
+        {!onRoute && (
+          <button onClick={onGoRoute} className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs text-white">
+            Take me there →
+          </button>
+        )}
+        {current.action && (
+          <button onClick={() => onAction(current.action!.route)} className="rounded-lg border border-sky-600 px-3 py-1.5 text-xs text-sky-700 dark:text-sky-300">
+            {current.action.label}
+          </button>
+        )}
+      </div>
       <div className="mt-3 flex items-center justify-between">
         <button onClick={onSkip} className="text-xs text-[var(--text-muted)] underline">
           Skip tour

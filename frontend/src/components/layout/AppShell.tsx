@@ -275,6 +275,7 @@ export function AppShell() {
           onBack={() => tour.go(tour.step - 1)}
           onSkip={() => tour.finish()}
           onGoRoute={() => tour.go(tour.step)}
+          onAction={(route) => tour.act(route)}
         />
       )}
       {idle.warning && (
