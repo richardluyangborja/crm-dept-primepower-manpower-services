@@ -24,20 +24,25 @@ class CrmActivitySeeder extends Seeder
         $catering = Client::where('name', 'Cebu Pacific Catering Services')->firstOrFail();
         $calamba = Client::where('name', 'Calamba Electronics Corp.')->firstOrFail();
         $qc = Client::where('name', 'Quezon City Retail Group')->firstOrFail();
+        $subic = Client::where('name', 'Subic Logistics Corp.')->firstOrFail();
         $rep2 = User::where('email', 'rep.mariasantos@primepower.ph')->firstOrFail();
         $salesMgr = User::where('role', 'manager')->firstOrFail();
 
         $opps = [
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => '120 janitors — SM Cebu', 'stage' => 'negotiation', 'value_centavos' => 480000000, 'probability' => 80, 'expected_close_date' => now()->addDays(20)->toDateString(), 'ca' => 40, 'ua' => 3],
-            ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => '80 security guards — Davao Prime', 'stage' => 'proposal', 'value_centavos' => 240000000, 'probability' => 60, 'expected_close_date' => now()->addDays(35)->toDateString(), 'ca' => 30, 'ua' => 6],
+            // Won + deployed: guards deal closed, job order staffing, contract signed.
+            ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => '60 security guards — Davao Prime', 'stage' => 'won', 'value_centavos' => 240000000, 'probability' => 100, 'headcount' => 60, 'rate_per_head_centavos' => 4000000, 'contract_months' => 12, 'won_at' => now()->subDays(45), 'ca' => 120, 'ua' => 45],
             ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => '50 cashiers — SM Cebu (lost)', 'stage' => 'lost', 'value_centavos' => 150000000, 'probability' => 0, 'lost_reason' => 'Chose competitor pricing', 'lost_at' => now()->subDays(10), 'ca' => 280, 'ua' => 10],
             ['client_id' => $bdo->id, 'owner_id' => $bdo->owner_id, 'title' => '30 tellers — BDO Ortigas', 'stage' => 'qualified', 'value_centavos' => 190000000, 'probability' => 40, 'expected_close_date' => now()->addDays(45)->toDateString(), 'ca' => 50, 'ua' => 12],
             ['client_id' => $calamba->id, 'owner_id' => $calamba->owner_id, 'title' => '50 production aides — Calamba', 'stage' => 'contacted', 'value_centavos' => 175000000, 'probability' => 20, 'expected_close_date' => now()->addDays(60)->toDateString(), 'ca' => 25, 'ua' => 4],
             ['client_id' => $qc->id, 'owner_id' => $qc->owner_id, 'title' => '25 merchandisers — QC Retail', 'stage' => 'new', 'value_centavos' => 90000000, 'probability' => 10, 'expected_close_date' => now()->addDays(50)->toDateString(), 'ca' => 8, 'ua' => 8],
             ['client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'title' => '40 housekeepers — Davao Prime', 'stage' => 'negotiation', 'value_centavos' => 160000000, 'probability' => 80, 'expected_close_date' => now()->addDays(15)->toDateString(), 'ca' => 35, 'ua' => 2],
             ['client_id' => $catering->id, 'owner_id' => $catering->owner_id, 'title' => '35 commissary crew — Cebu Catering (lost)', 'stage' => 'lost', 'value_centavos' => 140000000, 'probability' => 0, 'lost_reason' => 'No response after quotation', 'lost_at' => now()->subDays(40), 'ca' => 300, 'ua' => 40],
-            ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => '60 promo staff — SM Cebu (won)', 'stage' => 'won', 'value_centavos' => 210000000, 'probability' => 100, 'won_at' => now()->subDays(20), 'ca' => 150, 'ua' => 20],
+            ['client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'title' => '60 promo staff — SM Cebu (won)', 'stage' => 'won', 'value_centavos' => 210000000, 'probability' => 100, 'headcount' => 60, 'rate_per_head_centavos' => 3500000, 'contract_months' => 12, 'won_at' => now()->subDays(20), 'ca' => 150, 'ua' => 20],
             ['client_id' => $bdo->id, 'owner_id' => $bdo->owner_id, 'title' => '15 messengers — BDO Makati', 'stage' => 'proposal', 'value_centavos' => 75000000, 'probability' => 60, 'expected_close_date' => now()->addDays(25)->toDateString(), 'ca' => 20, 'ua' => 5],
+            // Inactive account keeps its lost history; prospect starts with a fresh inquiry.
+            ['client_id' => $med->id, 'owner_id' => $med->owner_id, 'title' => '40 ward aides — Makati Med (lost)', 'stage' => 'lost', 'value_centavos' => 160000000, 'probability' => 0, 'lost_reason' => 'Account went quiet after quotation', 'lost_at' => now()->subDays(90), 'ca' => 310, 'ua' => 90],
+            ['client_id' => $subic->id, 'owner_id' => $subic->owner_id, 'title' => '12 forklift operators — Subic Logistics', 'stage' => 'new', 'value_centavos' => 54000000, 'probability' => 10, 'expected_close_date' => now()->addDays(60)->toDateString(), 'ca' => 30, 'ua' => 6],
         ];
         foreach ($opps as $o) {
             $ca = now()->subDays($o['ca']);
@@ -108,10 +113,10 @@ class CrmActivitySeeder extends Seeder
         }
 
         // Journey seeds (specs/18 §3A): Davao Prime walks staffing stages out of the box.
-        $wonOpp = Opportunity::where('title', '80 security guards — Davao Prime')->first();
+        $wonOpp = Opportunity::where('title', '60 security guards — Davao Prime')->first();
         $smWon = Opportunity::where('title', '60 promo staff — SM Cebu (won)')->first();
         $seedJobs = [
-            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'JO-2026-0101', 'title' => '80 security guards — Davao Prime', 'headcount' => 60, 'value_centavos' => 240000000, 'status' => 'deployed', 'invoice_ref' => 'INV-2026-0101', 'ca' => 45],
+            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'JO-2026-0101', 'title' => '60 security guards — Davao Prime', 'headcount' => 60, 'value_centavos' => 240000000, 'status' => 'deployed', 'invoice_ref' => 'INV-2026-0101', 'ca' => 45],
             ['opportunity_id' => $smWon?->id, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'JO-2026-0102', 'title' => '60 promo staff — SM Cebu', 'headcount' => 45, 'value_centavos' => 210000000, 'status' => 'staffed', 'invoice_ref' => 'INV-2026-0102', 'ca' => 60],
         ];
         foreach ($seedJobs as $j) {
@@ -125,23 +130,37 @@ class CrmActivitySeeder extends Seeder
             $row->update(['created_at' => $ca, 'updated_at' => $ca]);
         }
 
-        // Signed contract behind the Davao deployment (mock Core-3/Governance/Facilities).
-        if ($wonOpp) {
+        // Signed contracts behind the deployments (every won deal has one —
+        // the app itself refuses contract-less wins).
+        $seedContracts = [
+            [
+                'ref' => 'CTR-2026-0001', 'opp' => $wonOpp, 'client' => $hotel,
+                'headcount' => 60, 'rate' => 4000000, 'months' => 12,
+                'start' => now()->subDays(50)->toDateString(), 'ca' => 55,
+            ],
+            [
+                'ref' => 'CTR-2026-0002', 'opp' => $smWon, 'client' => $sm,
+                'headcount' => 60, 'rate' => 3500000, 'months' => 12,
+                'start' => now()->subDays(30)->toDateString(), 'ca' => 35,
+            ],
+        ];
+        foreach ($seedContracts as $c) {
+            if (! $c['opp']) continue;
             \App\Models\Contract::firstOrCreate(
-                ['ref' => 'CTR-2026-0001'],
+                ['ref' => $c['ref']],
                 [
-                    'opportunity_id' => $wonOpp->id,
-                    'client_id' => $hotel->id,
-                    'owner_id' => $hotel->owner_id,
-                    'headcount' => 60,
-                    'rate_per_head_centavos' => 4000000,
-                    'contract_months' => 12,
-                    'monthly_billing_centavos' => 240000000,
-                    'contract_total_centavos' => 2880000000,
-                    'start_date' => now()->subDays(50)->toDateString(),
+                    'opportunity_id' => $c['opp']->id,
+                    'client_id' => $c['client']->id,
+                    'owner_id' => $c['client']->owner_id,
+                    'headcount' => $c['headcount'],
+                    'rate_per_head_centavos' => $c['rate'],
+                    'contract_months' => $c['months'],
+                    'monthly_billing_centavos' => $c['headcount'] * $c['rate'],
+                    'contract_total_centavos' => $c['headcount'] * $c['rate'] * $c['months'],
+                    'start_date' => $c['start'],
                     'status' => 'active',
                     'payload' => ['mock' => true, 'seeded' => true, 'depts' => ['core3_docs', 'governance_legal', 'facilities_contracts']],
-                    'created_at' => now()->subDays(55), 'updated_at' => now()->subDays(55),
+                    'created_at' => now()->subDays($c['ca']), 'updated_at' => now()->subDays($c['ca']),
                 ]
             );
         }
@@ -149,7 +168,7 @@ class CrmActivitySeeder extends Seeder
         // Phase 2B: mock AR across aging buckets (deterministic refs, no Faker).
         $med = Client::where('name', 'Makati Medical Center')->firstOrFail();
         $seedInvoices = [
-            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'INV-2026-0101', 'title' => '80 security guards — Davao Prime', 'amount_centavos' => 240000000, 'balance_centavos' => 240000000, 'status' => 'sent', 'due_at' => now()->addDays(20)->toDateString(), 'ca' => 25],
+            ['opportunity_id' => $wonOpp?->id, 'client_id' => $hotel->id, 'owner_id' => $hotel->owner_id, 'ref' => 'INV-2026-0101', 'title' => '60 security guards — Davao Prime', 'amount_centavos' => 240000000, 'balance_centavos' => 240000000, 'status' => 'sent', 'due_at' => now()->addDays(20)->toDateString(), 'ca' => 25],
             ['opportunity_id' => $smWon?->id, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'INV-2026-0102', 'title' => '60 promo staff — SM Cebu', 'amount_centavos' => 210000000, 'balance_centavos' => 60000000, 'status' => 'sent', 'due_at' => now()->subDays(10)->toDateString(), 'ca' => 40],
             ['opportunity_id' => null, 'client_id' => $sm->id, 'owner_id' => $sm->owner_id, 'ref' => 'INV-2026-0103', 'title' => 'Promo booth staff — SM Cebu (Q3)', 'amount_centavos' => 90000000, 'balance_centavos' => 0, 'status' => 'paid', 'due_at' => now()->subDays(60)->toDateString(), 'ca' => 200],
             ['opportunity_id' => null, 'client_id' => $med->id, 'owner_id' => $med->owner_id, 'ref' => 'INV-2026-0104', 'title' => 'Ward aides — Makati Med (Q2)', 'amount_centavos' => 320000000, 'balance_centavos' => 320000000, 'status' => 'overdue', 'due_at' => now()->subDays(75)->toDateString(), 'ca' => 250],

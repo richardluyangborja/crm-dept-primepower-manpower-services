@@ -31,6 +31,18 @@ interface Lead {
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
 const MANUAL_STATUSES = ['new', 'contacted', 'qualified', 'unqualified'];
 
+// Mirrors backend Lead::LOW_LEVEL_POSITIONS — agency deploys rank-and-file only.
+const LOW_LEVEL_POSITIONS = [
+  'security guards', 'guards', 'janitors', 'housekeepers',
+  'packers', 'production aides', 'production crew', 'cannery workers',
+  'cashiers', 'sales clerks', 'merchandisers', 'promo staff',
+  'waiters', 'porters', 'stevedores', 'forklift operators',
+  'warehouse aides', 'drivers', 'messengers', 'tellers',
+  'ward aides', 'nursing aides', 'lab aides', 'farm aides',
+  'technicians', 'housekeeping aides', 'service crew', 'commissary crew',
+  'helpers', 'utility staff',
+];
+
 function ScoreBar({ v }: { v: number }) {
   return (
     <span className="flex items-center gap-2">
@@ -221,7 +233,7 @@ function LeadTable({ rows, onStatus, onDeal, empty, pagination }: {
       columns={[
         { key: 'co', header: 'Company', render: (r) => <Link to={`/leads/${r.id}`} className="font-medium text-sky-700 dark:text-sky-300">{r.company_name}</Link> },
         { key: 'ct', header: 'Contact', render: (r) => <span>{r.contact_name}<br /><span className="text-xs text-[var(--text-muted)]">{r.contact_phone ?? r.contact_email}</span></span> },
-        { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 PH email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
+        { key: 'sc', header: 'Score', render: (r) => <span title={`Score ${r.score}/100: +20 valid email, +25 valid +63 phone, +status`}><ScoreBar v={r.score} /></span> },
         { key: 'st', header: 'Status', render: (r) => (
           <select value={r.status} disabled={['converted', 'unqualified'].includes(r.status)} onChange={(e) => onStatus(r, e.target.value)}
             className="rounded border border-[var(--border)] bg-transparent px-1 py-0.5 text-xs" aria-label={`Status of ${r.company_name}`}>
@@ -384,18 +396,22 @@ function NewLeadForm({ onClose, onDone }: { onClose: () => void; onDone: () => v
               <label>Position<input value={f.contact_position} onChange={set('contact_position')} placeholder="HR Manager" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.ph (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Email<input type="email" value={f.contact_email} onChange={set('contact_email')} placeholder="hrd@company.com (+20 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
               <label>Mobile<input value={f.contact_phone} onChange={set('contact_phone')} placeholder="+639XXXXXXXXX (+25 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <label>Heads needed<input value={f.headcount} onChange={set('headcount')} inputMode="numeric" placeholder="40 (+10 score)" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
-              <label>Positions<input value={f.positions} onChange={set('positions')} placeholder="e.g. Guards, Janitors" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
+              <label>Positions needed (rank-and-file only)<input value={f.positions} onChange={set('positions')} list="low-level-positions" placeholder="e.g. Guards, Janitors" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" />
+                <span className="mt-1 block text-xs text-[var(--text-muted)]">Agency deploys rank-and-file roles only — no heads/managers.</span></label>
             </div>
             <label>Source<select value={f.source} onChange={set('source')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
               {sources.map((s) => <option key={s} value={s}>{s}</option>)}
             </select></label>
           </div>
         )}
+        <datalist id="low-level-positions">
+          {LOW_LEVEL_POSITIONS.map((p) => <option key={p} value={p} />)}
+        </datalist>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
         <div className="mt-4 flex justify-between gap-2">
           <div className="flex gap-2">
