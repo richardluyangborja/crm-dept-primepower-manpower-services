@@ -649,13 +649,15 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
   const [rate, setRate] = useState('');
   const [months, setMonths] = useState('12');
   const [closeDate, setCloseDate] = useState('');
+  // Terms come prefilled from the deal (set at creation) — change only what
+  // moved. Pristine-only fills so a late server response never clobbers typing.
   useEffect(() => {
-    if (src.headcount) setHeads(String(src.headcount));
-    if (src.rate_per_head_centavos) setRate(String(src.rate_per_head_centavos / 100));
-    if (src.contract_months) setMonths(String(src.contract_months));
-    if (src.expected_close_date) setCloseDate(src.expected_close_date);
+    if (src.headcount && !heads) setHeads(String(src.headcount));
+    if (src.rate_per_head_centavos && !rate) setRate(String(src.rate_per_head_centavos / 100));
+    if (src.contract_months && months === '12') setMonths(String(src.contract_months));
+    if (src.expected_close_date && !closeDate) setCloseDate(src.expected_close_date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src.id, detailQ.dataUpdatedAt]);
+  }, [src]);
   // P3 · proposal: quoted value + sent date. P4 · negotiation: terms tweak + note.
   const [sentDate, setSentDate] = useState(new Date().toISOString().slice(0, 10));
   const [negNote, setNegNote] = useState('');
@@ -726,7 +728,7 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
     >
       {to === 'qualified' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Confirm the requirement — qualifying locks the money story. Heads, rate, and months are required from here on; the value computes itself.</p>
+          <p className="text-xs text-[var(--text-muted)]">Confirm the requirement — qualifying locks the money story. Heads, rate, and months are required from here on; the value computes itself. Prefilled from the deal — change only what moved.</p>
           <div className="grid grid-cols-3 gap-2">
             <label>Heads *<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
@@ -740,7 +742,7 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
       )}
       {to === 'proposal' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Record the quotation — confirm the per-head terms, value follows automatically, and a follow-up is booked.</p>
+          <p className="text-xs text-[var(--text-muted)]">Record the quotation — confirm the per-head terms, value follows automatically, and a follow-up is booked. Prefilled from the deal — change only what moved.</p>
           <div className="grid grid-cols-3 gap-2">
             <label>Heads *<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Rate/head/mo (₱) *<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder="15000" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
@@ -754,7 +756,7 @@ function RitualDialog({ opp, to, labels, onClose, onDone }: {
       )}
       {to === 'negotiation' && (
         <div className="mb-2 flex flex-col gap-2 text-sm">
-          <p className="text-xs text-[var(--text-muted)]">Take the temperature — the win chance updates automatically on Approval (currently {src.probability}%). Note what the client is pushing on.</p>
+          <p className="text-xs text-[var(--text-muted)]">Take the temperature — the win chance updates automatically on Approval (currently {src.probability}%). Note what the client is pushing on. Terms prefilled — change only what moved.</p>
           <div className="grid grid-cols-3 gap-2">
             <label>Heads<input value={heads} onChange={(e) => setHeads(e.target.value)} inputMode="numeric" placeholder={src.headcount ? String(src.headcount) : '40'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
             <label>Rate/head/mo (₱)<input value={rate} onChange={(e) => setRate(e.target.value)} inputMode="decimal" placeholder={src.rate_per_head_centavos ? String(src.rate_per_head_centavos / 100) : '15000'} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
@@ -855,14 +857,14 @@ function ContractModal({ dealId, fromStage, onClose, onDone }: {
   const skipped = skippedStages(fromStage, 'contract');
   const needSkip = skipRequired(fromStage, 'contract');
   const d = dealQ.data;
+  // Prefilled from the deal — change only what moved. Pristine-only fills
+  // so a late server response never clobbers typing.
   useEffect(() => {
-    if (d) {
-      if (d.headcount) setHeadcount(String(d.headcount));
-      if (d.rate_per_head_centavos) setRate(String(d.rate_per_head_centavos / 100));
-      if (d.contract_months) setMonths(String(d.contract_months));
-    }
+    if (d?.headcount && !headcount) setHeadcount(String(d.headcount));
+    if (d?.rate_per_head_centavos && !rate) setRate(String(d.rate_per_head_centavos / 100));
+    if (d?.contract_months && months === '12') setMonths(String(d.contract_months));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d?.id]);
+  }, [d]);
   const monthly = (Number(headcount) || 0) * pesoToCentavos(rate || '0');
   const valid = Number(headcount) > 0 && pesoToCentavos(rate || '0') > 0 && Number(months) > 0 && !!start;
 
@@ -870,7 +872,7 @@ function ContractModal({ dealId, fromStage, onClose, onDone }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Sign contract{d ? ` — ${d.title}` : ''}?</h2>
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Records the agreed terms as the contract. Winning starts from here.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">Records the agreed terms as the contract. Winning starts from here. Prefilled from the deal — change only what moved.</p>
         <div className="flex flex-col gap-2 text-sm">
           <div className="grid grid-cols-3 gap-2">
             <label>Heads *<input value={headcount} onChange={(e) => setHeadcount(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
@@ -918,12 +920,19 @@ function WinModal({ opp, signed, labels, onClose, onDone }: {
   const [months, setMonths] = useState('12');
   const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
   const [skip, setSkip] = useState('');
+  // Fresh terms (board rows can lag optimistic updates); pristine-only fills.
+  const dealQ = useQuery({
+    queryKey: ['opportunity', opp.id],
+    queryFn: async () => (await api.get(`/opportunities/${opp.id}`)).data.data as Opp,
+    staleTime: 30000,
+  });
+  const src = dealQ.data ?? opp;
   useEffect(() => {
-    if (opp.headcount) setHeadcount(String(opp.headcount));
-    if (opp.rate_per_head_centavos) setRate(String(opp.rate_per_head_centavos / 100));
-    if (opp.contract_months) setMonths(String(opp.contract_months));
+    if (src.headcount && !headcount) setHeadcount(String(src.headcount));
+    if (src.rate_per_head_centavos && !rate) setRate(String(src.rate_per_head_centavos / 100));
+    if (src.contract_months && months === '12') setMonths(String(src.contract_months));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opp.id]);
+  }, [src]);
   const skipped = skippedStages(opp.stage, 'contract');
   const needSkip = signed === null && skipRequired(opp.stage, 'contract');
   const monthly = (Number(headcount) || 0) * pesoToCentavos(rate || '0');
@@ -945,7 +954,7 @@ function WinModal({ opp, signed, labels, onClose, onDone }: {
         ) : (
           <div className="flex flex-col gap-2 text-sm">
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs dark:bg-amber-900/20">
-              No signed contract on this deal yet — the contract stage comes before won, so sign it here first. Both land on the history.
+              No signed contract on this deal yet — the contract stage comes before won, so sign it here first. Terms prefilled from the deal; both land on the history.
             </p>
             <div className="grid grid-cols-3 gap-2">
               <label>Heads *<input value={headcount} onChange={(e) => setHeadcount(e.target.value)} inputMode="numeric" placeholder="40" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2" /></label>
