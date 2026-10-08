@@ -10,10 +10,10 @@ class LeadScorer
     public static function score(Lead $lead): int
     {
         $score = 0;
-        if ($lead->contact_email && str_ends_with($lead->contact_email, '.ph')) {
+        // Any syntactically valid email scores — agency deals with
+        // gmail/yahoo/corporate alike; deliverability is not checked in v1.
+        if ($lead->contact_email && filter_var($lead->contact_email, FILTER_VALIDATE_EMAIL)) {
             $score += 20;
-        } elseif ($lead->contact_email) {
-            $score += 10;
         }
         if ($lead->address_city ?? false) {
             $score += 15;

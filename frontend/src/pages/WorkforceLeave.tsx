@@ -9,10 +9,14 @@ import { MemberPicker, MonthNav, PrintButton, currentMonth, downloadCsv, useMemb
 
 interface LeaveDay { date: string; status: string; check_in: string | null; kind: string | null }
 
-/** Workforce hub: leave & absence balances (Core-2, read-only mock). */
+/** Workforce hub: leave & absence balances (filed with HR — shown here). */
 export function WorkforceLeavePage() {
   const { user, members, canPick } = useMembers();
-  const [memberId, setMemberId] = useState<number | null>(null);
+  // Deep link from the directory: /workforce/leave?user=<id> preselects them.
+  const [memberId, setMemberId] = useState<number | null>(() => {
+    const u = Number(new URLSearchParams(window.location.search).get('user'));
+    return Number.isFinite(u) && u > 0 ? u : null;
+  });
   const [month, setMonth] = useState(currentMonth());
   const target = canPick ? (memberId ?? members[0]?.id ?? user?.id ?? null) : (user?.id ?? null);
 

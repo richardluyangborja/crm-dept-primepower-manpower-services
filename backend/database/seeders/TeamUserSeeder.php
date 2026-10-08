@@ -13,13 +13,16 @@ class TeamUserSeeder extends Seeder
         // Single team (specs/02 + follow-up overhaul Phase 1): the whole salesforce lives here.
         $sales = Team::firstOrCreate(['name' => 'Primepower Team'], ['region' => 'Nationwide']);
 
+        // Demo OTP goes through the real superadmin Gmail account (no placeholder user).
+        User::where('email', 'otp.demo@primepower.ph')->delete();
+
         $users = [
-            ['name' => 'Super Admin', 'email' => 'superadmin@primepower.ph', 'role' => 'superadmin', 'team_id' => null],
-            ['name' => 'Admin Ops', 'email' => 'admin@primepower.ph', 'role' => 'admin', 'team_id' => null],
-            ['name' => 'Marites Reyes', 'email' => 'manager@primepower.ph', 'role' => 'manager', 'team_id' => $sales->id],
-            ['name' => 'Juan Dela Cruz', 'email' => 'rep.juandelacruz@primepower.ph', 'role' => 'sales_rep', 'team_id' => $sales->id, 'phone' => '+639171234567'],
-            ['name' => 'Maria Santos', 'email' => 'rep.mariasantos@primepower.ph', 'role' => 'sales_rep', 'team_id' => $sales->id, 'phone' => '+639271234567'],
-            ['name' => 'OTP Demo', 'email' => 'otp.demo@primepower.ph', 'role' => 'sales_rep', 'team_id' => $sales->id, 'phone' => '+639451234567', 'otp_enabled' => true],
+            ['name' => 'Super Admin', 'email' => 'superadmin@primepower.ph', 'role' => 'superadmin', 'team_id' => null, 'otp_enabled' => false],
+            ['name' => 'Richard Borja', 'email' => 'borja.richard.luyang@gmail.com', 'role' => 'superadmin', 'team_id' => null, 'otp_enabled' => true],
+            ['name' => 'Admin Ops', 'email' => 'admin@primepower.ph', 'role' => 'admin', 'team_id' => null, 'otp_enabled' => false],
+            ['name' => 'Marites Reyes', 'email' => 'manager@primepower.ph', 'role' => 'manager', 'team_id' => $sales->id, 'otp_enabled' => false],
+            ['name' => 'Juan Dela Cruz', 'email' => 'rep.juandelacruz@primepower.ph', 'role' => 'sales_rep', 'team_id' => $sales->id, 'phone' => '+639171234567', 'otp_enabled' => false],
+            ['name' => 'Maria Santos', 'email' => 'rep.mariasantos@primepower.ph', 'role' => 'sales_rep', 'team_id' => $sales->id, 'phone' => '+639271234567', 'otp_enabled' => false],
         ];
         foreach ($users as $u) {
             $user = User::firstOrCreate(
@@ -27,7 +30,9 @@ class TeamUserSeeder extends Seeder
                 $u + ['password' => env('SEED_PASSWORD', 'Primepower123!'), 'is_active' => true]
             );
             // Team simplification converges on re-seed without touching passwords.
-            $user->update(['team_id' => $u['team_id']]);
+            // OTP stays opt-in: only the real Gmail superadmin has it on; seed
+            // emails keep it off (toggled per-user in Settings).
+            $user->update(['team_id' => $u['team_id'], 'otp_enabled' => $u['otp_enabled']]);
         }
     }
 }

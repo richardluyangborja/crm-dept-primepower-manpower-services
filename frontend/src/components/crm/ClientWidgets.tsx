@@ -45,11 +45,11 @@ export function ClientOpsCards({ clientId }: { clientId: string }) {
   return (
     <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
       <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Read-back from Client Management">ⓘ</span></p>
+        <p className="text-xs text-[var(--text-muted)]">Deployed <span title="Live headcount from the deployment board — updated when job orders advance">ⓘ</span></p>
         <p className="font-semibold tabular-nums"><Link to={`/pipeline/staffing?client=${clientId}`} className="text-sky-700 hover:underline dark:text-sky-300">{ops.deployment.deployed ?? 0} staff</Link></p>
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
-        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Read-back from Finance">ⓘ</span></p>
+        <p className="text-xs text-[var(--text-muted)]">AR balance <span title="Outstanding invoices from billing — recording a payment lowers it">ⓘ</span></p>
         <p className="font-semibold tabular-nums">{formatPHP(ops.billing.outstanding_centavos ?? 0)}</p>
       </div>
       <div className="rounded-lg border border-[var(--border)] p-2">
@@ -79,7 +79,7 @@ export function ClientJourney({ clientId }: { clientId: string }) {
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(via Client Management — read-only)</span></h3>
+        <h3 className="font-medium">Staffing journey <span className="text-xs font-normal text-[var(--text-muted)]">(staffing runs it — shown here)</span></h3>
         <Link to={`/pipeline?client=${clientId}`} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs">+ New deal</Link>
       </div>
       <ul className="mt-1 flex flex-col gap-2">

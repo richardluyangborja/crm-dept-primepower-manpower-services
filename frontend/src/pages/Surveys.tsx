@@ -218,7 +218,7 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <form onSubmit={submit} className="card w-full max-w-md p-6">
         <h2 className="text-lg font-semibold">Send survey</h2>
-        <p className="mb-3 text-xs text-[var(--text-muted)]">Logged to the client timeline — no real email or SMS leaves the system.</p>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">The client gets a share link to answer. Pick how they'd normally receive it — delivery is logged to the client timeline.</p>
         <div className="flex flex-col gap-2 text-sm">
           <label>Template *<select required value={f.template_id} onChange={set('template_id')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="">Pick a template…</option>
@@ -230,8 +230,8 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
           </select></label>
           <label>Channel<select value={f.channel} onChange={set('channel')} className="mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2">
             <option value="link">Share link</option>
-            <option value="email_mock">Email (simulated)</option>
-            <option value="sms_mock">SMS (simulated)</option>
+            <option value="email_mock">Email</option>
+            <option value="sms_mock">SMS</option>
           </select></label>
         </div>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
@@ -244,7 +244,7 @@ function SendSurveyForm({ onClose, onDone }: { onClose: () => void; onDone: () =
         open={confirmSend}
         tone="info"
         title="Send survey?"
-        body="The client contact gets a fresh share link. Mock send — logged to the timeline, no real email or SMS leaves the system."
+        body="The client contact gets a fresh share link via the chosen channel. Delivery is logged to the timeline so you can see it was sent."
         details={[
           `Template: ${chosenTemplate?.name ?? '—'} (${chosenTemplate?.type ?? '?'})`,
           `Client: ${chosenClient?.name ?? '—'}`,

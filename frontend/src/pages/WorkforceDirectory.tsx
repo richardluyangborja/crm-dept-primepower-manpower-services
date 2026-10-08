@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { DataTable } from '../components/ui/DataTable';
@@ -51,6 +52,15 @@ export function WorkforceDirectoryPage() {
               { key: 't', header: 'Team', render: (r) => r.team_name ?? '—' },
               { key: 'a', header: 'Active', render: (r) => (r.is_active ? 'Yes' : 'No') },
               { key: 'l', header: 'Last login', render: (r) => (r.last_login_at ? new Date(r.last_login_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : '—') },
+              {
+                key: 'rec', header: 'Records', render: (r) => (
+                  <span className="flex flex-wrap gap-1.5 text-[11px]">
+                    <Link to={`/workforce/leave?user=${r.id}`} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sky-700 hover:underline dark:text-sky-300">Leave</Link>
+                    <Link to={`/workforce/attendance?user=${r.id}`} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sky-700 hover:underline dark:text-sky-300">Attendance</Link>
+                    <Link to={`/workforce/performance?user=${r.id}`} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-sky-700 hover:underline dark:text-sky-300">Performance</Link>
+                  </span>
+                ),
+              },
             ]}
             empty={<EmptyState title="Nobody here" hint="Nobody in scope matches that search." />}
           />

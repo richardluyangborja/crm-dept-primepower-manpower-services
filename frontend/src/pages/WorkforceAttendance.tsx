@@ -14,10 +14,14 @@ interface AttSummary { present: number; late: number; absent: number; leave: num
 
 const DOT: Record<string, string> = { present: 'bg-green-500', late: 'bg-amber-500', absent: 'bg-red-500', leave: 'bg-sky-500' };
 
-/** Workforce hub: timekeeping attendance (Core-2, read-only mock). */
+/** Workforce hub: timekeeping attendance (filed with HR — shown here). */
 export function WorkforceAttendancePage() {
   const { user, members, canPick } = useMembers();
-  const [memberId, setMemberId] = useState<number | null>(null);
+  // Deep link from the directory: /workforce/attendance?user=<id> preselects them.
+  const [memberId, setMemberId] = useState<number | null>(() => {
+    const u = Number(new URLSearchParams(window.location.search).get('user'));
+    return Number.isFinite(u) && u > 0 ? u : null;
+  });
   const [month, setMonth] = useState(currentMonth());
   const [page, setPage] = useState(1);
   const PER_PAGE = 15;

@@ -18,10 +18,14 @@ interface Perf {
   mock: boolean;
 }
 
-/** Workforce hub: performance composites (Core-2, blended mock). Managers+ get the ranking. */
+/** Workforce hub: performance composites (CRM output + HR context). Managers+ get the ranking. */
 export function WorkforcePerformancePage() {
   const { user, members, canPick } = useMembers();
-  const [memberId, setMemberId] = useState<number | null>(null);
+  // Deep link from the directory: /workforce/performance?user=<id> preselects them.
+  const [memberId, setMemberId] = useState<number | null>(() => {
+    const u = Number(new URLSearchParams(window.location.search).get('user'));
+    return Number.isFinite(u) && u > 0 ? u : null;
+  });
   const [month, setMonth] = useState(currentMonth());
   const target = canPick ? (memberId ?? members[0]?.id ?? user?.id ?? null) : (user?.id ?? null);
   const showRanking = hasRole(user, 'manager', 'admin', 'superadmin');
@@ -79,7 +83,7 @@ export function WorkforcePerformancePage() {
         <PrintButton />
       </div>
       <InfoCallout lead="Real output, HR context.">
-        Won value, touches, and follow-up completion come from live CRM data; attendance, punctuality, and ratings arrive via HR. Nothing here can be edited.
+        Won value, touches, and follow-up completion come from live CRM data; attendance, punctuality, and ratings come from the HR record. Nothing here can be edited.
       </InfoCallout>
       <div className="flex flex-wrap gap-2">
         <MemberPicker value={target} onChange={setMemberId} members={members} />

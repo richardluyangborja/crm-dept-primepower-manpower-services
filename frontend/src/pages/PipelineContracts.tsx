@@ -22,7 +22,7 @@ interface Contract {
   status: string;
 }
 
-/** Pipeline hub child: contract ledger (mock Core-3/Governance/Facilities). */
+/** Pipeline hub child: contract ledger (filed with Docs, Legal, and Facilities at signing). */
 export function PipelineContractsPage() {
   const { clientId, setClientId } = useClientParam();
   const contractsQ = useQuery({
@@ -36,7 +36,7 @@ export function PipelineContractsPage() {
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-bold">Pipeline · Contracts</h1>
-        <p className="text-sm text-[var(--text-muted)]">Signed terms per deal. Mock paper trail for Core-3 docs, Governance legal, and Facilities contracts — created at signing, read-only here.</p>
+        <p className="text-sm text-[var(--text-muted)]">Signed terms per deal. Every signing files the contract with Docs, Legal, and Facilities — created at signing, read-only here.</p>
       </div>
       <div className="flex gap-2">
         <ClientPicker clientId={clientId} onChange={setClientId} />

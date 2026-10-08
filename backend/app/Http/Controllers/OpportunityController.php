@@ -79,6 +79,34 @@ class OpportunityController extends Controller
         return $this->ok(new OpportunityResource($opportunity));
     }
 
+    /** Stage-history timeline: every creation + stage move, oldest first. */
+    public function history(Opportunity $opportunity)
+    {
+        $this->authorize('view', $opportunity);
+        $logs = \App\Models\AuditLog::with('user:id,name')
+            ->where('entity', $opportunity->getTable())
+            ->where('entity_id', $opportunity->getKey())
+            ->whereIn('action', ['created', 'stage_moved'])
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($l) => [
+                'id' => $l->id,
+                'action' => $l->action,
+                'actor' => $l->user?->name,
+                'at' => $l->created_at,
+                'from' => $l->meta['from'] ?? null,
+                'to' => $l->meta['to'] ?? null,
+                'skipped' => $l->meta['skipped'] ?? [],
+                'skip_reason' => $l->meta['skip_reason'] ?? null,
+                'lost_reason' => $l->meta['lost_reason'] ?? null,
+                'reopen_note' => $l->meta['reopen_note'] ?? null,
+                'contract_ref' => $l->meta['contract_ref'] ?? null,
+            ]);
+
+        return $this->ok($logs);
+    }
+
     public function update(UpdateOpportunityRequest $request, Opportunity $opportunity)
     {
         $this->authorize('update', $opportunity);
@@ -113,7 +141,7 @@ class OpportunityController extends Controller
         $this->authorize('update', $opportunity);
         $user = $request->user();
         $validated = validator(
-            ['stage' => 'won'] + $request->only(['probability', 'effective_date']),
+            ['stage' => 'won'] + $request->only(['probability', 'effective_date', 'skip_reason']),
             (new MoveStageRequest)->rules(),
             (new MoveStageRequest)->messages()
         )->validate();
@@ -128,7 +156,7 @@ class OpportunityController extends Controller
         $this->authorize('update', $opportunity);
         $user = $request->user();
         $validated = validator(
-            ['stage' => 'lost'] + $request->only(['lost_reason', 'probability', 'effective_date']),
+            ['stage' => 'lost'] + $request->only(['lost_reason', 'probability', 'effective_date', 'skip_reason']),
             (new MoveStageRequest)->rules(),
             (new MoveStageRequest)->messages()
         )->validate();

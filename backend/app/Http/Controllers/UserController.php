@@ -160,6 +160,31 @@ class UserController extends Controller
         return $this->ok(null, 'Password reset — share the new temporary password securely.');
     }
 
+    /**
+     * Per-user OTP on/off. Admins may toggle anyone; anyone may toggle
+     * their own. Guards the demo: the last OTP-armed active superadmin
+     * cannot be disarmed (logins would lose their second factor).
+     */
+    public function otpToggle(Request $request, User $user)
+    {
+        $me = $request->user();
+        if ($me->id !== $user->id) {
+            $this->authorize('update', $user);
+        }
+        $data = $request->validate(['otp_enabled' => ['required', 'boolean']]);
+        if ($data['otp_enabled'] === false && $user->role === 'superadmin' && $user->otp_enabled) {
+            $others = User::where('role', 'superadmin')->where('is_active', true)
+                ->where('id', '!=', $user->id)->where('otp_enabled', true)->exists();
+            if (! $others) {
+                return $this->fail('Keep at least one superadmin with OTP on — otherwise logins lose their second factor.', 422);
+            }
+        }
+        $user->update(['otp_enabled' => $data['otp_enabled']]);
+        $user->audit('otp_toggled', $me->id, ['otp_enabled' => $data['otp_enabled']]);
+
+        return $this->ok(new UserResource($user->refresh()->load('team')), $data['otp_enabled'] ? 'OTP turned on — next login asks for a code.' : 'OTP turned off.');
+    }
+
     public function preferences(Request $request)
     {
         return $this->ok($request->user()->preferences ?? $this->defaults());

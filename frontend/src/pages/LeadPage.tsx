@@ -179,7 +179,7 @@ export function LeadPage() {
 
 function ScoreExplainer({ lead }: { lead: LeadFull }) {
   const rows: [string, boolean][] = [
-    ['PH corporate email (+20)', !!lead.contact_email && lead.contact_email.endsWith('.ph')],
+    ['Valid email (+20)', !!lead.contact_email && /.+@.+\..+/.test(lead.contact_email)],
     ['Valid +63 mobile (+25)', !!lead.contact_phone && /^\+63\d{10}$/.test(lead.contact_phone)],
     ['Worked status: contacted (+15) / qualified (+30)', ['contacted', 'qualified', 'converted'].includes(lead.status)],
     ['Notes on file (+10)', !!lead.notes],

@@ -34,9 +34,11 @@ class OtpController extends Controller
             $result = $otp->send($userId, $purpose);
         } catch (OtpLockedException $e) {
             return $this->fail($e->getMessage(), 429);
+        } catch (\App\Exceptions\OtpCooldownException $e) {
+            return response()->json(['message' => $e->getMessage(), 'meta' => ['retry_after' => $e->retryAfter]], 429);
         }
 
-        return $this->created($result, 'Code sent — it expires in 5 minutes (mock: check logs).');
+        return $this->created($result, "Code sent to {$result['sent_to']} — it expires in 5 minutes.");
     }
 
     public function verify(Request $request, OtpServiceInterface $otp, StepUpService $stepUp)
@@ -56,7 +58,10 @@ class OtpController extends Controller
             } catch (OtpLockedException $e) {
                 return $this->fail($e->getMessage(), 429);
             }
-            if (! $ok) return $this->fail('Invalid or expired code.', 410);
+            if (! $ok) return response()->json([
+                'message' => 'Invalid or expired code.',
+                'meta' => ['attempts_left' => $otp->attemptsLeft($user->id, 'step_up')],
+            ], 410);
             $grant = $stepUp->grant($user->id);
 
             return $this->ok(['step_up_token' => $grant, 'expires_in' => 300], 'Verified — token valid 5 minutes, single use.');
@@ -73,7 +78,10 @@ class OtpController extends Controller
         } catch (OtpLockedException $e) {
             return $this->fail($e->getMessage(), 429);
         }
-        if (! $ok) return $this->fail('Invalid or expired code.', 410);
+        if (! $ok) return response()->json([
+            'message' => 'Invalid or expired code.',
+            'meta' => ['attempts_left' => $otp->attemptsLeft($user->id, 'login')],
+        ], 410);
 
         return $this->ok($this->issueTokens($user, $request), 'Verified — logged in.');
     }
