@@ -271,7 +271,7 @@ export function AppShell() {
           step={tour.step}
           current={tour.current}
           onRoute={tour.onRoute}
-          onNext={() => (tour.step === 4 ? tour.finish() : tour.go(tour.step + 1))}
+          onNext={() => tour.next()}
           onBack={() => tour.go(tour.step - 1)}
           onSkip={() => tour.finish()}
           onGoRoute={() => tour.go(tour.step)}
