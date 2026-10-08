@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
         Route::post('users/{user}/deactivate', [\App\Http\Controllers\UserController::class, 'deactivate']);
         Route::get('users/{user}/owned', [\App\Http\Controllers\UserController::class, 'owned']);
         Route::post('users/{user}/reset-password', [\App\Http\Controllers\UserController::class, 'resetPassword']);
+        Route::post('users/{user}/otp', [\App\Http\Controllers\UserController::class, 'otpToggle']);
         Route::get('me/preferences', [\App\Http\Controllers\UserController::class, 'preferences']);
         Route::put('me/preferences', [\App\Http\Controllers\UserController::class, 'updatePreferences']);
         Route::post('me/password', [\App\Http\Controllers\UserController::class, 'changePassword']);
@@ -101,6 +102,7 @@ Route::prefix('v1')->group(function () {
         Route::get('integrations/{service}/test', [\App\Http\Controllers\IntegrationController::class, 'test']);
         Route::put('integrations/mode', [\App\Http\Controllers\IntegrationController::class, 'updateMode']);
         Route::get('exports/{entity}.csv', [\App\Http\Controllers\ExportController::class, 'csv']);
+        Route::get('exports/snapshot.json', [\App\Http\Controllers\ExportController::class, 'snapshot']);
         // Step 7 — AI Analytics + Reports (specs/15).
         Route::get('/reports/weekly', [\App\Http\Controllers\ReportController::class, 'weekly']);
         Route::get('/reports/monthly', [\App\Http\Controllers\ReportController::class, 'monthly']);

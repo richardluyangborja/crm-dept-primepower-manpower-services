@@ -49,4 +49,23 @@ class ExportController extends Controller
         if (is_array($v)) return json_encode($v);
         return (string) ($v ?? '');
     }
+
+    /** Full JSON snapshot for off-site backup (superadmin). Passwords never leave. */
+    public function snapshot()
+    {
+        if (auth('api')->user()->role !== 'superadmin') {
+            return $this->fail('Only superadmin can download snapshots.', 403);
+        }
+        $dump = ['exported_at' => now()->toIso8601String(), 'tables' => []];
+        foreach (self::ENTITIES as $entity => [$model, $columns]) {
+            $dump['tables'][$entity] = $model::query()->orderBy('id')->get($columns)->toArray();
+        }
+        $dump['tables']['users'] = \App\Models\User::query()->orderBy('id')
+            ->get(['id', 'name', 'email', 'role', 'team_id', 'is_active', 'otp_enabled', 'last_login_at'])->toArray();
+        $filename = 'crm-snapshot-'.now()->format('Ymd-His').'.json';
+
+        return response()->streamDownload(function () use ($dump) {
+            echo json_encode($dump, JSON_PRETTY_PRINT);
+        }, $filename, ['Content-Type' => 'application/json']);
+    }
 }

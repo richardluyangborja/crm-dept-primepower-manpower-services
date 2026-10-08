@@ -89,6 +89,7 @@ class LeadClientTest extends TestCase
         $this->postJson("/api/v1/opportunities/$oppId/move", [
             'stage' => 'contract', 'headcount' => 80, 'rate_per_head_centavos' => 250000,
             'contract_months' => 12, 'start_date' => now()->toDateString(),
+            'skip_reason' => 'Fast-tracked signing',
         ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $t"])->assertOk();
 
@@ -106,7 +107,7 @@ class LeadClientTest extends TestCase
         $opp2 = $this->postJson('/api/v1/opportunities', [
             'company_id' => $companyId, 'client_id' => $client['id'], 'title' => 'Second need', 'value_centavos' => 100000,
         ], ['Authorization' => "Bearer $t"])->assertCreated()->json('data.id');
-        $this->postJson("/api/v1/opportunities/$opp2/move", ['stage' => 'lost', 'lost_reason' => 'Timing'], ['Authorization' => "Bearer $t"])->assertOk();
+        $this->postJson("/api/v1/opportunities/$opp2/move", ['stage' => 'lost', 'lost_reason' => 'Timing', 'skip_reason' => 'Killed at first pass'], ['Authorization' => "Bearer $t"])->assertOk();
 
         // Retired convert endpoint is gone.
         $this->postJson("/api/v1/leads/$leadId/convert", [], ['Authorization' => "Bearer $t"])->assertNotFound();

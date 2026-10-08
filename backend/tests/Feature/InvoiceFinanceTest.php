@@ -52,6 +52,7 @@ class InvoiceFinanceTest extends TestCase
         $this->postJson("/api/v1/opportunities/$oppId/move", [
             'stage' => 'contract', 'headcount' => 5, 'rate_per_head_centavos' => 100000,
             'contract_months' => 12, 'start_date' => now()->toDateString(),
+            'skip_reason' => 'Fast-tracked signing',
         ], ['Authorization' => "Bearer $t"])->assertOk();
         $this->postJson("/api/v1/opportunities/$oppId/win", [], ['Authorization' => "Bearer $t"])->assertOk();
         $oppInt = \App\Models\Opportunity::decodeId($oppId);

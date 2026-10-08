@@ -96,6 +96,36 @@ class SettingsAccessTest extends TestCase
         $this->putJson("/api/v1/users/{$o['rep']->id}", ['role' => 'admin'], ['Authorization' => "Bearer $at", 'X-StepUp-Token' => $grant])->assertStatus(422);
     }
 
+    public function test_otp_toggle_self_and_admin_and_last_superadmin_guard(): void
+    {
+        $o = $this->setupOrg();
+        $repT = $this->token($o['rep']);
+
+        // Rep toggles their own OTP on/off.
+        $this->postJson("/api/v1/users/{$o['rep']->id}/otp", ['otp_enabled' => true], ['Authorization' => "Bearer $repT"])
+            ->assertOk()->assertJsonPath('data.otp_enabled', true);
+        $this->assertTrue($o['rep']->refresh()->otp_enabled);
+
+        // Rep cannot toggle someone else; admin can.
+        $this->postJson("/api/v1/users/{$o['mgr']->id}/otp", ['otp_enabled' => true], ['Authorization' => "Bearer $repT"])->assertForbidden();
+        $at = $this->token($o['admin']);
+        $this->postJson("/api/v1/users/{$o['rep']->id}/otp", ['otp_enabled' => false], ['Authorization' => "Bearer $at"])
+            ->assertOk()->assertJsonPath('data.otp_enabled', false);
+
+        // Last OTP-armed superadmin cannot be disarmed.
+        $st = $this->token($o['super']);
+        $this->postJson("/api/v1/users/{$o['super']->id}/otp", ['otp_enabled' => true], ['Authorization' => "Bearer $st"])->assertOk();
+        $this->postJson("/api/v1/users/{$o['super']->id}/otp", ['otp_enabled' => false], ['Authorization' => "Bearer $st"])->assertStatus(422);
+    }
+
+    public function test_snapshot_download_is_superadmin_only(): void
+    {
+        $o = $this->setupOrg();
+        $this->getJson('/api/v1/exports/snapshot.json', ['Authorization' => 'Bearer '.$this->token($o['admin'])])->assertForbidden();
+        $res = $this->getJson('/api/v1/exports/snapshot.json', ['Authorization' => 'Bearer '.$this->token($o['super'])])->assertOk();
+        $this->assertStringContainsString('crm-snapshot-', $res->headers->get('Content-Disposition'));
+    }
+
     public function test_self_and_last_superadmin_guards(): void
     {        $o = $this->setupOrg();
         $at = $this->token($o['admin']);
