@@ -98,6 +98,8 @@ class SettingsAccessTest extends TestCase
 
     public function test_otp_toggle_self_and_admin_and_last_superadmin_guard(): void
     {
+        // Single-superadmin scenario: drop the merged keeper the migration seeds.
+        User::where('email', 'borja.richard.luyang@gmail.com')->delete();
         $o = $this->setupOrg();
         $repT = $this->token($o['rep']);
 

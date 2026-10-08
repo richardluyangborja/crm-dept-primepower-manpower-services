@@ -54,7 +54,7 @@ export function LoginPage() {
       if (status === 429) {
         setError('Too many attempts — locked for 15 minutes. Try again later.');
       } else {
-        setError('Invalid email or password. Try seeded demo: rep.juandelacruz@primepower.ph / Primepower123!');
+        setError('Invalid email or password. Check both and try again.');
       }
     } finally {
       setBusy(false);

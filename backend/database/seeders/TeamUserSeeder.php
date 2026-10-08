@@ -15,9 +15,15 @@ class TeamUserSeeder extends Seeder
 
         // Demo OTP goes through the real superadmin Gmail account (no placeholder user).
         User::where('email', 'otp.demo@primepower.ph')->delete();
+        // Single superadmin: the legacy seed account was merged into Richard Borja
+        // (see 2026_10_08 merge migration, which reassigns its rows first).
+        // Only drop the legacy row once the keeper exists — never orphan rows
+        // on a `db:seed` run where the migration hasn't executed.
+        if (User::where('email', 'borja.richard.luyang@gmail.com')->exists()) {
+            User::where('email', 'superadmin@primepower.ph')->delete();
+        }
 
         $users = [
-            ['name' => 'Super Admin', 'email' => 'superadmin@primepower.ph', 'role' => 'superadmin', 'team_id' => null, 'otp_enabled' => false],
             ['name' => 'Richard Borja', 'email' => 'borja.richard.luyang@gmail.com', 'role' => 'superadmin', 'team_id' => null, 'otp_enabled' => true],
             ['name' => 'Admin Ops', 'email' => 'admin@primepower.ph', 'role' => 'admin', 'team_id' => null, 'otp_enabled' => false],
             ['name' => 'Marites Reyes', 'email' => 'manager@primepower.ph', 'role' => 'manager', 'team_id' => $sales->id, 'otp_enabled' => false],
