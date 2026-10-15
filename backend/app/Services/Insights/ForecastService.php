@@ -14,11 +14,16 @@ class ForecastService
 
     public static function pipelineTotals(mixed $user): array
     {
-        $opps = Opportunity::visibleTo($user)
-            ->whereNotIn('stage', ['won', 'lost'])->get();
-        $open = $opps->sum('value_centavos');
-        $weighted = $opps->sum(fn ($o) => self::weighted($o->value_centavos, $o->probability));
+        // Single aggregate row — was a full collection load + PHP sums.
+        $row = Opportunity::visibleTo($user)
+            ->whereNotIn('stage', ['won', 'lost'])
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(value_centavos),0) as open, COALESCE(SUM(value_centavos * probability / 100.0),0) as weighted')
+            ->first();
 
-        return ['open_centavos' => $open, 'weighted_centavos' => $weighted, 'count' => $opps->count()];
+        return [
+            'open_centavos' => (int) ($row->open ?? 0),
+            'weighted_centavos' => (int) round($row->weighted ?? 0),
+            'count' => (int) ($row->count ?? 0),
+        ];
     }
 }

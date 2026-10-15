@@ -86,6 +86,36 @@ class HrController extends Controller
         return $this->ok($svc->score($target->id, $this->month($request)) + ['user_id' => $target->id]);
     }
 
+    /**
+     * Team pulse in one call: own card + top-5 ranking for the month.
+     * Replaces the frontend's N× per-member fetches with ~6 queries total.
+     */
+    public function pulse(Request $request, PerformanceServiceInterface $svc)
+    {
+        $me = $request->user();
+        $month = $this->month($request);
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            return $this->fail('Month must be YYYY-MM.', 422);
+        }
+        $q = User::whereIn('role', ['manager', 'sales_rep'])->where('is_active', true);
+        if ($me->role === 'sales_rep') {
+            $q->whereKey($me->id);
+        } elseif ($me->role === 'manager') {
+            $q->where(function ($w) use ($me) {
+                $w->whereKey($me->id);
+                if ($me->team_id) {
+                    $w->orWhere('team_id', $me->team_id);
+                }
+            });
+        }
+        $ids = $q->limit(25)->pluck('id')->all();
+        if (! in_array($me->id, $ids, true)) {
+            $ids[] = $me->id; // requester always gets their own card
+        }
+
+        return $this->ok($svc->pulse($ids, $me->id, $month));
+    }
+
     public function directory(Request $request)
     {
         $me = $request->user();
