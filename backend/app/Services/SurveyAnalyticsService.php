@@ -79,7 +79,7 @@ class SurveyAnalyticsService
             'trend' => $trend,
             'per_client' => $perClient,
             'low_scores' => $lowScores,
-            'comments' => $responses->filter(fn ($r) => $r->comment)->map(fn ($r) => ['score' => $r->score, 'comment' => $r->comment, 'client_name' => $r->survey?->client?->name, 'at' => $r->responded_at])->values()->all(),
+            'comments' => $responses->filter(fn ($r) => $r->comment)->sortByDesc('responded_at')->take(200)->map(fn ($r) => ['score' => $r->score, 'comment' => $r->comment, 'client_name' => $r->survey?->client?->name, 'at' => $r->responded_at])->values()->all(),
         ];
     }
 }

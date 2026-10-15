@@ -123,10 +123,16 @@ interface LifecycleContract {
 }
 
 /** Lifecycle strip (specs/04): contract + Client Management + Finance summaries, read-only. */
+/** Local calendar month (YYYY-MM) — UTC slicing can disagree with the server by a month at the edges. */
+function localMonth(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /** Team pulse (specs/11): role-aware people charts linking into Workforce. */
 function TeamPulse() {
   const { user } = useSession();
-  const month = new Date().toISOString().slice(0, 7);
+  const month = localMonth();
+  const monthName = new Date(`${month}-01T00:00:00`).toLocaleDateString('en-PH', { month: 'long' });
   // One batched call (was: directory + N parallel per-member fetches).
   const pulseQ = useQuery({
     queryKey: ['hr-pulse', month],
@@ -140,11 +146,13 @@ function TeamPulse() {
   const maxWon = Math.max(1, ...ranked.map((r) => r.perf.crm.won_value_centavos ?? 0));
   const isRep = user?.role === 'sales_rep';
   const mine = pulseQ.data?.mine ?? null;
+  // Strictly this-month wins — a quiet month is honest, not broken.
+  const allZero = ranked.every((r) => (r.perf.crm.won_value_centavos ?? 0) === 0);
 
   return (
     <div className="card p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">live attendance + sales</span></h2>
+        <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">{monthName} · live attendance + sales</span></h2>
         <Link to="/workforce/performance" className="text-xs text-sky-700 hover:underline dark:text-sky-300">Open Workforce →</Link>
       </div>
       {pulseQ.isLoading ? (
@@ -153,10 +161,15 @@ function TeamPulse() {
         <p className="text-sm text-[var(--text-muted)]">Couldn't read the team.</p>
       ) : ranked.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">No measured teammates in scope.</p>
+      ) : allZero ? (
+        <p className="text-sm text-[var(--text-muted)]">
+          No wins closed yet in {monthName} — the crew is working open deals.{' '}
+          <Link to="/pipeline" className="text-sky-700 hover:underline dark:text-sky-300">Open the board →</Link>
+        </p>
       ) : isRep && mine ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <KpiCard label="My composite" value={mine.perf.composite !== null ? String(mine.perf.composite) : '—'} sub="blended 0–100" href="/workforce/performance" />
-          <KpiCard label="My won value" value={formatPHP(mine.perf.crm.won_value_centavos)} sub="this month" href="/pipeline" />
+          <KpiCard label="My won value" value={formatPHP(mine.perf.crm.won_value_centavos)} sub={mine.perf.crm.won_value_centavos > 0 ? 'this month' : `nothing closed yet in ${monthName}`} href="/pipeline" />
           <KpiCard label="My attendance" value={mine.perf.hr.attendance_pct !== null ? `${mine.perf.hr.attendance_pct}%` : '—'} sub="this month" href="/workforce/attendance" />
         </div>
       ) : (
@@ -236,7 +249,7 @@ function NarrativeStrip({ data }: { data: {  forecast: { open_centavos: number; 
   const overdue = data.next_best_actions.filter((a) => a.kind === 'followup_overdue').length;
   const risks = data.at_risk ?? [];
   const topRisk = risks.find((c) => c.level === 'high') ?? risks[0];
-  const sentences = [
+  const items = [
     `${data.forecast.count} open deals worth ${formatPHP(data.forecast.open_centavos)} (${formatPHP(data.forecast.weighted_centavos)} weighted).`,
     data.nps_avg !== null && data.nps_avg !== undefined
       ? `Client sentiment sits at ${data.nps_avg} out of 10.`
@@ -246,7 +259,10 @@ function NarrativeStrip({ data }: { data: {  forecast: { open_centavos: number; 
   ];
   return (
     <div className="card border-l-4 border-l-sky-500 p-4">
-      <p className="text-sm leading-relaxed"><span className="font-semibold">Today at Primepower: </span>{sentences.join(' ')}</p>
+      <p className="font-semibold">Today at Primepower</p>
+      <ul className="mt-1 flex list-disc flex-col gap-0.5 pl-5 text-sm leading-relaxed">
+        {items.map((s, i) => <li key={i}>{s}</li>)}
+      </ul>
     </div>
   );
 }
