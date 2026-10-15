@@ -31,6 +31,23 @@ class HrEndpointTest extends TestCase
         return $this->getJson($uri, ['Authorization' => 'Bearer '.auth('api')->login($u)]);
     }
 
+    public function test_pulse_batches_self_and_top_with_scope(): void
+    {
+        $o = $this->org();
+        // Rep: only their own card, empty ranking of others.
+        $rep = $this->asUser('/api/v1/hr/pulse', $o['rep'])->assertOk()->json('data');
+        $this->assertSame($o['rep']->id, $rep['mine']['member']['id']);
+        $this->assertEmpty(array_filter($rep['top'], fn ($r) => $r['member']['id'] !== $o['rep']->id));
+
+        // Manager: team members only, never the other team.
+        $mgr = $this->asUser('/api/v1/hr/pulse', $o['mgr'])->assertOk()->json('data');
+        $ids = array_column(array_column($mgr['top'], 'member'), 'id');
+        $this->assertContains($o['mgr']->id, $ids);
+        $this->assertContains($o['rep']->id, $ids);
+        $this->assertNotContains($o['other']->id, $ids);
+        $this->assertSame($o['mgr']->id, $mgr['mine']['member']['id']);
+    }
+
     public function test_rep_sees_self_only(): void
     {
         $o = $this->org();

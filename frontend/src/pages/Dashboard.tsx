@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../lib/apiClient';
 import { formatPHP } from '../lib/format';
 import { KpiCard } from '../components/ui/KpiCard';
@@ -127,33 +127,19 @@ interface LifecycleContract {
 function TeamPulse() {
   const { user } = useSession();
   const month = new Date().toISOString().slice(0, 7);
-  const dirQ = useQuery({
-    queryKey: ['hr-directory', 'pulse'],
-    queryFn: async () => (await api.get('/hr/directory', { params: { per_page: 100 } })).data.data as {
-      id: number; name: string; role: string;
-    }[],
+  // One batched call (was: directory + N parallel per-member fetches).
+  const pulseQ = useQuery({
+    queryKey: ['hr-pulse', month],
+    queryFn: async () => (await api.get('/hr/pulse', { params: { month } })).data.data as {
+      mine: { member: { id: number; name: string }; perf: { composite: number | null; crm: { won_value_centavos: number }; hr: { attendance_pct: number | null } } } | null;
+      top: { member: { id: number; name: string }; perf: { composite: number | null; crm: { won_value_centavos: number }; hr: { attendance_pct: number | null } } }[];
+    },
+    staleTime: 60000,
   });
-  const members = (dirQ.data ?? []).filter((m) => ['manager', 'sales_rep'].includes(m.role)).slice(0, 12);
-  const perfQ = useQueries({
-    queries: members.map((m) => ({
-      queryKey: ['hr-performance', m.id, month, 'pulse'],
-      queryFn: async () => ({
-        member: m,
-        perf: (await api.get('/hr/performance', { params: { user_id: m.id, month } })).data.data as {
-          composite: number | null; crm: { won_value_centavos: number }; hr: { attendance_pct: number | null };
-        },
-      }),
-      staleTime: 60000,
-    })),
-  });
-  const ranked: { member: { id: number; name: string }; perf: { crm: { won_value_centavos: number }; hr: { attendance_pct: number | null }; composite: number | null } }[] = [];
-  for (const r of perfQ) {
-    if (r.data?.perf) ranked.push(r.data as (typeof ranked)[number]);
-  }
-  ranked.sort((a, b) => (b.perf.crm.won_value_centavos ?? 0) - (a.perf.crm.won_value_centavos ?? 0));
+  const ranked = pulseQ.data?.top ?? [];
   const maxWon = Math.max(1, ...ranked.map((r) => r.perf.crm.won_value_centavos ?? 0));
   const isRep = user?.role === 'sales_rep';
-  const mine = ranked.find((r) => r.member.id === user?.id);
+  const mine = pulseQ.data?.mine ?? null;
 
   return (
     <div className="card p-4">
@@ -161,8 +147,10 @@ function TeamPulse() {
         <h2 className="font-semibold">Team pulse <span className="text-xs font-normal text-[var(--text-muted)]">live attendance + sales</span></h2>
         <Link to="/workforce/performance" className="text-xs text-sky-700 hover:underline dark:text-sky-300">Open Workforce →</Link>
       </div>
-      {dirQ.isLoading || perfQ.some((r) => r.isLoading) ? (
+      {pulseQ.isLoading ? (
         <p className="text-sm text-[var(--text-muted)]">Reading the team…</p>
+      ) : pulseQ.isError ? (
+        <p className="text-sm text-[var(--text-muted)]">Couldn't read the team.</p>
       ) : ranked.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">No measured teammates in scope.</p>
       ) : isRep && mine ? (

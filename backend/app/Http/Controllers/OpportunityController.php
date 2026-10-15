@@ -28,6 +28,41 @@ class OpportunityController extends Controller
         return $this->paginated(OpportunityResource::collection($opps));
     }
 
+    /** Per-stage counts + value/monthly sums for board paging (60s cache). */
+    public function stageCounts(Request $request)
+    {
+        $this->authorize('viewAny', Opportunity::class);
+        $user = $request->user();
+        $perStage = min(25, max(1, (int) $request->query('per_stage', 7)));
+
+        // Cache the grouped rows only — page math depends on per_stage.
+        $grouped = \Illuminate\Support\Facades\Cache::remember(
+            "opp:stage-counts:{$user->id}:{$user->role}:".($user->team_id ?? 0),
+            60,
+            function () use ($user) {
+                return Opportunity::visibleToWithCompany($user)
+                    ->selectRaw('stage, COUNT(*) as count, COALESCE(SUM(value_centavos),0) as value, COALESCE(SUM(headcount * rate_per_head_centavos),0) as monthly')
+                    ->groupBy('stage')->get();
+            }
+        );
+
+        $max = 1;
+        $columns = [];
+        foreach (Opportunity::STAGES as $stage) {
+            $row = $grouped->firstWhere('stage', $stage);
+            $count = (int) ($row->count ?? 0);
+            $columns[] = [
+                'stage' => $stage,
+                'count' => $count,
+                'value_centavos' => (int) ($row->value ?? 0),
+                'monthly_centavos' => (int) ($row->monthly ?? 0),
+            ];
+            $max = max($max, (int) ceil($count / $perStage));
+        }
+
+        return $this->ok(['columns' => $columns, 'max_pages' => $max, 'per_stage' => $perStage]);
+    }
+
     public function store(StoreOpportunityRequest $request)
     {
         $this->authorize('create', Opportunity::class);
@@ -67,6 +102,7 @@ class OpportunityController extends Controller
         $data['probability'] ??= Opportunity::STAGE_PROBABILITY[$data['stage']];
         $opp = Opportunity::create($data);
         $opp->audit('created', $user->id, ['company_id' => $company->id, 'client_id' => $client?->id]);
+        $this->bustStageCounts($user->id);
 
         return $this->created(new OpportunityResource($opp), 'Opportunity created.');
     }
@@ -77,6 +113,15 @@ class OpportunityController extends Controller
         $opportunity->load('client:id,name');
 
         return $this->ok(new OpportunityResource($opportunity));
+    }
+
+    /** Stage-counts cache is per-viewer; drop it on any write so the board never lies. */
+    protected function bustStageCounts(int $userId): void
+    {
+        $u = \App\Models\User::find($userId);
+        if ($u) {
+            \Illuminate\Support\Facades\Cache::forget("opp:stage-counts:{$u->id}:{$u->role}:".($u->team_id ?? 0));
+        }
     }
 
     /** Stage-history timeline: every creation + stage move, oldest first. */
@@ -122,6 +167,7 @@ class OpportunityController extends Controller
         $this->authorize('delete', $opportunity);
         $opportunity->delete();
         $opportunity->audit('deleted', auth('api')->id(), []);
+        $this->bustStageCounts((int) auth('api')->id());
 
         return $this->ok(null, 'Opportunity archived.');
     }
@@ -132,6 +178,7 @@ class OpportunityController extends Controller
         $user = $request->user();
         $opp = $service->moveStage($opportunity, $request->validated(), $user->id, $user->role);
         $opp->load('client:id,name');
+        $this->bustStageCounts($user->id);
 
         return $this->ok(new OpportunityResource($opp), "Moved to {$opp->stage}.");
     }
@@ -147,6 +194,7 @@ class OpportunityController extends Controller
         )->validate();
         $opp = $service->moveStage($opportunity, $validated, $user->id, $user->role);
         $opp->load('client:id,name');
+        $this->bustStageCounts($user->id);
 
         return $this->ok(new OpportunityResource($opp), 'Marked as won — job order + invoice drafted (mock).');
     }
@@ -162,6 +210,7 @@ class OpportunityController extends Controller
         )->validate();
         $opp = $service->moveStage($opportunity, $validated, $user->id, $user->role);
         $opp->load('client:id,name');
+        $this->bustStageCounts($user->id);
 
         return $this->ok(new OpportunityResource($opp), 'Marked as lost.');
     }
