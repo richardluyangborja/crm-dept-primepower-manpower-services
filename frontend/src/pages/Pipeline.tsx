@@ -265,7 +265,7 @@ export function PipelinePage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search deals…" className="card max-w-md flex-1 px-3 py-2 text-sm outline-none" />
-        {!q && maxPages > 1 && (
+        {!q && (maxPages > 1 || rows.length > 0) && (
           <nav aria-label="Board pages" className="flex items-center gap-1 text-sm">
             <span className="text-xs text-[var(--text-muted)]">Page</span>
             {Array.from({ length: maxPages }, (_, i) => i + 1).map((n) => (

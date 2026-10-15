@@ -36,13 +36,23 @@ class InvoiceController extends Controller
     public function summary(Request $request)
     {
         $this->authorize('viewAny', Invoice::class);
-        $invoices = Invoice::visibleTo($request->user())->with('client:id,name')->get();
+        // Slim rows only (no full models, no per-row relations) — was a full
+        // collection load with PHP grouping over fat rows.
+        $rows = Invoice::visibleTo($request->user())->where('status', '!=', 'paid')
+            ->get(['id', 'client_id', 'balance_centavos', 'due_at', 'status']);
+        $names = $rows->isEmpty() ? collect() : \App\Models\Client::whereIn('id', $rows->pluck('client_id')->unique())
+            ->pluck('name', 'id');
 
-        $open = $invoices->where('status', '!=', 'paid');
         $buckets = ['current' => 0, 'd1_30' => 0, 'd31_60' => 0, 'd61_90' => 0, 'd90plus' => 0];
         $overdueTotal = 0;
-        foreach ($open as $inv) {
-            $days = $inv->daysOverdue();
+        $today = now()->startOfDay();
+        foreach ($rows as $inv) {
+            // Same math as Invoice::daysOverdue().
+            $overdue = $inv->status === 'overdue'
+                || ($inv->due_at !== null && \Carbon\Carbon::parse($inv->due_at)->lt($today));
+            $days = (! $overdue || $inv->due_at === null)
+                ? 0
+                : $today->diffInDays(\Carbon\Carbon::parse($inv->due_at), true);
             if ($days <= 0) {
                 $buckets['current'] += $inv->balance_centavos;
             } else {
@@ -59,15 +69,15 @@ class InvoiceController extends Controller
             }
         }
 
-        $perClient = $open->groupBy('client_id')->map(fn ($g) => [
+        $perClient = $rows->groupBy('client_id')->map(fn ($g) => [
             'client_id' => \App\Models\Client::encodeId($g->first()->client_id),
-            'client_name' => $g->first()->client?->name,
+            'client_name' => $names[$g->first()->client_id] ?? null,
             'outstanding_centavos' => $g->sum('balance_centavos'),
             'invoices' => $g->count(),
         ])->values()->all();
 
         return $this->ok([
-            'outstanding_total_centavos' => $open->sum('balance_centavos'),
+            'outstanding_total_centavos' => $rows->sum('balance_centavos'),
             'overdue_total_centavos' => $overdueTotal,
             'aging_buckets_centavos' => $buckets,
             'per_client' => $perClient,

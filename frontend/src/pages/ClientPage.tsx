@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/apiClient';
@@ -51,6 +51,35 @@ const FULFILLMENT_LABELS: Record<string, string> = {
 interface HeaderContract { id: string; status: string; monthly_billing_centavos: number | null; }
 interface HeaderFulfillment { required: number; deployed: number; remaining: number; pct: number | null; status: string; }
 interface HeaderSurvey { id: string; response?: { score: number } | null; }
+
+/**
+ * Below-fold sections mount (and fetch) only when scrolled near.
+ * Cuts the client-page mount from ~15 parallel queries to ~5.
+ */
+function LazySection({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || seen) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '500px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+  return (
+    <section id={id} ref={ref} aria-label={label} className="flex scroll-mt-24 flex-col gap-3">
+      {seen ? children : <p className="text-sm text-[var(--text-muted)]">Loading {label.toLowerCase()}…</p>}
+    </section>
+  );
+}
 
 export function ClientPage() {
   const { id = '' } = useParams();
@@ -142,19 +171,19 @@ export function ClientPage() {
             <ProfileStats client={detailQ.data} />
             <ContactsTab client={detailQ.data} />
           </section>
-          <section id="deals" aria-label="Deals" className="flex scroll-mt-24 flex-col gap-3">
+          <LazySection id="deals" label="Deals">
             <SectionHead title="Deals" hint="Every opportunity under this client — past and present. A new requirement never makes them a lead again." />
             <OppsTab clientId={detailQ.data.id} />
-          </section>
-          <section id="contracts" aria-label="Contracts" className="flex scroll-mt-24 flex-col gap-3">
+          </LazySection>
+          <LazySection id="contracts" label="Contracts">
             <SectionHead title="Contracts" hint="Commercial agreements — what was signed, for how many heads, for how long." />
             <ContractsSection clientId={detailQ.data.id} />
-          </section>
-          <section id="operations" aria-label="Operations" className="flex scroll-mt-24 flex-col gap-3">
+          </LazySection>
+          <LazySection id="operations" label="Operations">
             <SectionHead title="Operations" tag="back office" hint="Fulfillment status from the back office — the CRM shows it, they run it." />
             <OperationsSection clientId={detailQ.data.id} />
-          </section>
-          <section id="conversations" aria-label="Conversations" className="flex scroll-mt-24 flex-col gap-3">
+          </LazySection>
+          <LazySection id="conversations" label="Conversations">
             <SectionHead title="Conversations" hint="Touchpoints, feedback, and promised follow-ups." />
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Touchpoints</p>
             <CommsTab clientId={detailQ.data.id} />
@@ -162,15 +191,15 @@ export function ClientPage() {
             <SurveysTab clientId={detailQ.data.id} />
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Promised follow-ups</p>
             <FollowupsTab clientId={detailQ.data.id} />
-          </section>
-          <section id="billing" aria-label="Billing" className="flex scroll-mt-24 flex-col gap-3">
+          </LazySection>
+          <LazySection id="billing" label="Billing">
             <SectionHead title="Billing" tag="via Finance" hint="What they owe and what's been invoiced — Finance owns the ledger." />
             <FinanceTab clientId={detailQ.data.id} />
-          </section>
-          <section id="insights" aria-label="Insights" className="flex scroll-mt-24 flex-col gap-3">
+          </LazySection>
+          <LazySection id="insights" label="Insights">
             <SectionHead title="Insights" hint="What the system notices about this relationship — gaps, renewals, risks." />
             <InsightsSection clientId={detailQ.data.id} clientName={detailQ.data.name} />
-          </section>
+          </LazySection>
           {transferOpen && detailQ.data.company_id && (
             <TransferDialog
               companyId={detailQ.data.company_id}

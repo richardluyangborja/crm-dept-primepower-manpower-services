@@ -148,4 +148,26 @@ class PerfCeilingTest extends TestCase
         $res->assertOk();
         $this->assertLessThan(6, $n, "board page queries: $n");
     }
+
+    public function test_pass_two_endpoints_stay_within_ceilings(): void
+    {
+        $admin = $this->seedVolume();
+        $t = auth('api')->login($admin);
+
+        [$res, $n] = $this->measuredCall('GET', '/api/v1/staffing?page=1&per_page=15', $t);
+        $res->assertOk();
+        $this->assertLessThan(10, $n, "staffing queries: $n");
+
+        [$res, $n] = $this->measuredCall('GET', '/api/v1/finance/summary', $t);
+        $res->assertOk();
+        $this->assertLessThan(6, $n, "finance summary queries: $n");
+
+        [$res, $n] = $this->measuredCall('GET', '/api/v1/surveys-analytics', $t);
+        $res->assertOk();
+        $this->assertLessThan(10, $n, "survey analytics queries: $n");
+
+        [$res, $n] = $this->measuredCall('GET', '/api/v1/job-orders?status=deployed&per_page=12', $t);
+        $res->assertOk();
+        $this->assertLessThan(6, $n, "job board column queries: $n");
+    }
 }
