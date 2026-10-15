@@ -54,25 +54,35 @@ export function PipelineFinancePage() {
   const [status, setStatus] = useState('');
   const [payId, setPayId] = useState<string | null>(null);
   const [collectTarget, setCollectTarget] = useState<Invoice | null>(null);
+  const [clientPage, setClientPage] = useState(1);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const INV_PER_PAGE = 15;
   const toast = useToast();
   const qc = useQueryClient();
-
-  const perClientQ = useQuery({
-    queryKey: ['invoices', clientId],
-    queryFn: async () =>
-      (await api.get('/invoices', { params: { client_id: clientId || undefined, per_page: 100 } })).data.data as Invoice[],
-  });
-  const perClientRows = perClientQ.data ?? [];
-  const outstanding = perClientRows.filter((r) => r.status !== 'paid').reduce((a, r) => a + r.balance_centavos, 0);
 
   const summaryQ = useQuery({
     queryKey: ['finance-summary'],
     queryFn: async () => (await api.get('/finance/summary')).data.data as Summary,
   });
-  const invoicesQ = useQuery({
-    queryKey: ['invoices', status],
-    queryFn: async () => (await api.get('/invoices', { params: { status: status || undefined, per_page: 50 } })).data.data as Invoice[],
+  const perClientQ = useQuery({
+    queryKey: ['invoices', clientId, clientPage],
+    queryFn: async () =>
+      (await api.get('/invoices', { params: { client_id: clientId || undefined, page: clientPage, per_page: INV_PER_PAGE } })).data as { data: Invoice[]; meta?: { total?: number } },
   });
+  const perClientRows = perClientQ.data?.data ?? [];
+  // Full-client outstanding from the summary (the table only holds one page).
+  const outstanding = clientId
+    ? ((summaryQ.data?.per_client ?? []).find((c) => String(c.client_id) === clientId)?.outstanding_centavos
+      ?? perClientRows.filter((r) => r.status !== 'paid').reduce((a, r) => a + r.balance_centavos, 0))
+    : 0;
+
+  const invoicesQ = useQuery({
+    queryKey: ['invoices', status, ledgerPage],
+    queryFn: async () =>
+      (await api.get('/invoices', { params: { status: status || undefined, page: ledgerPage, per_page: INV_PER_PAGE } })).data as { data: Invoice[]; meta?: { total?: number } },
+  });
+
+  const s = summaryQ.data;
 
   const collectMut = useMutation({
     mutationFn: async (id: string) => (await api.post(`/invoices/${id}/collect`)).data,
@@ -83,7 +93,6 @@ export function PipelineFinancePage() {
     onError: (e) => toast('error', apiErr(e, 'Could not create collection reminder.')),
   });
 
-  const s = summaryQ.data;
   const buckets: [string, number][] = s
     ? [['Current', s.aging_buckets_centavos.current], ['1–30 days', s.aging_buckets_centavos.d1_30], ['31–60 days', s.aging_buckets_centavos.d31_60], ['61–90 days', s.aging_buckets_centavos.d61_90], ['90+ days', s.aging_buckets_centavos.d90plus]]
     : [];
@@ -101,7 +110,7 @@ export function PipelineFinancePage() {
       <section aria-label="Per client" className="flex flex-col gap-3">
         <SectionHead title="Per client" hint="Pick an account to see its invoices and outstanding balance." />
         <div className="flex gap-2">
-          <ClientPicker clientId={clientId} onChange={setClientId} />
+          <ClientPicker clientId={clientId} onChange={(id) => { setClientId(id); setClientPage(1); }} />
           {outstanding > 0 && (
             <div className="card px-4 py-2 text-sm">
               Outstanding: <strong className="tabular-nums">{formatPHP(outstanding)}</strong>
@@ -113,6 +122,7 @@ export function PipelineFinancePage() {
           : (
             <DataTable<Invoice>
               rows={perClientRows}
+              pagination={{ page: clientPage, perPage: INV_PER_PAGE, total: perClientQ.data?.meta?.total ?? perClientRows.length, onPage: setClientPage }}
               columns={[
                 { key: 'r', header: 'Invoice', render: (r) => <span className="font-medium">{r.ref}<br /><span className="text-xs font-normal text-[var(--text-muted)]">{r.title}</span></span> },
                 { key: 'c', header: 'Client', render: (r) => <Link to={`/clients/${r.client_id}`} className="text-sky-700 hover:underline dark:text-sky-300">{r.client_name ?? `#${r.client_id}`}</Link> },
@@ -169,7 +179,7 @@ export function PipelineFinancePage() {
           )}
 
         <div className="flex gap-2">
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="card px-3 py-2 text-sm" aria-label="Filter by status">
+          <select value={status} onChange={(e) => { setStatus(e.target.value); setLedgerPage(1); }} className="card px-3 py-2 text-sm" aria-label="Filter by status">
             <option value="">All statuses</option>
             {['draft', 'sent', 'paid', 'overdue'].map((st) => <option key={st} value={st}>{st}</option>)}
           </select>
@@ -177,7 +187,8 @@ export function PipelineFinancePage() {
 
         {invoicesQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading invoices…</p> : (
           <DataTable<Invoice>
-            rows={invoicesQ.data ?? []}
+            rows={invoicesQ.data?.data ?? []}
+            pagination={{ page: ledgerPage, perPage: INV_PER_PAGE, total: invoicesQ.data?.meta?.total ?? 0, onPage: setLedgerPage }}
             columns={[
               { key: 'r', header: 'Invoice', render: (r) => <span className="font-medium">{r.ref}<br /><span className="text-xs font-normal text-[var(--text-muted)]">{r.title}</span></span> },
               { key: 'c', header: 'Client', render: (r) => <Link to={`/clients/${r.client_id}`} className="text-sky-700 dark:text-sky-300">{r.client_name ?? `#${r.client_id}`}</Link> },
@@ -199,7 +210,7 @@ export function PipelineFinancePage() {
 
         {payId !== null && (
           <PayModal
-            invoice={(invoicesQ.data ?? []).find((i) => i.id === payId) ?? perClientRows.find((i) => i.id === payId) ?? null}
+            invoice={(invoicesQ.data?.data ?? []).find((i: Invoice) => i.id === payId) ?? perClientRows.find((i) => i.id === payId) ?? null}
             onClose={() => setPayId(null)}
             onDone={() => {
               qc.invalidateQueries({ queryKey: ['invoices'] });
