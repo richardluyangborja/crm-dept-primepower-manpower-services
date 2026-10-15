@@ -16,7 +16,10 @@ class SurveyAnalyticsService
         if ($from) $q->where('created_at', '>=', $from);
         if ($to) $q->where('created_at', '<=', $to);
         $surveys = $q->get();
-        $responses = SurveyResponse::whereIn('survey_id', $surveys->pluck('id'))->get();
+        // Eager responses' parents once — was N+1 (survey + template per row).
+        $responses = SurveyResponse::whereIn('survey_id', $surveys->pluck('id'))
+            ->with('survey.template', 'survey.client')->get();
+        $responsesBySurvey = $responses->groupBy('survey_id');
 
         $npsScores = $responses->filter(fn ($r) => optional($r->survey?->template)->type === 'nps' || $r->score >= 0)->pluck('score'); // fallback to all if type not filtered
         // More precise: separate by template type when available
@@ -47,9 +50,9 @@ class SurveyAnalyticsService
             ];
         }
 
-        // Per-client + low-score flag
-        $perClient = $surveys->groupBy('client_id')->map(function ($group) {
-            $scores = SurveyResponse::whereIn('survey_id', $group->pluck('id'))->pluck('score');
+        // Per-client + low-score flag (scores from the single pre-fetched set).
+        $perClient = $surveys->groupBy('client_id')->map(function ($group) use ($responsesBySurvey) {
+            $scores = $group->flatMap(fn ($s) => ($responsesBySurvey[$s->id] ?? collect())->pluck('score'));
             return [
                 'client_id' => \App\Models\Client::encodeId($group->first()->client_id),
                 'client_name' => $group->first()->client?->name,

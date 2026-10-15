@@ -25,6 +25,31 @@ class OpportunityPipelineTest extends TestCase
         ]);
     }
 
+    public function test_stage_counts_drive_board_paging(): void
+    {
+        $rep = $this->rep('rep.counts@primepower.ph');
+        $t = auth('api')->login($rep);
+        $c = $this->clientFor($rep);
+        for ($i = 0; $i < 8; $i++) {
+            $this->postJson('/api/v1/opportunities', [
+                'client_id' => $c->id, 'company_id' => $c->company->opaqueId(),
+                'title' => "Deal $i", 'value_centavos' => 100000,
+            ], ['Authorization' => "Bearer $t"])->assertCreated();
+        }
+        // 8 deals in `new`, 7 per column → 2 pages.
+        $counts = $this->getJson('/api/v1/opportunities/stage-counts?per_stage=7', ['Authorization' => "Bearer $t"])
+            ->assertOk()->json('data');
+        $this->assertSame(2, $counts['max_pages']);
+        $new = collect($counts['columns'])->firstWhere('stage', 'new');
+        $this->assertSame(8, $new['count']);
+
+        // Per-column pages slice correctly.
+        $p1 = $this->getJson('/api/v1/opportunities?stage=new&page=1&per_page=7', ['Authorization' => "Bearer $t"])->assertOk();
+        $this->assertCount(7, $p1->json('data'));
+        $p2 = $this->getJson('/api/v1/opportunities?stage=new&page=2&per_page=7', ['Authorization' => "Bearer $t"])->assertOk();
+        $this->assertCount(1, $p2->json('data'));
+    }
+
     public function test_create_applies_stage_probability_and_lists_by_stage(): void
     {
         $rep = $this->rep('rep.pipe@primepower.ph');

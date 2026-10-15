@@ -30,6 +30,9 @@ interface Opp {
 
 const STAGES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'contract', 'won', 'lost'] as const;
 
+/** Board paging: at most this many cards per column; numbered pages on top. */
+const PER_STAGE = 7;
+
 /** Admin-configurable stage labels (Settings → Master data); keys stay fixed for logic. */
 function useStageLabels(): Record<string, string> {
   const q = useQuery({
@@ -62,6 +65,7 @@ function pesoToCentavos(v: string): number {
 
 export function PipelinePage() {
   const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [lostId, setLostId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -73,8 +77,23 @@ export function PipelinePage() {
   const [showNew, setShowNew] = useState(preselectClient !== '');
 
   const oppsQ = useQuery({
-    queryKey: ['opportunities', q],
-    queryFn: async () => (await api.get('/opportunities', { params: { q: q || undefined, per_page: 100 } })).data.data as Opp[],
+    // Board pages: 7 cards per column; page 1 first, later pages on demand.
+    // Searching switches to a flat capped result set (no column paging).
+    queryKey: ['opportunities-board', page, q],
+    queryFn: async () => {
+      if (q) return (await api.get('/opportunities', { params: { q, per_page: 50 } })).data.data as Opp[];
+      const cols = await Promise.all(STAGES.map(async (s) =>
+        (await api.get('/opportunities', { params: { stage: s, page, per_page: PER_STAGE } })).data.data as Opp[]));
+      return cols.flat();
+    },
+  });
+  const countsQ = useQuery({
+    queryKey: ['opportunities', 'stage-counts'],
+    queryFn: async () => (await api.get('/opportunities/stage-counts', { params: { per_stage: PER_STAGE } })).data.data as {
+      columns: { stage: string; count: number; value_centavos: number; monthly_centavos: number }[];
+      max_pages: number; per_stage: number;
+    },
+    staleTime: 30000,
   });
   const dashQ = useQuery({
     queryKey: ['dashboard'],
@@ -83,8 +102,13 @@ export function PipelinePage() {
 
   const rows = oppsQ.data ?? [];
   const labels = useStageLabels();
+  const colStats = Object.fromEntries((countsQ.data?.columns ?? []).map((c) => [c.stage, c]));
+  const maxPages = countsQ.data?.max_pages ?? 1;
   const byStage = (s: string) => rows.filter((r) => r.stage === s);
-  const openVal = rows.filter((r) => !['won', 'lost'].includes(r.stage)).reduce((a, r) => a + r.value_centavos, 0);
+  // Totals come from the counts endpoint (full scope), not the loaded page.
+  const openVal = (countsQ.data?.columns ?? []).filter((c) => !['won', 'lost'].includes(c.stage)).reduce((a, c) => a + c.value_centavos, 0);
+  const wonCount = colStats.won?.count ?? byStage('won').length;
+  const lostCount = colStats.lost?.count ?? byStage('lost').length;
 
   const [contractId, setContractId] = useState<string | null>(null);
   const [ritual, setRitual] = useState<{ id: string; stage: string } | null>(null);
@@ -97,16 +121,17 @@ export function PipelinePage() {
       (await api.post(`/opportunities/${id}/move`, { stage, lost_reason, effective_date, headcount, rate_per_head_centavos, contract_months, start_date, reopen_note, probability, skip_reason })).data,
     onMutate: async ({ id, stage }) => {
       await qc.cancelQueries({ queryKey: ['opportunities'] });
-      const prev = qc.getQueryData<Opp[]>(['opportunities', q]);
-      qc.setQueryData<Opp[]>(['opportunities', q], (old) => old?.map((o) => (o.id === id ? { ...o, stage } : o)) ?? old);
+      const key = ['opportunities-board', page, q];
+      const prev = qc.getQueryData<Opp[]>(key);
+      qc.setQueryData<Opp[]>(key, (old) => old?.map((o) => (o.id === id ? { ...o, stage } : o)) ?? old);
       return { prev };
     },
     onError: (e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['opportunities', q], ctx.prev);
+      if (ctx?.prev) qc.setQueryData(['opportunities-board', page, q], ctx.prev);
       toast('error', apiErr(e, 'Move failed — reverted.'));
     },
     onSuccess: (d, vars) => {
-      const moved = (qc.getQueryData<Opp[]>(['opportunities', q]) ?? rows).find((o) => o.id === vars.id);
+      const moved = (qc.getQueryData<Opp[]>(['opportunities-board', page, q]) ?? rows).find((o) => o.id === vars.id);
       toast('success', {
         title: d.message ?? 'Moved.',
         ...(moved?.client_id ? { action: { label: 'Open client', href: `/clients/${moved.client_id}` } } : {}),
@@ -234,11 +259,26 @@ export function PipelinePage() {
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Open pipeline</p><p className="text-2xl font-bold tabular-nums">{formatPHP(openVal)}</p></div>
         <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Weighted forecast</p><p className="text-2xl font-bold tabular-nums">{dashQ.data ? formatPHP(dashQ.data.forecast.weighted_centavos) : '…'}</p></div>
-        <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Won</p><p className="text-2xl font-bold tabular-nums text-green-600">{byStage('won').length}</p></div>
-        <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Lost</p><p className="text-2xl font-bold tabular-nums text-slate-500">{byStage('lost').length}</p></div>
+        <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Won</p><p className="text-2xl font-bold tabular-nums text-green-600">{wonCount}</p></div>
+        <div className="card p-4"><p className="text-xs uppercase text-[var(--text-muted)]">Lost</p><p className="text-2xl font-bold tabular-nums text-slate-500">{lostCount}</p></div>
       </div>
 
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search deals…" className="card max-w-md px-3 py-2 text-sm outline-none" />
+      <div className="flex flex-wrap items-center gap-2">
+        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search deals…" className="card max-w-md flex-1 px-3 py-2 text-sm outline-none" />
+        {!q && maxPages > 1 && (
+          <nav aria-label="Board pages" className="flex items-center gap-1 text-sm">
+            <span className="text-xs text-[var(--text-muted)]">Page</span>
+            {Array.from({ length: maxPages }, (_, i) => i + 1).map((n) => (
+              <button key={n} onClick={() => setPage(n)} aria-current={n === page ? 'page' : undefined}
+                className={`rounded-lg px-2.5 py-1 text-xs tabular-nums ${n === page ? 'bg-sky-600 font-semibold text-white' : 'border border-[var(--border)]'}`}>
+                {n}
+              </button>
+            ))}
+            <span className="text-xs tabular-nums text-[var(--text-muted)]">· {PER_STAGE}/column</span>
+          </nav>
+        )}
+        {q && <span className="text-xs text-[var(--text-muted)]">Search results (capped 50) — clear to page the board.</span>}
+      </div>
 
       {oppsQ.isLoading ? <p className="text-sm text-[var(--text-muted)]">Loading pipeline…</p>
         : oppsQ.isError ? <div className="card p-6 text-sm">Couldn't load pipeline. <button className="text-sky-600 underline" onClick={() => oppsQ.refetch()}>Retry</button></div>
@@ -247,8 +287,11 @@ export function PipelinePage() {
           <div className="flex gap-3 overflow-x-auto pb-2">
             {STAGES.map((s) => {
               const col = byStage(s);
-              const sum = col.reduce((a, r) => a + r.value_centavos, 0);
-              const monthly = col.reduce((a, r) => a + (r.monthly_billing_centavos ?? 0), 0);
+              // Full-scope totals; the loaded page is only a 7-card window.
+              const stat = colStats[s];
+              const total = stat?.count ?? col.length;
+              const sum = stat?.value_centavos ?? col.reduce((a, r) => a + r.value_centavos, 0);
+              const monthly = stat?.monthly_centavos ?? col.reduce((a, r) => a + (r.monthly_billing_centavos ?? 0), 0);
               return (
                 <div key={s} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (dragId !== null) {
                   const from = rows.find((r) => r.id === dragId)?.stage;
@@ -259,12 +302,15 @@ export function PipelinePage() {
                   else setDragId(null);
                 } }} className="w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-2">
                   <div className="flex items-center justify-between px-1 py-1">
-                    <p className="text-xs font-bold uppercase">{labels[s]} <span className="text-[var(--text-muted)]">{col.length}</span></p>
+                    <p className="text-xs font-bold uppercase">{labels[s]} <span className="text-[var(--text-muted)]">{total}</span></p>
                     <p className="text-[11px] tabular-nums text-[var(--text-muted)]" title={monthly > 0 ? `${formatPHP(monthly)}/mo expected billing` : undefined}>{formatPHP(sum)}{monthly > 0 ? ` · ${formatPHP(monthly)}/mo` : ''}</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     {col.map((o) => <OppCard key={o.id} o={o} onOpen={() => setDetailId(o.id)} onDrag={() => setDragId(o.id)} />)}
                     {col.length === 0 && <p className="px-1 py-4 text-center text-xs text-[var(--text-muted)]">Drop here</p>}
+                    {!q && total > col.length && (
+                      <p className="px-1 py-1 text-center text-[11px] tabular-nums text-[var(--text-muted)]">+{total - col.length} more — turn the page above</p>
+                    )}
                   </div>
                 </div>
               );

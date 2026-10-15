@@ -63,6 +63,8 @@ Route::prefix('v1')->group(function () {
         Route::post('invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'pay']);
         Route::post('invoices/{invoice}/collect', [\App\Http\Controllers\InvoiceController::class, 'collect']);
         // Step 2 — Opportunity Pipeline (specs/05).
+        // Single-segment helper BEFORE the resource so it isn't eaten by {opportunity}.
+        Route::get('opportunities/stage-counts', [OpportunityController::class, 'stageCounts']);
         Route::apiResource('opportunities', OpportunityController::class);
         Route::get('opportunities/{opportunity}/history', [OpportunityController::class, 'history']);
         Route::post('opportunities/{opportunity}/move', [OpportunityController::class, 'move']);
@@ -113,6 +115,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/hr/attendance', [\App\Http\Controllers\HrController::class, 'attendance']);
         Route::get('/hr/leave', [\App\Http\Controllers\HrController::class, 'leave']);
         Route::get('/hr/performance', [\App\Http\Controllers\HrController::class, 'performance']);
+        Route::get('/hr/pulse', [\App\Http\Controllers\HrController::class, 'pulse']);
         Route::get('/hr/directory', [\App\Http\Controllers\HrController::class, 'directory']);
     });
 });
